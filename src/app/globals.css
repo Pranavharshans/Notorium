@@ -120,3 +120,26 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@layer utilities {
+  .animate-shimmer {
+    animation: shimmer 1.5s infinite linear;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 25%,
+      rgba(255, 255, 255, 0.6) 50%,
+      rgba(255, 255, 255, 0.3) 75%,
+      transparent 100%
+    );
+  }
+}
