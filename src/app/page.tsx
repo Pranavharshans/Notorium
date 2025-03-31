@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { AuthModal } from "@/components/auth-modal";
@@ -8,16 +9,25 @@ import { useAuth } from "@/context/auth-context";
 
 export default function Home() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user && !loading) {
+      router.push("/home");
+    }
+  }, [user, loading, router]);
 
   const handleGetStarted = () => {
     if (user) {
-      // Navigate to dashboard or start using the app
-      console.log("Already signed in");
+      router.push("/home");
     } else {
       setIsAuthModalOpen(true);
     }
   };
+
+  if (loading) return null;
+  if (user) return null;
 
   return (
     <div className="relative min-h-screen bg-black">
@@ -33,7 +43,7 @@ export default function Home() {
           className="text-lg px-8 py-4" 
           onClick={handleGetStarted}
         >
-          {user ? "Go to Dashboard" : "Get Started"}
+          Get Started
         </ShimmerButton>
       </div>
 

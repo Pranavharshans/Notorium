@@ -43,8 +43,11 @@ export function AuthModal({
               Welcome to Notorium
             </Dialog.Title>
 
-            <p className="text-lg text-gray-300 text-center mb-8">
+            <p className="text-lg text-gray-300 text-center mb-4">
               Transform your lectures into comprehensive notes with AI
+            </p>
+            <p className="text-sm text-gray-400 text-center mb-8">
+              New to Notorium? Your account will be created automatically
             </p>
 
             <button
