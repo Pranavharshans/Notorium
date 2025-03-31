@@ -8,6 +8,7 @@ import { User } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
+import { groqService, TranscriptionResult } from "@/lib/groq-service";
 
 const icons = {
   home: (
@@ -109,6 +110,27 @@ function UserProfile({ user }: { user: any }) {
   );
 }
 
+function SignOutButton({ onSignOut }: { onSignOut: () => void }) {
+  const { open } = useSidebar();
+
+  return (
+    <button
+      onClick={onSignOut}
+      className="flex items-center gap-2 px-2 py-2 mt-auto text-red-600 hover:text-red-700 transition-colors"
+    >
+      {icons.signOut}
+      <motion.span
+        animate={{
+          width: open ? "auto" : 0,
+          opacity: open ? 1 : 0
+        }}
+      >
+        Sign Out
+      </motion.span>
+    </button>
+  );
+}
+
 function Navigation({ currentView, setCurrentView }: { currentView: string; setCurrentView: (view: string) => void }) {
   const links = [
     { label: "Home", id: "home", icon: icons.home },
@@ -131,94 +153,125 @@ function Navigation({ currentView, setCurrentView }: { currentView: string; setC
   );
 }
 
-function SignOutButton({ onSignOut }: { onSignOut: () => void }) {
-  const { open } = useSidebar();
-
-  return (
-    <button
-      onClick={onSignOut}
-      className="flex items-center gap-2 px-2 py-2 mt-auto text-red-600 hover:text-red-700 transition-colors"
-    >
-      {icons.signOut}
-      <motion.span
-        animate={{
-          width: open ? "auto" : 0,
-          opacity: open ? 1 : 0
-        }}
-      >
-        Sign Out
-      </motion.span>
-    </button>
-  );
-}
-
-function NewLectureView() {
+function NewLectureView({ setCurrentView }: { setCurrentView: (view: string) => void }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleRecordingStart = () => {
+    setIsRecording(true);
+    setError(null);
+    setTranscription(null);
+    setCopySuccess(false);
+  };
+
+  const handleRecordingStop = async (duration: number, audioBlob: Blob) => {
+    setRecordingDuration(duration);
+    setIsRecording(false);
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const result = await groqService.transcribeAudio(audioBlob);
+      setTranscription(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to process the recording. Please try again.";
+      setError(errorMessage);
+      console.error("Transcription error:", err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCopyToClipboard = () => {
+    if (transcription?.text) {
+      navigator.clipboard.writeText(transcription.text);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    }
+  };
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">New Lecture</h2>
-      <div className="max-w-2xl mx-auto">
-        <div className="p-12 bg-white rounded-xl border border-gray-200">
-          <div className="text-center">
-            <h3 className="text-2xl font-semibold mb-4">Record Live Lecture</h3>
-            <p className="text-base text-gray-600 mb-8 max-w-lg mx-auto">
-              Transform your lectures into comprehensive notes instantly with our AI-powered recording system.
-            </p>
-            <div className="text-sm bg-black/5 rounded-lg p-4 mb-8 inline-block">
-              {isRecording ? (
-                <span className="text-red-500 font-medium flex items-center gap-2">
-                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
-                  Recording in Progress
-                </span>
-              ) : (
-                <span className="text-gray-600">
-                  Click the microphone to start recording
-                </span>
-              )}
-            </div>
+    <div className="flex flex-col items-center pt-16"> {/* Removed justify-center h-full, added pt-16 */}
+      <div className="w-full max-w-4xl px-4 text-center">
+        <h2 className="text-3xl font-bold mb-4">Record Live Lecture</h2>
+        <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+          Transform your lectures into comprehensive notes instantly with our AI-powered recording system.
+        </p>
+        
+        {error && (
+          <div className="mb-8 p-4 bg-red-50 text-red-600 rounded-lg">
+            {error}
           </div>
-          
+        )}
+
+        <div className="mb-12">
           <AIVoiceInput
             className="w-full scale-125 transform"
-            onStart={() => {
-              setIsRecording(true);
-              console.log("Recording started");
-            }}
-            onStop={(duration: number) => {
-              setIsRecording(false);
-              setRecordingDuration(duration);
-              console.log("Recording stopped after", duration, "seconds");
-            }}
+            onStart={handleRecordingStart}
+            onStop={handleRecordingStop}
           />
+        </div>
 
-          {recordingDuration > 0 && !isRecording && (
-            <div className="text-center mt-8 space-y-6">
-              <div className="bg-green-50 rounded-lg p-6 inline-block">
-                <p className="text-base text-green-600 font-medium flex items-center justify-center gap-2">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                    <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Recording complete! ({Math.round(recordingDuration)} seconds)
-                </p>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-500">
-                    Processing your lecture...
-                  </p>
-                  <div className="flex justify-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500 max-w-md mx-auto">
-                Our AI is analyzing your lecture and creating comprehensive notes. This may take a few minutes.
+        {isProcessing && (
+          <div className="text-center space-y-4">
+            <div className="inline-block px-6 py-3 bg-blue-50 rounded-lg">
+              <p className="text-blue-600 font-medium flex items-center gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"/>
+                Processing your lecture recording...
               </p>
             </div>
-          )}
-        </div>
+            <p className="text-sm text-gray-500">
+              Our AI is analyzing your lecture. This may take a few minutes.
+            </p>
+          </div>
+        )}
+
+        {transcription && (
+          <div className="mt-8 text-left w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold">Lecture Transcription</h3>
+              <button
+                onClick={handleCopyToClipboard}
+                className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
+                {copySuccess ? "Copied!" : "Copy"}
+              </button>
+            </div>
+            <div className="space-y-6">
+              <div className="p-6 bg-white rounded-xl border border-gray-200">
+                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {transcription.text}
+                </p>
+              </div>
+              
+              <button
+                onClick={() => setCurrentView('notes')}
+                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+              >
+                Generate Notes
+              </button>
+              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg mt-4">
+                <p className="text-sm text-gray-500">
+                  Your transcription is ready. Would you like to view it in your notes?
+                </p>
+                <button 
+                  onClick={() => setCurrentView('notes')} 
+                  className="text-blue-600 hover:text-blue-700 text-sm"
+                >
+                  View in Notes →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -227,7 +280,7 @@ function NewLectureView() {
 export default function HomePage() {
   const { user, signOutUser } = useAuth();
   const router = useRouter();
-  const [currentView, setCurrentView] = useState('home');
+  const [currentView, setCurrentView] = useState('new-lecture');
 
   useEffect(() => {
     if (!user) {
@@ -250,8 +303,8 @@ export default function HomePage() {
       </Sidebar>
 
       <main className="flex-1 p-8 overflow-auto">
-        <div className="max-w-5xl mx-auto">
-          {currentView === 'new-lecture' && <NewLectureView />}
+        <div className="max-w-5xl mx-auto h-full">
+          {currentView === 'new-lecture' && <NewLectureView setCurrentView={setCurrentView} />}
           {currentView === 'home' && (
             <div>
               <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
