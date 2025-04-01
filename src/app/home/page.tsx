@@ -9,7 +9,6 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
-import { GoogleGenAI } from "@google/genai";
 
 const icons = {
   home: (
@@ -154,15 +153,7 @@ function Navigation({ currentView, setCurrentView }: { currentView: string; setC
   );
 }
 
-function NewLectureView({ 
-  setCurrentView,
-  generatedNotes,
-  setGeneratedNotes
-}: { 
-  setCurrentView: (view: string) => void;
-  generatedNotes: string | null;
-  setGeneratedNotes: React.Dispatch<React.SetStateAction<string | null>>;
-}) {
+function NewLectureView({ setCurrentView }: { setCurrentView: (view: string) => void }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -182,22 +173,10 @@ function NewLectureView({
     setIsRecording(false);
     setIsProcessing(true);
     setError(null);
-    setGeneratedNotes(null);
 
     try {
       const result = await groqService.transcribeAudio(audioBlob);
       setTranscription(result);
-
-      // Generate notes using Gemini
-      const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || "" });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: result.text,
-        config: {
-          systemInstruction: "You are a helpful lecture assistant. Summarize the key points from this lecture in clear, concise notes.",
-        },
-      });
-      setGeneratedNotes(response.text || "No notes generated");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to process the recording. Please try again.";
       setError(errorMessage);
@@ -216,7 +195,7 @@ function NewLectureView({
   };
 
   return (
-    <div className="flex flex-col items-center pt-16">
+    <div className="flex flex-col items-center pt-16"> {/* Removed justify-center h-full, added pt-16 */}
       <div className="w-full max-w-4xl px-4 text-center">
         <h2 className="text-3xl font-bold mb-4">Record Live Lecture</h2>
         <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
@@ -273,13 +252,25 @@ function NewLectureView({
                 </p>
               </div>
               
-              <button
-                onClick={() => setCurrentView('notes')}
-                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-              >
-                Generate Notes
-              </button>
-              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg mt-4">
+              {transcription.segments && transcription.segments.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold">Timestamped Segments</h4>
+                  <div className="bg-gray-50 rounded-lg divide-y divide-gray-100">
+                    {transcription.segments.map((segment, index) => (
+                      <div key={index} className="p-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                          <span className="font-mono">
+                            {Math.floor(segment.start)}s - {Math.ceil(segment.end)}s
+                          </span>
+                        </div>
+                        <p className="text-gray-700">{segment.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                 <p className="text-sm text-gray-500">
                   Your transcription is ready. Would you like to view it in your notes?
                 </p>
@@ -302,7 +293,6 @@ export default function HomePage() {
   const { user, signOutUser } = useAuth();
   const router = useRouter();
   const [currentView, setCurrentView] = useState('new-lecture');
-  const [generatedNotes, setGeneratedNotes] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -326,13 +316,7 @@ export default function HomePage() {
 
       <main className="flex-1 p-8 overflow-auto">
         <div className="max-w-5xl mx-auto h-full">
-          {currentView === 'new-lecture' && (
-            <NewLectureView 
-              setCurrentView={setCurrentView}
-              generatedNotes={generatedNotes}
-              setGeneratedNotes={setGeneratedNotes}
-            />
-          )}
+          {currentView === 'new-lecture' && <NewLectureView setCurrentView={setCurrentView} />}
           {currentView === 'home' && (
             <div>
               <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
@@ -360,13 +344,7 @@ export default function HomePage() {
               <div className="grid gap-6">
                 <div className="p-6 bg-white rounded-xl border border-gray-200">
                   <h3 className="text-lg font-semibold mb-2">Generated Notes</h3>
-                  {generatedNotes ? (
-                    <div className="prose max-w-none">
-                      <p className="whitespace-pre-wrap">{generatedNotes}</p>
-                    </div>
-                  ) : (
-                    <p className="text-gray-600">No notes generated yet. Record a lecture first.</p>
-                  )}
+                  <p className="text-gray-600">Your processed lecture notes will appear here.</p>
                 </div>
               </div>
             </div>

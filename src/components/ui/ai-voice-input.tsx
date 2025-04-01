@@ -23,6 +23,7 @@ export function AIVoiceInput({
   className
 }: AIVoiceInputProps) {
   const [isRecording, setIsRecording] = useState(false);
+  const [time, setTime] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [isDemo, setIsDemo] = useState(demoMode);
 
@@ -30,6 +31,20 @@ export function AIVoiceInput({
     setIsClient(true);
   }, []);
 
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    if (isRecording && !isDemo) {
+      intervalId = setInterval(() => {
+        const currentDuration = recordingService.getCurrentDuration();
+        setTime(Math.floor(currentDuration));
+      }, 1000);
+    } else {
+      setTime(0);
+    }
+
+    return () => clearInterval(intervalId);
+  }, [isRecording, isDemo]);
 
   useEffect(() => {
     if (!isDemo) return;
@@ -49,6 +64,12 @@ export function AIVoiceInput({
       clearTimeout(initialTimeout);
     };
   }, [isDemo, demoInterval]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const handleClick = async () => {
     if (isDemo) {
@@ -95,6 +116,17 @@ export function AIVoiceInput({
             <Mic className="w-6 h-6 text-black/70 dark:text-white/70" />
           )}
         </button>
+
+        <span
+          className={cn(
+            "font-mono text-sm transition-opacity duration-300",
+            isRecording
+              ? "text-black/70 dark:text-white/70"
+              : "text-black/30 dark:text-white/30"
+          )}
+        >
+          {formatTime(time)}
+        </span>
 
         <div className="h-4 w-64 flex items-center justify-center gap-0.5">
           {[...Array(visualizerBars)].map((_, i) => (
