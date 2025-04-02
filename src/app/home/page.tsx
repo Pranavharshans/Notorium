@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
+import { geminiService } from "@/lib/gemini-service";
 
 const icons = {
   home: (
@@ -153,13 +154,16 @@ function Navigation({ currentView, setCurrentView }: { currentView: string; setC
   );
 }
 
-function NewLectureView({ setCurrentView }: { setCurrentView: (view: string) => void }) {
+function NewLectureView({ setCurrentView, setGeneratedNotes }: { setCurrentView: (view: string) => void; setGeneratedNotes: (notes: string | null) => void; }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [notes, setNotes] = useState<string | null>(null);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
 
   const handleRecordingStart = () => {
     setIsRecording(true);
@@ -193,9 +197,26 @@ const handleCopyToClipboard = () => {
   }
 };
 
-const handleGenerateNotes = () => {
-  // Placeholder: Initiate notes generation; currently redirects to notes view.
-  setCurrentView('notes');
+const handleGenerateNotes = async () => {
+  if (!transcription?.text) {
+    console.log("No transcription available for generating notes");
+    return;
+  }
+  setNotesLoading(true);
+  setNotesError(null);
+  try {
+    console.log("Generating notes with transcript:", transcription.text);
+    const generatedNotes = await geminiService.generateNotesFromTranscript(transcription.text);
+    console.log("Generated notes:", generatedNotes);
+    setGeneratedNotes(generatedNotes);
+    setCurrentView('notes');
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Failed to generate notes";
+    console.error("Error generating notes:", errorMessage);
+    setNotesError(errorMessage);
+  } finally {
+    setNotesLoading(false);
+  }
 };
 
 return (
@@ -287,6 +308,9 @@ export default function HomePage() {
   const { user, signOutUser } = useAuth();
   const router = useRouter();
   const [currentView, setCurrentView] = useState('new-lecture');
+  const [generatedNotes, setGeneratedNotes] = useState<string | null>(null);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -310,7 +334,17 @@ export default function HomePage() {
 
       <main className="flex-1 p-8 overflow-auto">
         <div className="max-w-5xl mx-auto h-full">
-          {currentView === 'new-lecture' && <NewLectureView setCurrentView={setCurrentView} />}
+          {currentView === 'new-lecture' && <NewLectureView setCurrentView={setCurrentView} setGeneratedNotes={setGeneratedNotes} />}
+          {currentView === 'notes' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-4">My Notes</h2>
+              {generatedNotes ? (
+                <div className="border p-4 rounded">{generatedNotes}</div>
+              ) : (
+                <p>No notes generated yet.</p>
+              )}
+            </div>
+          )}
           {currentView === 'home' && (
             <div>
               <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
