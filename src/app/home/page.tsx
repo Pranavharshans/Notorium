@@ -252,24 +252,6 @@ function NewLectureView({ setCurrentView }: { setCurrentView: (view: string) => 
                 </p>
               </div>
               
-              {transcription.segments && transcription.segments.length > 0 && (
-                <div className="space-y-4">
-                  <h4 className="text-lg font-semibold">Timestamped Segments</h4>
-                  <div className="bg-gray-50 rounded-lg divide-y divide-gray-100">
-                    {transcription.segments.map((segment, index) => (
-                      <div key={index} className="p-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                          <span className="font-mono">
-                            {Math.floor(segment.start)}s - {Math.ceil(segment.end)}s
-                          </span>
-                        </div>
-                        <p className="text-gray-700">{segment.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
               <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                 <p className="text-sm text-gray-500">
                   Your transcription is ready. Would you like to view it in your notes?

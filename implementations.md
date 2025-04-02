@@ -1,6 +1,6 @@
 # Implementation Log
 
-Last Update: March 31, 2025, 9:14 PM (IST)
+Last Update: April 2, 2025, 8:16 AM (IST)
 
 ## Implemented Features
 
@@ -66,6 +66,11 @@ Last Update: March 31, 2025, 9:14 PM (IST)
 - Persistent authentication state
 - Clean sign-out process
 
+### Removal of Timestamped Segments
+- Date: April 2, 2025
+- Description:
+  - Removed "Timestamped transcription results" from Groq Integration as it is no longer needed.
+
 ## Implemented Services
 - Recording Service:
   - Web Audio API integration
@@ -75,7 +80,6 @@ Last Update: March 31, 2025, 9:14 PM (IST)
 - Groq Integration:
   - Audio transcription API setup
   - Error handling and retries
-  - Timestamped transcription results
   - Processing state management
 
 ## Planned Features
