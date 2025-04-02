@@ -185,16 +185,20 @@ function NewLectureView({ setCurrentView }: { setCurrentView: (view: string) => 
       setIsProcessing(false);
     }
   };
+const handleCopyToClipboard = () => {
+  if (transcription?.text) {
+    navigator.clipboard.writeText(transcription.text);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
+  }
+};
 
-  const handleCopyToClipboard = () => {
-    if (transcription?.text) {
-      navigator.clipboard.writeText(transcription.text);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    }
-  };
+const handleGenerateNotes = () => {
+  // Placeholder: Initiate notes generation; currently redirects to notes view.
+  setCurrentView('notes');
+};
 
-  return (
+return (
     <div className="flex flex-col items-center pt-16"> {/* Removed justify-center h-full, added pt-16 */}
       <div className="w-full max-w-4xl px-4 text-center">
         <h2 className="text-3xl font-bold mb-4">Record Live Lecture</h2>
@@ -261,6 +265,14 @@ function NewLectureView({ setCurrentView }: { setCurrentView: (view: string) => 
                   className="text-blue-600 hover:text-blue-700 text-sm"
                 >
                   View in Notes →
+                </button>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={handleGenerateNotes}
+                  className="text-green-600 hover:text-green-700 text-sm font-semibold"
+                >
+                  Generate Notes
                 </button>
               </div>
             </div>
