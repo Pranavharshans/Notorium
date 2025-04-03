@@ -53,6 +53,8 @@ export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -64,6 +66,7 @@ export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
         const userNotes = await notesService.getNotes(user.uid);
         if (mounted) {
           setNotes(userNotes);
+          setFilteredNotes(userNotes);
           setLoading(false);
           setError(null);
         }
@@ -82,6 +85,25 @@ export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
       mounted = false;
     };
   }, [user]);
+
+  // Handle search
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredNotes(notes);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = notes.filter(note => 
+      note.transcript.toLowerCase().includes(query) ||
+      note.notes.toLowerCase().includes(query)
+    );
+    setFilteredNotes(filtered);
+  }, [searchQuery, notes]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
 
   if (loading) {
     return (
@@ -102,11 +124,29 @@ export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
   return (
     <div className="w-80 border-r border-gray-200 bg-gray-50 flex flex-col h-full">
       <div className="p-4 border-b border-gray-200">
-        <input
-          type="text"
-          placeholder="Search notes"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search notes"
+            value={searchQuery}
+            onChange={handleSearch}
+            className="w-full px-3 py-2 pl-9 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <svg
+            className="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
       </div>
       <div className="flex justify-between items-center px-4 py-2 border-b border-gray-200">
         <h2 className="text-xs font-semibold uppercase text-gray-500">My Notes</h2>
@@ -115,10 +155,12 @@ export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-4">
-        {notes.length === 0 ? (
-          <p className="text-gray-500 text-center mt-4">No notes yet</p>
+        {filteredNotes.length === 0 ? (
+          <p className="text-gray-500 text-center mt-4">
+            {notes.length === 0 ? "No notes yet" : "No matching notes found"}
+          </p>
         ) : (
-          notes.map((note) => (
+          filteredNotes.map((note) => (
             <NoteItem
               key={note.id}
               note={note}
