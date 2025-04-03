@@ -15,10 +15,40 @@ interface Note {
   tags?: string[];
 }
 
+interface TranscriptDisplayProps {
+  transcript: string;
+}
+
 interface NoteItemProps {
   note: Note;
   isActive: boolean;
   onClick: (id: string) => void;
+}
+
+function TranscriptDisplay({ transcript }: TranscriptDisplayProps) {
+  const [expanded, setExpanded] = useState(false);
+  const truncatedTranscript = transcript.slice(0, 300); // Show first 300 characters instead of 100
+
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      <p className="text-xs font-medium text-gray-500 mb-1">Transcript</p>
+      <p className="text-xs text-gray-600">
+        {expanded ? transcript : truncatedTranscript}
+        {!expanded && transcript.length > 300 && "..."}
+      </p>
+      {transcript.length > 300 && (
+        <button
+          className="text-blue-500 text-xs hover:underline"
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent click from bubbling to parent
+            setExpanded(!expanded);
+          }}
+        >
+          {expanded ? "See Less" : "See More"}
+        </button>
+      )}
+    </div>
+  );
 }
 
 function NoteItem({ note, isActive, onClick }: NoteItemProps) {
@@ -32,9 +62,14 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
       className={`p-4 border rounded-lg mb-3 cursor-pointer hover:shadow-md transition-shadow duration-200 ${isActive ? 'border-blue-500 bg-white' : 'border-gray-200 bg-white'}`}
       onClick={() => onClick(note.id)}
     >
-      <h3 className="font-semibold text-sm mb-1 truncate">{title}</h3>
-      <p className="text-xs text-gray-600 mb-2 line-clamp-2">{excerpt || note.transcript}</p>
-      <div className="flex justify-between items-center text-xs text-gray-500">
+      <h3 className="font-semibold text-sm mb-2 truncate">{title}</h3>
+      {/* Notes section */}
+      <div className="mb-2">
+        <p className="text-xs text-gray-600 line-clamp-2">{excerpt}</p>
+      </div>
+      {/* Transcript section */}
+      {note.transcript && <TranscriptDisplay transcript={note.transcript} />}
+      <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
         <div className="flex items-center gap-1">
           {note.tags && note.tags.map(tag => {
             // Simple hash function to generate a color

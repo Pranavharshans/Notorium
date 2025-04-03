@@ -338,6 +338,8 @@ export default function HomePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [notesListRefreshKey, setNotesListRefreshKey] = useState(0); // State to trigger list refresh
+  const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false); // State for transcript expansion
+
   // Auth redirect effect
   useEffect(() => {
     if (!user) {
@@ -434,33 +436,51 @@ export default function HomePage() {
                   {selectedNote && !isEditing && (
                     <div>
                       <div className="flex justify-between items-start mb-6">
-                        <div>
-                          <div className="mb-6">
-                            <h3 className="text-lg font-semibold mb-2">Transcript</h3>
-                            <div className="bg-gray-50 border rounded-lg p-4">
-                              <p className="text-gray-600 whitespace-pre-wrap">{selectedNote.transcript}</p>
-                            </div>
-                          </div>
+                        {/* Main Content Area (Notes first, then Transcript) */}
+                        <div className="flex-1 space-y-6">
+                          {/* Notes Section */}
                           <div>
                             <h3 className="text-lg font-semibold mb-2">Notes</h3>
                             <div className="bg-white border rounded-lg p-6">
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedNote.notes}</ReactMarkdown>
                             </div>
                           </div>
+
+                          {/* Transcript Section */}
+                          <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-2">Transcript</h3>
+                            <div className="bg-gray-50 border rounded-lg p-4">
+                              <p className="text-gray-600 whitespace-pre-wrap">
+                                {isTranscriptExpanded
+                                  ? selectedNote.transcript
+                                  : `${selectedNote.transcript.substring(0, 300)}${selectedNote.transcript.length > 300 ? '...' : ''}`}
+                              </p>
+                              {selectedNote.transcript.length > 300 && (
+                                <button
+                                  onClick={() => setIsTranscriptExpanded(!isTranscriptExpanded)}
+                                  className="text-blue-600 hover:text-blue-700 text-sm mt-2"
+                                >
+                                  {isTranscriptExpanded ? "See Less" : "See More"}
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
+
+                        {/* Action Buttons (Edit/Delete) */}
+                        <div className="flex flex-col items-end gap-3 ml-4"> {/* Changed to flex-col and added ml-4 */}
                           <button
                             onClick={() => setIsEditing(true)}
-                            className="text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                            className="text-gray-500 hover:text-gray-700 flex items-center gap-1 text-sm" // Added text-sm
                           >
-                            <Pencil size={16} />
+                            <Pencil size={14} /> {/* Adjusted size */}
                             <span>Edit</span>
                           </button>
                           <button
                             onClick={() => setIsDeleting(true)}
-                            className="text-red-500 hover:text-red-700 flex items-center gap-1"
+                            className="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm" // Added text-sm
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={14} /> {/* Adjusted size */}
                             <span>Delete</span>
                           </button>
                         </div>
