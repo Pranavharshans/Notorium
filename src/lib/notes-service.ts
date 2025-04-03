@@ -21,24 +21,27 @@ export interface Note {
   userId: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  tags: string[];
 }
 
 export interface CreateNoteInput {
   transcript: string;
   notes: string;
   userId: string;
+  tags?: string[];
 }
 
 const NOTES_COLLECTION = 'notes';
 
 export const notesService = {
   // Create a new note
-  async createNote({ transcript, notes, userId }: CreateNoteInput): Promise<string> {
+  async createNote({ transcript, notes, userId, tags }: CreateNoteInput): Promise<string> {
     try {
       const docRef = await addDoc(collection(db, NOTES_COLLECTION), {
         transcript,
         notes,
         userId,
+        tags: tags || [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });

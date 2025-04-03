@@ -334,7 +334,7 @@ export default function HomePage() {
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-  const [selectedNote, setSelectedNote] = useState<{transcript: string; notes: string} | null>(null);
+  const [selectedNote, setSelectedNote] = useState<{transcript: string; notes: string; tags?: string[]} | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   // Auth redirect effect
@@ -359,7 +359,8 @@ export default function HomePage() {
         if (note) {
           setSelectedNote({
             transcript: note.transcript,
-            notes: note.notes
+            notes: note.notes,
+            tags: note.tags
           });
         }
       } catch (err) {
@@ -367,6 +368,7 @@ export default function HomePage() {
         setNotesError('Failed to load note content');
       }
     }
+  
 
     fetchNoteContent();
   }, [selectedNoteId, user]);
@@ -469,12 +471,15 @@ export default function HomePage() {
                       noteId={selectedNoteId}
                       initialTranscript={selectedNote.transcript}
                       initialNotes={selectedNote.notes}
+                      initialTags={selectedNote.tags || []}
                       onSave={() => {
                         setIsEditing(false);
                         // Refresh the note content
                         const noteId = selectedNoteId;
-                        setSelectedNoteId(null);
-                        setTimeout(() => setSelectedNoteId(noteId), 0);
+                        setSelectedNoteId(null); // Clear ID to trigger re-fetch
+                        setTimeout(() => {
+                          setSelectedNoteId(noteId); // Set ID back to trigger re-fetch
+                        }, 0);
                       }}
                       onCancel={() => setIsEditing(false)}
                     />

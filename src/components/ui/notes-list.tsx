@@ -12,6 +12,7 @@ interface Note {
   notes: string;
   createdAt: any;
   updatedAt: any;
+  tags?: string[];
 }
 
 interface NoteItemProps {
@@ -25,7 +26,7 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
   const lines = note.notes.split('\n');
   const title = lines[0] || 'Untitled Note';
   const excerpt = lines.slice(1).join('\n').trim();
-  
+
   return (
     <div
       className={`p-4 border rounded-lg mb-3 cursor-pointer hover:shadow-md transition-shadow duration-200 ${isActive ? 'border-blue-500 bg-white' : 'border-gray-200 bg-white'}`}
@@ -34,9 +35,13 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
       <h3 className="font-semibold text-sm mb-1 truncate">{title}</h3>
       <p className="text-xs text-gray-600 mb-2 line-clamp-2">{excerpt || note.transcript}</p>
       <div className="flex justify-between items-center text-xs text-gray-500">
-        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          {note.transcript ? 'Lecture' : 'Note'}
-        </span>
+        <div className="flex items-center gap-1">
+          {note.tags && note.tags.map(tag => (
+            <span key={tag} className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              {tag}
+            </span>
+          ))}
+        </div>
         <span>{formatDistanceToNow(note.createdAt?.toDate() || new Date(), { addSuffix: true })}</span>
       </div>
     </div>
@@ -61,7 +66,7 @@ export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
 
     async function fetchNotes() {
       if (!user) return;
-      
+
       try {
         const userNotes = await notesService.getNotes(user.uid);
         if (mounted) {
@@ -86,7 +91,6 @@ export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
     };
   }, [user]);
 
-  // Handle search
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredNotes(notes);
