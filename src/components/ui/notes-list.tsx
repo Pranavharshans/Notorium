@@ -1,79 +1,98 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
+import { notesService } from '@/lib/notes-service';
+import { useAuth } from '@/context/auth-context';
+import { formatDistanceToNow } from 'date-fns';
 
-// Placeholder data structure similar to ui3.png
-const notes = [
-  {
-    id: 1,
-    title: "Work on budget report for...",
-    excerpt: "Working on a budget report for the next quarter involves planning and forecasting the financial performance...",
-    tag: "Working",
-    tagColor: "bg-orange-100 text-orange-800",
-    time: "Today, 15:24",
-    active: false,
-  },
-  {
-    id: 2,
-    title: "The Remarkable Story of...",
-    excerpt: "Jeff Bezos is a business magnate and the founder, CEO, and president of Amazon, the world's largest online retailer...",
-    tag: "Blogging",
-    tagColor: "bg-cyan-100 text-cyan-800",
-    time: "Today, 11:23",
-    active: true, // Example of an active note
-  },
-  {
-    id: 3,
-    title: "Grocery shopping after work..",
-    excerpt: "Grocery shopping after work can be a convenient way to get your weekly or monthly shopping done...",
-    tag: "Personal",
-    tagColor: "bg-purple-100 text-purple-800",
-    time: "Today, 12:24",
-    active: false,
-  },
-];
-
-interface NoteItemProps {
-  note: typeof notes[0];
-  onClick: (id: number) => void;
+interface Note {
+  id: string;
+  transcript: string;
+  notes: string;
+  createdAt: any;
+  updatedAt: any;
 }
 
-function NoteItem({ note, onClick }: NoteItemProps) {
+interface NoteItemProps {
+  note: Note;
+  isActive: boolean;
+  onClick: (id: string) => void;
+}
+
+function NoteItem({ note, isActive, onClick }: NoteItemProps) {
+  // Get first line as title, rest as excerpt
+  const lines = note.notes.split('\n');
+  const title = lines[0] || 'Untitled Note';
+  const excerpt = lines.slice(1).join('\n').trim();
+  
   return (
-    <div 
-      className={`p-4 border rounded-lg mb-3 cursor-pointer hover:shadow-md transition-shadow duration-200 ${note.active ? 'border-blue-500 bg-white' : 'border-gray-200 bg-white'}`}
+    <div
+      className={`p-4 border rounded-lg mb-3 cursor-pointer hover:shadow-md transition-shadow duration-200 ${isActive ? 'border-blue-500 bg-white' : 'border-gray-200 bg-white'}`}
       onClick={() => onClick(note.id)}
     >
-      <h3 className="font-semibold text-sm mb-1 truncate">{note.title}</h3>
-      <p className="text-xs text-gray-600 mb-2 line-clamp-2">{note.excerpt}</p>
+      <h3 className="font-semibold text-sm mb-1 truncate">{title}</h3>
+      <p className="text-xs text-gray-600 mb-2 line-clamp-2">{excerpt || note.transcript}</p>
       <div className="flex justify-between items-center text-xs text-gray-500">
-        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${note.tagColor}`}>
-          {note.tag}
+        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {note.transcript ? 'Lecture' : 'Note'}
         </span>
-        <span>{note.time}</span>
+        <span>{formatDistanceToNow(note.createdAt?.toDate() || new Date(), { addSuffix: true })}</span>
       </div>
     </div>
   );
 }
 
 export function NotesList() {
-  const [activeNoteId, setActiveNoteId] = React.useState<number | null>(2); // Default to the active note in placeholder
+  const { user } = useAuth();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleNoteClick = (id: number) => {
+  useEffect(() => {
+    async function fetchNotes() {
+      if (!user) return;
+      
+      try {
+        const userNotes = await notesService.getNotes(user.uid);
+        setNotes(userNotes);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to load notes');
+        setLoading(false);
+      }
+    }
+
+    fetchNotes();
+  }, [user]);
+
+  const handleNoteClick = (id: string) => {
     setActiveNoteId(id);
-    // In a real app, you'd also trigger loading the full note content
-    // in the main editor area here.
-    console.log("Selected note:", id);
   };
+
+  if (loading) {
+    return (
+      <div className="w-80 border-r border-gray-200 bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500">Loading notes...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-80 border-r border-gray-200 bg-gray-50 flex items-center justify-center">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-80 border-r border-gray-200 bg-gray-50 flex flex-col h-full">
       <div className="p-4 border-b border-gray-200">
-        {/* Search Input - Placeholder */}
-        <input 
-          type="text" 
-          placeholder="Search notes" 
+        <input
+          type="text"
+          placeholder="Search notes"
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
@@ -84,13 +103,18 @@ export function NotesList() {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-4">
-        {notes.map((note) => (
-          <NoteItem 
-            key={note.id} 
-            note={{ ...note, active: note.id === activeNoteId }} 
-            onClick={handleNoteClick} 
-          />
-        ))}
+        {notes.length === 0 ? (
+          <p className="text-gray-500 text-center mt-4">No notes yet</p>
+        ) : (
+          notes.map((note) => (
+            <NoteItem
+              key={note.id}
+              note={note}
+              isActive={note.id === activeNoteId}
+              onClick={handleNoteClick}
+            />
+          ))
+        )}
       </div>
     </div>
   );

@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { Sidebar, SidebarBody, useSidebar } from "@/components/ui/sidebar";
-import { User } from "lucide-react";
+import { User, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
-import { NotesList } from "@/components/ui/notes-list"; // Added import
+import { NotesList } from "@/components/ui/notes-list";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
 import { geminiService } from "@/lib/gemini-service";
+import { notesService } from "@/lib/notes-service";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from 'remark-gfm';
 
@@ -156,8 +157,15 @@ function Navigation({ currentView, setCurrentView }: { currentView: string; setC
     </nav>
   );
 }
-
-function NewLectureView({ setCurrentView, setGeneratedNotes }: { setCurrentView: (view: string) => void; setGeneratedNotes: (notes: string | null) => void; }) {
+function NewLectureView({
+  setCurrentView,
+  setGeneratedNotes,
+  user
+}: {
+  setCurrentView: (view: string) => void;
+  setGeneratedNotes: (notes: string | null) => void;
+  user: any;
+}) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -211,6 +219,16 @@ const handleGenerateNotes = async () => {
     console.log("Generating notes with transcript:", transcription.text);
     const generatedNotes = await geminiService.generateNotesFromTranscript(transcription.text);
     console.log("Generated notes:", generatedNotes);
+    
+    // Save to Firebase
+    if (user?.uid) {
+      await notesService.createNote({
+        transcript: transcription.text,
+        notes: generatedNotes,
+        userId: user.uid,
+      });
+    }
+    
     setGeneratedNotes(generatedNotes);
     setCurrentView('notes');
   } catch (err) {
@@ -314,12 +332,41 @@ export default function HomePage() {
   const [generatedNotes, setGeneratedNotes] = useState<string | null>(null);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [selectedNote, setSelectedNote] = useState<{transcript: string; notes: string} | null>(null);
+// Redirect if not authenticated
+useEffect(() => {
+  if (!user) {
+    router.push("/");
+  }
+}, [user, router]);
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/");
+// Fetch selected note's content
+useEffect(() => {
+  async function fetchNoteContent() {
+    if (!selectedNoteId || !user) {
+      setSelectedNote(null);
+      return;
     }
-  }, [user, router]);
+
+    try {
+      // Get all notes and find the selected one
+      const notes = await notesService.getNotes(user.uid);
+      const note = notes.find(n => n.id === selectedNoteId);
+      if (note) {
+        setSelectedNote({
+          transcript: note.transcript,
+          notes: note.notes
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching note:', err);
+      setNotesError('Failed to load note content');
+    }
+  }
+
+  fetchNoteContent();
+}, [selectedNoteId, user]);
 
   if (!user) return null;
 
@@ -336,22 +383,77 @@ export default function HomePage() {
       </Sidebar>
 
       {/* Notes List Column */}
-      <NotesList />
+      <NotesList
+        activeNoteId={selectedNoteId}
+        onNoteSelect={(noteId) => {
+          setSelectedNoteId(noteId);
+          setGeneratedNotes(null); // Clear generated notes when selecting a saved note
+          setCurrentView('notes');
+        }}
+      />
 
       {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-auto">
         {/* Removed max-w-5xl and mx-auto to allow full width */}
         <div className="h-full">
-          {currentView === 'new-lecture' && <NewLectureView setCurrentView={setCurrentView} setGeneratedNotes={setGeneratedNotes} />}
+          {currentView === 'new-lecture' && (
+            <NewLectureView
+              setCurrentView={setCurrentView}
+              setGeneratedNotes={setGeneratedNotes}
+              user={user}
+            />
+          )}
           {currentView === 'notes' && (
             <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4">My Notes</h2>
-              {generatedNotes ? (
-                <div className="generated-notes border p-4 rounded">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{generatedNotes}</ReactMarkdown>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">My Notes</h2>
+                <button
+                  onClick={() => setCurrentView('new-lecture')}
+                  className="text-blue-600 hover:text-blue-700 flex items-center gap-2"
+                >
+                  {icons.upload}
+                  <span>New Lecture</span>
+                </button>
+              </div>
+
+              {notesError && (
+                <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-lg">
+                  {notesError}
+                </div>
+              )}
+
+              {(selectedNote || generatedNotes) ? (
+                <div className="space-y-8">
+                  {selectedNote && (
+                    <div>
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold mb-2">Transcript</h3>
+                        <div className="bg-gray-50 border rounded-lg p-4">
+                          <p className="text-gray-600 whitespace-pre-wrap">{selectedNote.transcript}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">Notes</h3>
+                        <div className="bg-white border rounded-lg p-6">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedNote.notes}</ReactMarkdown>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {generatedNotes && !selectedNote && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">Recently Generated Notes</h3>
+                      <div className="bg-white border rounded-lg p-6">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{generatedNotes}</ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <p>No notes generated yet.</p>
+                <div className="text-center text-gray-500 mt-8">
+                  Select a note from the sidebar to view its content or create a new one
+                </div>
               )}
             </div>
           )}
@@ -372,17 +474,6 @@ export default function HomePage() {
                     {icons.upload}
                     <span>Record New Lecture</span>
                   </button>
-                </div>
-              </div>
-            </div>
-          )}
-          {currentView === 'notes' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">My Notes</h2>
-              <div className="grid gap-6">
-                <div className="p-6 bg-white rounded-xl border border-gray-200">
-                  <h3 className="text-lg font-semibold mb-2">Generated Notes</h3>
-                  <p className="text-gray-600">Your processed lecture notes will appear here.</p>
                 </div>
               </div>
             </div>
