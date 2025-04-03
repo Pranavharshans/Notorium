@@ -143,3 +143,47 @@
     );
   }
 }
+
+.generated-notes {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-4xl mx-auto;
+}
+
+.generated-notes h1 {
+  @apply text-3xl font-bold mb-4 text-primary border-b pb-2;
+}
+
+.generated-notes h2 {
+  @apply text-2xl font-semibold mt-6 mb-3 text-primary;
+}
+
+.generated-notes h3 {
+  @apply text-xl font-medium mt-4 mb-2;
+}
+
+.generated-notes p {
+  @apply mb-4 leading-relaxed;
+}
+
+.generated-notes ul {
+  @apply list-disc pl-6 mb-4 space-y-2;
+}
+
+.generated-notes li {
+  @apply text-base;
+}
+
+.generated-notes code {
+  @apply bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono;
+}
+
+.generated-notes strong {
+  @apply font-semibold text-primary;
+}
+
+.generated-notes em {
+  @apply italic text-gray-600 dark:text-gray-300;
+}
+
+.generated-notes hr {
+  @apply my-6 border-t border-gray-200 dark:border-gray-700;
+}

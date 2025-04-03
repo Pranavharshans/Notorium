@@ -8,8 +8,11 @@ import { User } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
+import { NotesList } from "@/components/ui/notes-list"; // Added import
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
 import { geminiService } from "@/lib/gemini-service";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from 'remark-gfm';
 
 const icons = {
   home: (
@@ -332,14 +335,21 @@ export default function HomePage() {
         </SidebarBody>
       </Sidebar>
 
+      {/* Notes List Column */}
+      <NotesList />
+
+      {/* Main Content Area */}
       <main className="flex-1 p-8 overflow-auto">
-        <div className="max-w-5xl mx-auto h-full">
+        {/* Removed max-w-5xl and mx-auto to allow full width */}
+        <div className="h-full">
           {currentView === 'new-lecture' && <NewLectureView setCurrentView={setCurrentView} setGeneratedNotes={setGeneratedNotes} />}
           {currentView === 'notes' && (
             <div className="p-6">
               <h2 className="text-2xl font-bold mb-4">My Notes</h2>
               {generatedNotes ? (
-                <div className="border p-4 rounded">{generatedNotes}</div>
+                <div className="generated-notes border p-4 rounded">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{generatedNotes}</ReactMarkdown>
+                </div>
               ) : (
                 <p>No notes generated yet.</p>
               )}

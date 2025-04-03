@@ -59,11 +59,12 @@ Enhance Clarity & Readability:
 
 Formatting Guidelines:
 - Use Markdown for structure.
-- Use **larger fonts for titles** (e.g., Markdown "# " for headers).
+- Utilize "# " for large titles.
+- Utilize "## " for section headings.
 - Make **important text bold**.
-- Use *italics* for definitions or emphasis.
-- Utilize code blocks for formulas or key terms.
-- Arrange content with clear headings and subheadings for readability.
+- Use *italics* for emphasis.
+- Use \`\`\` for code blocks containing formulas or key terms.
+- Separate sections with horizontal rules (---) for visual clarity.
 
 Example Output Format:
 
