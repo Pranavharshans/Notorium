@@ -94,10 +94,10 @@ export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = notes.filter(note => 
-      note.transcript.toLowerCase().includes(query) ||
-      note.notes.toLowerCase().includes(query)
-    );
+    const filtered = notes.filter(note => {
+      const firstLine = note.notes.split('\n')[0] || '';
+      return firstLine.toLowerCase().includes(query);
+    });
     setFilteredNotes(filtered);
   }, [searchQuery, notes]);
 
