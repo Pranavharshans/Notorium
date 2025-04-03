@@ -36,24 +36,47 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
       <p className="text-xs text-gray-600 mb-2 line-clamp-2">{excerpt || note.transcript}</p>
       <div className="flex justify-between items-center text-xs text-gray-500">
         <div className="flex items-center gap-1">
-          {note.tags && note.tags.map(tag => (
-            <span key={tag} className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-              {tag}
-            </span>
-          ))}
+          {note.tags && note.tags.map(tag => {
+            // Simple hash function to generate a color
+            let hash = 0;
+            for (let i = 0; i < tag.length; i++) {
+              hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const colorIndex = Math.abs(hash) % 10;
+            const tagColors = [
+              "bg-red-100 text-red-800",
+              "bg-green-100 text-green-800",
+              "bg-yellow-100 text-yellow-800",
+              "bg-blue-100 text-blue-800",
+              "bg-indigo-100 text-indigo-800",
+              "bg-purple-100 text-purple-800",
+              "bg-pink-100 text-pink-800",
+              "bg-gray-100 text-gray-800",
+              "bg-teal-100 text-teal-800",
+              "bg-orange-100 text-orange-800",
+            ];
+            const tagColor = tagColors[colorIndex];
+
+            return (
+              <span key={tag} className={`px-2 py-0.5 rounded-full text-xs font-medium ${tagColor}`}>
+                {tag}
+              </span>
+            );
+          })}
         </div>
         <span>{formatDistanceToNow(note.createdAt?.toDate() || new Date(), { addSuffix: true })}</span>
       </div>
-    </div>
+    </div >
   );
 }
 
 interface NotesListProps {
   activeNoteId: string | null;
   onNoteSelect: (noteId: string) => void;
+  refreshKey: number;
 }
 
-export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
+export function NotesList({ activeNoteId, onNoteSelect, refreshKey }: NotesListProps) {
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +112,7 @@ export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
     return () => {
       mounted = false;
     };
-  }, [user]);
+  }, [user, refreshKey]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {

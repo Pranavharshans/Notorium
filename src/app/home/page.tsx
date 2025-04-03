@@ -337,6 +337,7 @@ export default function HomePage() {
   const [selectedNote, setSelectedNote] = useState<{transcript: string; notes: string; tags?: string[]} | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [notesListRefreshKey, setNotesListRefreshKey] = useState(0); // State to trigger list refresh
   // Auth redirect effect
   useEffect(() => {
     if (!user) {
@@ -395,6 +396,7 @@ export default function HomePage() {
           setGeneratedNotes(null); // Clear generated notes when selecting a saved note
           setCurrentView('notes');
         }}
+        refreshKey={notesListRefreshKey} // Pass the refresh key
       />
 
       {/* Main Content Area */}
@@ -480,6 +482,7 @@ export default function HomePage() {
                         setTimeout(() => {
                           setSelectedNoteId(noteId); // Set ID back to trigger re-fetch
                         }, 0);
+                        setNotesListRefreshKey(prev => prev + 1); // Trigger list refresh
                       }}
                       onCancel={() => setIsEditing(false)}
                     />
@@ -522,6 +525,7 @@ export default function HomePage() {
                             setIsDeleting(false);
                             setSelectedNoteId(null);
                             setSelectedNote(null);
+                            setNotesListRefreshKey(prev => prev + 1); // Trigger list refresh
                           } catch (err) {
                             console.error('Error deleting note:', err);
                             setNotesError('Failed to delete note');
