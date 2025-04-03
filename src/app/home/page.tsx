@@ -334,39 +334,39 @@ export default function HomePage() {
   const [notesError, setNotesError] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedNote, setSelectedNote] = useState<{transcript: string; notes: string} | null>(null);
-// Redirect if not authenticated
-useEffect(() => {
-  if (!user) {
-    router.push("/");
-  }
-}, [user, router]);
-
-// Fetch selected note's content
-useEffect(() => {
-  async function fetchNoteContent() {
-    if (!selectedNoteId || !user) {
-      setSelectedNote(null);
-      return;
+  // Auth redirect effect
+  useEffect(() => {
+    if (!user) {
+      router.push("/");
     }
+  }, [user, router]);
 
-    try {
-      // Get all notes and find the selected one
-      const notes = await notesService.getNotes(user.uid);
-      const note = notes.find(n => n.id === selectedNoteId);
-      if (note) {
-        setSelectedNote({
-          transcript: note.transcript,
-          notes: note.notes
-        });
+  // Note content fetch effect
+  useEffect(() => {
+    async function fetchNoteContent() {
+      if (!selectedNoteId || !user) {
+        setSelectedNote(null);
+        return;
       }
-    } catch (err) {
-      console.error('Error fetching note:', err);
-      setNotesError('Failed to load note content');
-    }
-  }
 
-  fetchNoteContent();
-}, [selectedNoteId, user]);
+      try {
+        // Get all notes and find the selected one
+        const notes = await notesService.getNotes(user.uid);
+        const note = notes.find(n => n.id === selectedNoteId);
+        if (note) {
+          setSelectedNote({
+            transcript: note.transcript,
+            notes: note.notes
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching note:', err);
+        setNotesError('Failed to load note content');
+      }
+    }
+
+    fetchNoteContent();
+  }, [selectedNoteId, user]);
 
   if (!user) return null;
 

@@ -43,33 +43,45 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
   );
 }
 
-export function NotesList() {
+interface NotesListProps {
+  activeNoteId: string | null;
+  onNoteSelect: (noteId: string) => void;
+}
+
+export function NotesList({ activeNoteId, onNoteSelect }: NotesListProps) {
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
-  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     async function fetchNotes() {
       if (!user) return;
       
       try {
         const userNotes = await notesService.getNotes(user.uid);
-        setNotes(userNotes);
-        setLoading(false);
+        if (mounted) {
+          setNotes(userNotes);
+          setLoading(false);
+          setError(null);
+        }
       } catch (err) {
-        setError('Failed to load notes');
-        setLoading(false);
+        if (mounted) {
+          setError('Failed to load notes');
+          setLoading(false);
+        }
       }
     }
 
+    setLoading(true);
     fetchNotes();
-  }, [user]);
 
-  const handleNoteClick = (id: string) => {
-    setActiveNoteId(id);
-  };
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
 
   if (loading) {
     return (
@@ -111,7 +123,7 @@ export function NotesList() {
               key={note.id}
               note={note}
               isActive={note.id === activeNoteId}
-              onClick={handleNoteClick}
+              onClick={onNoteSelect}
             />
           ))
         )}
