@@ -1,8 +1,9 @@
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -71,25 +72,66 @@ export const notesService = {
 
   // Update a note
   async updateNote(noteId: string, updates: Partial<Omit<Note, 'id' | 'userId' | 'createdAt'>>): Promise<void> {
+    if (!auth.currentUser) {
+      throw new Error('Must be logged in to update notes');
+    }
+
     try {
       const noteRef = doc(db, NOTES_COLLECTION, noteId);
+      const noteSnapshot = await getDoc(noteRef);
+      
+      if (!noteSnapshot.exists()) {
+        throw new Error('Note not found');
+      }
+
+      const noteData = noteSnapshot.data();
+      if (auth.currentUser.uid !== noteData.userId) {
+        throw new Error('You do not have permission to edit this note');
+      }
+
+      // Validate update data
+      if (updates.notes?.trim() === '') {
+        throw new Error('Notes content cannot be empty');
+      }
+
       await updateDoc(noteRef, {
         ...updates,
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
       console.error('Error updating note:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error('Failed to update note');
     }
   },
 
   // Delete a note
   async deleteNote(noteId: string): Promise<void> {
+    if (!auth.currentUser) {
+      throw new Error('Must be logged in to delete notes');
+    }
+
     try {
       const noteRef = doc(db, NOTES_COLLECTION, noteId);
+      const noteSnapshot = await getDoc(noteRef);
+      
+      if (!noteSnapshot.exists()) {
+        throw new Error('Note not found');
+      }
+
+      const noteData = noteSnapshot.data();
+      if (auth.currentUser.uid !== noteData.userId) {
+        throw new Error('You do not have permission to delete this note');
+      }
+
       await deleteDoc(noteRef);
     } catch (error) {
       console.error('Error deleting note:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error('Failed to delete note');
     }
   },

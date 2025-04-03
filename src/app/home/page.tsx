@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { Sidebar, SidebarBody, useSidebar } from "@/components/ui/sidebar";
-import { User, Plus } from "lucide-react";
+import { User, Plus, Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
 import { NotesList } from "@/components/ui/notes-list";
+import { EditNoteForm } from "@/components/ui/edit-note-form";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
 import { geminiService } from "@/lib/gemini-service";
 import { notesService } from "@/lib/notes-service";
@@ -334,6 +335,8 @@ export default function HomePage() {
   const [notesError, setNotesError] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedNote, setSelectedNote] = useState<{transcript: string; notes: string} | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   // Auth redirect effect
   useEffect(() => {
     if (!user) {
@@ -424,21 +427,57 @@ export default function HomePage() {
 
               {(selectedNote || generatedNotes) ? (
                 <div className="space-y-8">
-                  {selectedNote && (
+                  {selectedNote && !isEditing && (
                     <div>
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-2">Transcript</h3>
-                        <div className="bg-gray-50 border rounded-lg p-4">
-                          <p className="text-gray-600 whitespace-pre-wrap">{selectedNote.transcript}</p>
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-2">Transcript</h3>
+                            <div className="bg-gray-50 border rounded-lg p-4">
+                              <p className="text-gray-600 whitespace-pre-wrap">{selectedNote.transcript}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold mb-2">Notes</h3>
+                            <div className="bg-white border rounded-lg p-6">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedNote.notes}</ReactMarkdown>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Notes</h3>
-                        <div className="bg-white border rounded-lg p-6">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedNote.notes}</ReactMarkdown>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setIsEditing(true)}
+                            className="text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            <Pencil size={16} />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => setIsDeleting(true)}
+                            className="text-red-500 hover:text-red-700 flex items-center gap-1"
+                          >
+                            <Trash2 size={16} />
+                            <span>Delete</span>
+                          </button>
                         </div>
                       </div>
                     </div>
+                  )}
+
+                  {selectedNote && isEditing && selectedNoteId && (
+                    <EditNoteForm
+                      noteId={selectedNoteId}
+                      initialTranscript={selectedNote.transcript}
+                      initialNotes={selectedNote.notes}
+                      onSave={() => {
+                        setIsEditing(false);
+                        // Refresh the note content
+                        const noteId = selectedNoteId;
+                        setSelectedNoteId(null);
+                        setTimeout(() => setSelectedNoteId(noteId), 0);
+                      }}
+                      onCancel={() => setIsEditing(false)}
+                    />
                   )}
                   
                   {generatedNotes && !selectedNote && (
@@ -453,6 +492,42 @@ export default function HomePage() {
               ) : (
                 <div className="text-center text-gray-500 mt-8">
                   Select a note from the sidebar to view its content or create a new one
+                </div>
+              )}
+
+              {/* Delete Confirmation Dialog */}
+              {isDeleting && selectedNoteId && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 className="text-lg font-semibold mb-4">Delete Note</h3>
+                    <p className="text-gray-600 mb-6">
+                      Are you sure you want to delete this note? This action cannot be undone.
+                    </p>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => setIsDeleting(false)}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await notesService.deleteNote(selectedNoteId);
+                            setIsDeleting(false);
+                            setSelectedNoteId(null);
+                            setSelectedNote(null);
+                          } catch (err) {
+                            console.error('Error deleting note:', err);
+                            setNotesError('Failed to delete note');
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
