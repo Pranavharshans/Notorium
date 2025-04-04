@@ -95,25 +95,68 @@ export function EditNoteForm({
         />
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Notes
-          </label>
-          {enhancing && (
-            <div className="flex items-center text-purple-600 text-sm">
-              <span className="h-4 w-4 mr-2 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-              Enhancing with AI...
+      <div className="relative">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+        <div className="relative">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter notes"
+            disabled={enhancing}
+          />
+          
+          {/* Floating AI Enhance Button */}
+          <button
+            type="button"
+            onClick={() => setShowEnhanceOptions(!showEnhanceOptions)}
+            className="absolute top-2 right-2 p-2 text-gray-500 hover:text-purple-600 bg-white rounded-md shadow-sm border border-gray-200 transition-colors duration-200 flex items-center gap-2"
+            disabled={saving || enhancing}
+          >
+            <Wand2 size={16} />
+            {enhancing && (
+              <span className="h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+            )}
+          </button>
+
+          {/* Enhancement Options Dropdown */}
+          {showEnhanceOptions && (
+            <div className="absolute right-2 top-12 z-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => handleEnhance('detailed')}
+                className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 disabled:opacity-50 border-b border-gray-100"
+                disabled={enhancing}
+              >
+                Make More Detailed
+              </button>
+              <button
+                type="button"
+                onClick={() => handleEnhance('shorter')}
+                className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 disabled:opacity-50 border-b border-gray-100"
+                disabled={enhancing}
+              >
+                Make Shorter
+              </button>
+              <button
+                type="button"
+                onClick={() => handleEnhance('simpler')}
+                className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 disabled:opacity-50 border-b border-gray-100"
+                disabled={enhancing}
+              >
+                Make Simpler
+              </button>
+              <button
+                type="button"
+                onClick={() => handleEnhance('complex')}
+                className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 disabled:opacity-50"
+                disabled={enhancing}
+              >
+                Make More Complex
+              </button>
             </div>
           )}
         </div>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Enter notes"
-          disabled={enhancing}
-        />
       </div>
 
       <div>
@@ -150,81 +193,33 @@ export function EditNoteForm({
         />
       </div>
 
-      <div className="space-y-4">
-        {showEnhanceOptions && (
-          <div className="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-lg">
-            <button
-              type="button"
-              onClick={() => handleEnhance('detailed')}
-              className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50"
-              disabled={enhancing}
-            >
-              Make More Detailed
-            </button>
-            <button
-              type="button"
-              onClick={() => handleEnhance('shorter')}
-              className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50"
-              disabled={enhancing}
-            >
-              Make Shorter
-            </button>
-            <button
-              type="button"
-              onClick={() => handleEnhance('simpler')}
-              className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50"
-              disabled={enhancing}
-            >
-              Make Simpler
-            </button>
-            <button
-              type="button"
-              onClick={() => handleEnhance('complex')}
-              className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50"
-              disabled={enhancing}
-            >
-              Make More Complex
-            </button>
-          </div>
-        )}
-
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setShowEnhanceOptions(!showEnhanceOptions)}
-            className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-800 flex items-center gap-2 disabled:opacity-50"
-            disabled={saving || enhancing}
-          >
-            <Wand2 size={16} />
-            {enhancing ? 'Enhancing...' : 'AI Enhance'}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 flex items-center gap-2"
-            disabled={saving || enhancing}
-          >
-            <X size={16} />
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
-            disabled={saving || enhancing}
-          >
-            {saving ? (
-              <>
-                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save size={16} />
-                Save Changes
-              </>
-            )}
-          </button>
-        </div>
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 flex items-center gap-2"
+          disabled={saving || enhancing}
+        >
+          <X size={16} />
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+          disabled={saving || enhancing}
+        >
+          {saving ? (
+            <>
+              <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save size={16} />
+              Save Changes
+            </>
+          )}
+        </button>
       </div>
     </form>
   );

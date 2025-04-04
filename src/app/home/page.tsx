@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { Sidebar, SidebarBody, useSidebar } from "@/components/ui/sidebar";
-import { User, Plus, Pencil, Trash2 } from "lucide-react";
+import { User, Plus, Pencil, Trash2, Wand2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
 import { NotesList } from "@/components/ui/notes-list";
 import { EditNoteForm } from "@/components/ui/edit-note-form";
+import { NoteDisplay } from "@/components/ui/note-display";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
-import { geminiService } from "@/lib/gemini-service";
+import { geminiService, EnhanceMode } from "@/lib/gemini-service";
 import { notesService } from "@/lib/notes-service";
 import Markdown from 'markdown-to-jsx';
 
@@ -336,8 +337,41 @@ export default function HomePage() {
   const [selectedNote, setSelectedNote] = useState<{transcript: string; notes: string; tags?: string[]} | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [notesListRefreshKey, setNotesListRefreshKey] = useState(0); // State to trigger list refresh
-  const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false); // State for transcript expansion
+  const [notesListRefreshKey, setNotesListRefreshKey] = useState(0);
+  const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
+  const [showEnhanceOptions, setShowEnhanceOptions] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
+
+  // Handle AI enhancement
+  const handleEnhance = async (mode: EnhanceMode) => {
+    if (!selectedNote) return;
+    
+    setEnhancing(true);
+    setNotesError(null);
+    
+    try {
+      const enhancedNotes = await geminiService.enhanceNotes(selectedNote.notes, mode);
+      
+      // Update the note in Firebase
+      await notesService.updateNote(selectedNoteId!, {
+        ...selectedNote,
+        notes: enhancedNotes
+      });
+      
+      // Update local state
+      setSelectedNote({
+        ...selectedNote,
+        notes: enhancedNotes
+      });
+      
+      setShowEnhanceOptions(false);
+    } catch (err) {
+      setNotesError('Failed to enhance notes. Please try again.');
+      console.error('Error enhancing notes:', err);
+    } finally {
+      setEnhancing(false);
+    }
+  };
 
   // Auth redirect effect
   useEffect(() => {
@@ -440,29 +474,19 @@ export default function HomePage() {
                           {/* Notes Section */}
                           <div>
                             <h3 className="text-lg font-semibold mb-2">Notes</h3>
-                            <div className="bg-white border rounded-lg p-6 prose prose-slate max-w-none">
-                              <Markdown options={{
-                                overrides: {
-                                  h1: {
-                                    props: {
-                                      className: 'text-3xl font-bold mt-6 mb-4'
-                                    }
-                                  },
-                                  h2: {
-                                    props: {
-                                      className: 'text-2xl font-bold mt-5 mb-3'
-                                    }
-                                  },
-                                  h3: {
-                                    props: {
-                                      className: 'text-xl font-bold mt-4 mb-2'
-                                    }
-                                  }
-                                }
-                              }}>
-                                {selectedNote.notes}
-                              </Markdown>
-                            </div>
+                            <NoteDisplay
+                              content={selectedNote.notes}
+                              onEnhance={handleEnhance}
+                              isEnhancing={enhancing}
+                            />
+
+                              <div>
+                                <NoteDisplay
+                                  content={selectedNote.notes}
+                                  onEnhance={handleEnhance}
+                                  isEnhancing={enhancing}
+                                />
+                              </div>
                           </div>
 
                           {/* Transcript Section */}
