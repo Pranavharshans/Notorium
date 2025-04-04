@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
+export type EnhanceMode = 'detailed' | 'shorter' | 'simpler' | 'complex';
+
 export class GeminiService {
   async processTask(data: any): Promise<any> {
     try {
@@ -183,6 +185,32 @@ do not include staments in the begining of the output like "Here is a summary of
       return response.text ?? '';
     } catch (error) {
       console.error("Generate notes error:", error);
+      throw error;
+    }
+  }
+  async enhanceNotes(notes: string, mode: EnhanceMode): Promise<string> {
+    try {
+      const instructions = {
+        detailed: "Make these notes more detailed by expanding explanations and adding examples:",
+        shorter: "Summarize these notes into a more concise version while keeping the key points:",
+        simpler: "Simplify these notes to make them easier to understand:",
+        complex: "Make these notes more sophisticated and higher level, using advanced terminology:"
+      };
+
+      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("NEXT_PUBLIC_GEMINI_API_KEY is not defined");
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: `${instructions[mode]}\n\n${notes}`,
+      });
+
+      return response.text ?? '';
+    } catch (error) {
+      console.error("Enhance notes error:", error);
       throw error;
     }
   }

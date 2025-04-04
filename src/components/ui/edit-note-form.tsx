@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from 'react';
-import { Pencil, Save, X } from 'lucide-react';
+import { Pencil, Save, X, Wand2 } from 'lucide-react';
 import { notesService } from '@/lib/notes-service';
+import { geminiService, EnhanceMode } from '@/lib/gemini-service';
 
 interface EditNoteFormProps {
   noteId: string;
@@ -26,6 +27,23 @@ export function EditNoteForm({
   const [tags, setTags] = useState<string[]>(initialTags);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEnhanceOptions, setShowEnhanceOptions] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
+
+  const handleEnhance = async (mode: EnhanceMode) => {
+    setEnhancing(true);
+    setError(null);
+    try {
+      const enhancedNotes = await geminiService.enhanceNotes(notes, mode);
+      setNotes(enhancedNotes);
+      setShowEnhanceOptions(false);
+    } catch (err) {
+      setError('Failed to enhance notes. Please try again.');
+      console.error('Error enhancing notes:', err);
+    } finally {
+      setEnhancing(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,14 +96,23 @@ export function EditNoteForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Notes
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Notes
+          </label>
+          {enhancing && (
+            <div className="flex items-center text-purple-600 text-sm">
+              <span className="h-4 w-4 mr-2 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+              Enhancing with AI...
+            </div>
+          )}
+        </div>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Enter notes"
+          disabled={enhancing}
         />
       </div>
 
@@ -123,33 +150,81 @@ export function EditNoteForm({
         />
       </div>
 
-      <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 flex items-center gap-2"
-          disabled={saving}
-        >
-          <X size={16} />
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
-          disabled={saving}
-        >
-          {saving ? (
-            <>
-              <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save size={16} />
-              Save Changes
-            </>
-          )}
-        </button>
+      <div className="space-y-4">
+        {showEnhanceOptions && (
+          <div className="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-lg">
+            <button
+              type="button"
+              onClick={() => handleEnhance('detailed')}
+              className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              disabled={enhancing}
+            >
+              Make More Detailed
+            </button>
+            <button
+              type="button"
+              onClick={() => handleEnhance('shorter')}
+              className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              disabled={enhancing}
+            >
+              Make Shorter
+            </button>
+            <button
+              type="button"
+              onClick={() => handleEnhance('simpler')}
+              className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              disabled={enhancing}
+            >
+              Make Simpler
+            </button>
+            <button
+              type="button"
+              onClick={() => handleEnhance('complex')}
+              className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              disabled={enhancing}
+            >
+              Make More Complex
+            </button>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => setShowEnhanceOptions(!showEnhanceOptions)}
+            className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-800 flex items-center gap-2 disabled:opacity-50"
+            disabled={saving || enhancing}
+          >
+            <Wand2 size={16} />
+            {enhancing ? 'Enhancing...' : 'AI Enhance'}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 flex items-center gap-2"
+            disabled={saving || enhancing}
+          >
+            <X size={16} />
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+            disabled={saving || enhancing}
+          >
+            {saving ? (
+              <>
+                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save size={16} />
+                Save Changes
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </form>
   );
