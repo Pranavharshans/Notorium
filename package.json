@@ -20,6 +20,7 @@
     "groq-sdk": "^0.17.0",
     "lamejs": "^1.2.1",
     "lucide-react": "^0.485.0",
+    "markdown-to-jsx": "^7.7.4",
     "next": "15.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

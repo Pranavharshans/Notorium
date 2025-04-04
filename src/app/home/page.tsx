@@ -13,8 +13,7 @@ import { EditNoteForm } from "@/components/ui/edit-note-form";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
 import { geminiService } from "@/lib/gemini-service";
 import { notesService } from "@/lib/notes-service";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from 'remark-gfm';
+import Markdown from 'markdown-to-jsx';
 
 const icons = {
   home: (
@@ -441,8 +440,28 @@ export default function HomePage() {
                           {/* Notes Section */}
                           <div>
                             <h3 className="text-lg font-semibold mb-2">Notes</h3>
-                            <div className="bg-white border rounded-lg p-6">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedNote.notes}</ReactMarkdown>
+                            <div className="bg-white border rounded-lg p-6 prose prose-slate max-w-none">
+                              <Markdown options={{
+                                overrides: {
+                                  h1: {
+                                    props: {
+                                      className: 'text-3xl font-bold mt-6 mb-4'
+                                    }
+                                  },
+                                  h2: {
+                                    props: {
+                                      className: 'text-2xl font-bold mt-5 mb-3'
+                                    }
+                                  },
+                                  h3: {
+                                    props: {
+                                      className: 'text-xl font-bold mt-4 mb-2'
+                                    }
+                                  }
+                                }
+                              }}>
+                                {selectedNote.notes}
+                              </Markdown>
                             </div>
                           </div>
 
@@ -511,8 +530,16 @@ export default function HomePage() {
                   {generatedNotes && !selectedNote && (
                     <div>
                       <h3 className="text-lg font-semibold mb-2">Recently Generated Notes</h3>
-                      <div className="bg-white border rounded-lg p-6">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{generatedNotes}</ReactMarkdown>
+                      <div className="bg-white border rounded-lg p-6 prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-p:text-gray-600 prose-a:text-blue-600" style={{ whiteSpace: "pre-wrap" }}>
+                        <>
+                          {useEffect(() => {
+                            const html = document.querySelector('.prose')?.innerHTML;
+                            console.log('Generated HTML:', html);
+                          }, [generatedNotes])}
+                          <Markdown>
+                            {generatedNotes}
+                          </Markdown>
+                        </>
                       </div>
                     </div>
                   )}

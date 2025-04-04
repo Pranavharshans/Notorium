@@ -31,7 +31,9 @@ export class GeminiService {
         model: "gemini-2.0-flash",
         contents: transcript,
         config: {
-          systemInstruction: `📝 Role
+          systemInstruction: `# System Instructions
+
+## Role and Purpose
 You are an advanced AI assistant specializing in processing and summarizing raw lecture transcripts. Your goal is to convert spoken, unstructured text into well-organized, clear, and comprehensive notes that help students understand and retain key concepts.
 
 🛠 Instructions for Processing the Lecture Transcript
@@ -117,21 +119,20 @@ Formatting Type	Usage
 ---	Separate sections for better readability
 Use tables when comparing concepts or organizing structured data.
 
-📌 Example Output Format
-markdown
+📌 Important: Always include a space after # in headers
 
 # 📌 Lecture Topic: [Topic Name]
 
 ## 📝 Summary
-- Key point 1  
-- Key point 2  
-- Key point 3  
+- Key point 1
+- Key point 2
+- Key point 3
 
 ---
 
-## 📖 Key Concepts  
-- **Concept 1:** Explanation  
-- **Concept 2:** Explanation  
+## 📖 Key Concepts
+- **Concept 1:** Explanation
+- **Concept 2:** Explanation
 
 ---
 
@@ -168,7 +169,7 @@ Cheat Sheet summary at the end for quick revision.
 ✔ **Uses Markdown formatting** for structured output.  
 ✔ **Ensures textbook-style notes** for longer lectures.  
 
-This guarantees that **lecture transcripts** are **transformed into high-quality notes** with minimal noise, making them **easy to understand and retain**.`
+do not include staments in the begining of the output like "Here is a summary of the lecture" or "The following are the key points". Instead, directly present the content in a structured format.`
 
 
 

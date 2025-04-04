@@ -1,6 +1,6 @@
 # Implementations Documentation
 
-**Last Update:** 2025-04-03 22:53:28
+**Last Update:** 2025-04-03 23:04:52
 
 ## Implemented Features
 
@@ -15,6 +15,10 @@
 - **UI Improvement: Notes Above Transcript with "See More"**
   - **Date:** 2025-04-03 22:53:28
   - **Description:** Modified the `src/app/home/page.tsx` component. In the 'My Notes' view, the Notes section is now displayed above the Transcript section. The transcript is initially truncated to 300 characters with a "See More" / "See Less" button to expand/collapse the full text.
+
+- **Fix: Markdown Rendering for Notes**
+  - **Date:** 2025-04-03 23:04:52
+  - **Description:** Installed and configured the `@tailwindcss/typography` plugin. Created `tailwind.config.mjs` and added the plugin. Applied the `prose` class to the `ReactMarkdown` containers in `src/app/home/page.tsx`. Removed conflicting custom styles for `.generated-notes` from `src/app/globals.css` to ensure correct styling of Markdown content by the typography plugin.
 
 ## Planned Features
 
