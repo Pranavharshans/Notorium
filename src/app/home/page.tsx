@@ -479,14 +479,6 @@ export default function HomePage() {
                               onEnhance={handleEnhance}
                               isEnhancing={enhancing}
                             />
-
-                              <div>
-                                <NoteDisplay
-                                  content={selectedNote.notes}
-                                  onEnhance={handleEnhance}
-                                  isEnhancing={enhancing}
-                                />
-                              </div>
                           </div>
 
                           {/* Transcript Section */}
