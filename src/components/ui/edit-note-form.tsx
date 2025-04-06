@@ -1,32 +1,38 @@
 "use client";
 
 import { useState } from 'react';
-import { Pencil, Save, X, Wand2 } from 'lucide-react';
+import { Save, X, Wand2, RefreshCw } from 'lucide-react';
 import { notesService } from '@/lib/notes-service';
-import { geminiService, EnhanceMode } from '@/lib/gemini-service';
+import { EnhanceMode } from '@/lib/gemini-service';
+import { aiProviderService, AIProvider } from '@/lib/ai-provider-service';
 
 interface EditNoteFormProps {
-  noteId: string;
-  initialTranscript: string;
-  initialNotes: string;
-  initialTags: string[];
-  onSave: () => void;
+  note: {
+    id: string;
+    transcript: string;
+    notes: string;
+    tags?: string[];
+  };
+  onSave: (updatedNote: {
+    id: string;
+    transcript: string;
+    notes: string;
+    tags: string[];
+  }) => void;
   onCancel: () => void;
 }
 
 export function EditNoteForm({
-  noteId,
-  initialTranscript,
-  initialNotes,
-  initialTags,
+  note,
   onSave,
   onCancel
 }: EditNoteFormProps) {
-  const [transcript, setTranscript] = useState(initialTranscript);
-  const [notes, setNotes] = useState(initialNotes);
-  const [tags, setTags] = useState<string[]>(initialTags);
+  const [transcript, setTranscript] = useState(note.transcript);
+  const [notes, setNotes] = useState(note.notes);
+  const [tags, setTags] = useState<string[]>(note.tags || []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [provider, setProvider] = useState<AIProvider>('gemini');
   const [showEnhanceOptions, setShowEnhanceOptions] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
 
@@ -34,7 +40,8 @@ export function EditNoteForm({
     setEnhancing(true);
     setError(null);
     try {
-      const enhancedNotes = await geminiService.enhanceNotes(notes, mode);
+      aiProviderService.setProvider(provider);
+      const enhancedNotes = await aiProviderService.enhanceNotes(notes, mode);
       setNotes(enhancedNotes);
       setShowEnhanceOptions(false);
     } catch (err) {
@@ -51,12 +58,13 @@ export function EditNoteForm({
     setError(null);
 
     try {
-      await notesService.updateNote(noteId, {
+      const updatedNote = {
+        ...note,
         transcript,
         notes,
         tags
-      });
-      onSave();
+      };
+      onSave(updatedNote);
     } catch (err) {
       setError('Failed to save changes. Please try again.');
       console.error('Error saving note:', err);
@@ -106,18 +114,36 @@ export function EditNoteForm({
             disabled={enhancing}
           />
           
-          {/* Floating AI Enhance Button */}
-          <button
-            type="button"
-            onClick={() => setShowEnhanceOptions(!showEnhanceOptions)}
-            className="absolute top-2 right-2 p-2 text-gray-500 hover:text-purple-600 bg-white rounded-md shadow-sm border border-gray-200 transition-colors duration-200 flex items-center gap-2"
-            disabled={saving || enhancing}
-          >
-            <Wand2 size={16} />
-            {enhancing && (
-              <span className="h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-            )}
-          </button>
+          {/* AI Provider Toggle and Enhance Buttons */}
+          <div className="absolute top-2 right-2 flex gap-2">
+            {/* Provider Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                const newProvider = provider === 'gemini' ? 'groq' : 'gemini';
+                setProvider(newProvider);
+                aiProviderService.setProvider(newProvider);
+              }}
+              className="p-2 text-gray-500 hover:text-blue-600 bg-white rounded-md shadow-sm border border-gray-200 transition-colors duration-200 flex items-center gap-2"
+              disabled={saving || enhancing}
+            >
+              <RefreshCw size={16} />
+              <span className="text-sm">{provider === 'gemini' ? 'Gemini' : 'Groq'}</span>
+            </button>
+
+            {/* Enhance Button */}
+            <button
+              type="button"
+              onClick={() => setShowEnhanceOptions(!showEnhanceOptions)}
+              className="p-2 text-gray-500 hover:text-purple-600 bg-white rounded-md shadow-sm border border-gray-200 transition-colors duration-200 flex items-center gap-2"
+              disabled={saving || enhancing}
+            >
+              <Wand2 size={16} />
+              {enhancing && (
+                <span className="h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+              )}
+            </button>
+          </div>
 
           {/* Enhancement Options Dropdown */}
           {showEnhanceOptions && (

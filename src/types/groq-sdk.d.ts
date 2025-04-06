@@ -1,4 +1,27 @@
 declare module 'groq-sdk' {
+  export interface Message {
+    role: string;
+    content: string;
+  }
+
+  export interface ChatCompletionResponse {
+    choices: Array<{
+      message: {
+        content: string;
+      };
+    }>;
+  }
+
+  export interface CompletionOptions {
+    messages: Message[];
+    model: string;
+    temperature?: number;
+    max_completion_tokens?: number;
+    top_p?: number;
+    stream?: boolean;
+    stop?: string | null;
+  }
+
   export interface TranscriptionSegment {
     text: string;
     start: number;
@@ -30,8 +53,15 @@ declare module 'groq-sdk' {
     };
   }
 
+  export class ChatService {
+    completions: {
+      create(options: CompletionOptions): Promise<ChatCompletionResponse>;
+    };
+  }
+
   export default class Groq {
     constructor(config?: GroqConfig);
     audio: AudioService;
+    chat: ChatService;
   }
 }

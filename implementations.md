@@ -1,8 +1,20 @@
 # Implementations Documentation
 
-**Last Update:** 2025-04-03 23:04:52
+**Last Update:** 2025-04-06 09:55:00
 
 ## Implemented Features
+
+- **Remove Search Bar**
+  - **Date:** 2025-04-06 09:50:00
+  - **Description:** Removed the search bar from the top of the page in `src/app/home/page.tsx`.
+
+- **AI Provider Toggle: Gemini and Groq Integration**
+  - **Date:** 2025-04-06 08:42:02
+  - **Description:** Added support for switching between Google's Gemini and Groq AI models for note generation and enhancement. Implemented a new `AIProviderService` that manages the provider selection and abstracts the API calls. Added UI controls in both the note generation and enhancement interfaces to toggle between providers. The selected provider persists during the session and affects both initial note generation and subsequent enhancements.
+
+- **UI Refinement: Minimalist Note Display & Font Update**
+  - **Date:** 2025-04-05 22:54:23
+  - **Description:** Modified the `src/components/ui/note-display.tsx` component to adopt a more minimalist aesthetic similar to `ui5.png`. Removed the background, border, and rounded corners from the main note container. Adjusted heading typography (size, weight, margins) and removed the `prose-slate` variant. Updated the global font by modifying `tailwind.config.mjs` to use 'Inter' and the default sans-serif stack, replacing the previous Geist Sans font for a cleaner look closer to the target UI.
 
 - **Notes List Column**
   - **Date:** 2025-04-03 19:38:33
@@ -20,9 +32,17 @@
   - **Date:** 2025-04-03 23:04:52
   - **Description:** Installed and configured the `@tailwindcss/typography` plugin. Created `tailwind.config.mjs` and added the plugin. Applied the `prose` class to the `ReactMarkdown` containers in `src/app/home/page.tsx`. Removed conflicting custom styles for `.generated-notes` from `src/app/globals.css` to ensure correct styling of Markdown content by the typography plugin.
 
+- **UI Overhaul: Sidebar, Notes List, and Note Display**
+  - **Date:** 2025-04-06 09:47:00
+  - **Description:** Revised the user interface to match the design of the target UI (`ui7.png`). Updated the sidebar styling in `src/app/home/page.tsx`, modified the `NotesList` component (`src/components/ui/notes-list.tsx`) to improve the notes list style, and updated the `NoteDisplay` component (`src/components/ui/note-display.tsx`) to match the target UI's note display area style.
+
+## Implemented Features
+
+- **Categories List**
+  - **Date:** 2025-04-06 09:55:00
+  - **Description:** Implemented a categories list in the sidebar, displaying the categories based on the tags of the notes. The categories are dynamically fetched from the backend and displayed with their respective counts.
+
 ## Planned Features
 
 - Additional customization options for note formatting.
-- Functionality to load and display actual user notes in the Notes List.
-- Functionality to load the selected note's content into the main editor area.
-- Search functionality for the notes list.
+- ~~Search functionality for the notes list.~~ Removed search bar from the top of the page.

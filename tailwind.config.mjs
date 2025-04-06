@@ -1,3 +1,5 @@
+import defaultTheme from 'tailwindcss/defaultTheme';
+
 /** @type {import('tailwindcss').Config} */
 const config = {
   content: [
@@ -7,6 +9,9 @@ const config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', ...defaultTheme.fontFamily.sans], // Use Inter and Tailwind's default sans stack
+      },
       // Add any theme extensions here if needed in the future
     },
   },

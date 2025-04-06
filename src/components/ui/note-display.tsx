@@ -90,22 +90,22 @@ export function NoteDisplay({ content, onEnhance, isEnhancing }: NoteDisplayProp
       )}
 
       {/* Notes Content */}
-      <div className="bg-white border rounded-lg p-6 prose prose-slate max-w-none">
+      <div className="p-4 prose dark:prose-invert max-w-none">
         <Markdown options={{
           overrides: {
             h1: {
               props: {
-                className: 'text-3xl font-bold mt-6 mb-4'
+                className: 'text-2xl font-semibold mt-4 mb-3' // Reduced size, weight, margin
               }
             },
             h2: {
               props: {
-                className: 'text-2xl font-bold mt-5 mb-3'
+                className: 'text-xl font-semibold mt-4 mb-2' // Reduced size, weight, margin
               }
             },
             h3: {
               props: {
-                className: 'text-xl font-bold mt-4 mb-2'
+                className: 'text-lg font-semibold mt-3 mb-2' // Reduced size, weight, margin
               }
             }
           }

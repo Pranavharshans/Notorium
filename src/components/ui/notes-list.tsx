@@ -22,12 +22,12 @@ interface TranscriptDisplayProps {
 interface NoteItemProps {
   note: Note;
   isActive: boolean;
-  onClick: (id: string) => void;
+  onClick: (id: string, note: Note) => void;
 }
 
 function TranscriptDisplay({ transcript }: TranscriptDisplayProps) {
   const [expanded, setExpanded] = useState(false);
-  const truncatedTranscript = transcript.slice(0, 300); // Show first 300 characters instead of 100
+  const truncatedTranscript = transcript.slice(0, 300);
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-100">
@@ -40,7 +40,7 @@ function TranscriptDisplay({ transcript }: TranscriptDisplayProps) {
         <button
           className="text-blue-500 text-xs hover:underline"
           onClick={(e) => {
-            e.stopPropagation(); // Prevent click from bubbling to parent
+            e.stopPropagation();
             setExpanded(!expanded);
           }}
         >
@@ -52,27 +52,25 @@ function TranscriptDisplay({ transcript }: TranscriptDisplayProps) {
 }
 
 function NoteItem({ note, isActive, onClick }: NoteItemProps) {
-  // Get first line as title, rest as excerpt
   const lines = note.notes.split('\n');
   const title = lines[0] || 'Untitled Note';
   const excerpt = lines.slice(1).join('\n').trim();
 
   return (
     <div
-      className={`p-4 border rounded-lg mb-3 cursor-pointer hover:shadow-md transition-shadow duration-200 ${isActive ? 'border-blue-500 bg-white' : 'border-gray-200 bg-white'}`}
-      onClick={() => onClick(note.id)}
+      className={`p-3 rounded-lg mb-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ${
+        isActive ? 'bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+      }`}
+      onClick={() => onClick(note.id, note)}
     >
-      <h3 className="font-semibold text-sm mb-2 truncate">{title}</h3>
-      {/* Notes section */}
+      <h3 className="font-medium text-sm mb-1 truncate">{title}</h3>
       <div className="mb-2">
-        <p className="text-xs text-gray-600 line-clamp-2">{excerpt}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{excerpt}</p>
       </div>
-      {/* Transcript section */}
       {note.transcript && <TranscriptDisplay transcript={note.transcript} />}
-      <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
+      <div className="flex justify-between items-center text-xs text-gray-400 dark:text-gray-500 mt-2">
         <div className="flex items-center gap-1">
           {note.tags && note.tags.map(tag => {
-            // Simple hash function to generate a color
             let hash = 0;
             for (let i = 0; i < tag.length; i++) {
               hash = tag.charCodeAt(i) + ((hash << 5) - hash);
@@ -101,17 +99,18 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
         </div>
         <span>{formatDistanceToNow(note.createdAt?.toDate() || new Date(), { addSuffix: true })}</span>
       </div>
-    </div >
+    </div>
   );
 }
 
 interface NotesListProps {
   activeNoteId: string | null;
-  onNoteSelect: (noteId: string) => void;
+  onNoteSelect: (noteId: string, note: Note) => void;
   refreshKey: number;
+  selectedCategories: string[];
 }
 
-export function NotesList({ activeNoteId, onNoteSelect, refreshKey }: NotesListProps) {
+export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCategories }: NotesListProps) {
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,18 +149,26 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey }: NotesListP
   }, [user, refreshKey]);
 
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredNotes(notes);
-      return;
+    let filtered = notes;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(note => {
+        const firstLine = note.notes.split('\n')[0] || '';
+        return firstLine.toLowerCase().includes(query);
+      });
     }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = notes.filter(note => {
-      const firstLine = note.notes.split('\n')[0] || '';
-      return firstLine.toLowerCase().includes(query);
-    });
+    // Apply category filter
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(note => 
+        note.tags?.some(tag => selectedCategories.includes(tag))
+      );
+    }
+
     setFilteredNotes(filtered);
-  }, [searchQuery, notes]);
+  }, [searchQuery, notes, selectedCategories]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -169,7 +176,7 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey }: NotesListP
 
   if (loading) {
     return (
-      <div className="w-80 border-r border-gray-200 bg-gray-50 flex items-center justify-center">
+      <div className="w-full border-r border-gray-200 bg-gray-50 flex items-center justify-center p-4">
         <p className="text-gray-500">Loading notes...</p>
       </div>
     );
@@ -177,14 +184,14 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey }: NotesListP
 
   if (error) {
     return (
-      <div className="w-80 border-r border-gray-200 bg-gray-50 flex items-center justify-center">
+      <div className="w-full border-r border-gray-200 bg-gray-50 flex items-center justify-center p-4">
         <p className="text-red-500">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="w-80 border-r border-gray-200 bg-gray-50 flex flex-col h-full">
+    <div className="w-full flex flex-col h-full">
       <div className="p-4 border-b border-gray-200">
         <div className="relative">
           <input
@@ -210,13 +217,13 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey }: NotesListP
           </svg>
         </div>
       </div>
-      <div className="flex justify-between items-center px-4 py-2 border-b border-gray-200">
-        <h2 className="text-xs font-semibold uppercase text-gray-500">My Notes</h2>
+      <div className="flex justify-between items-center px-3 py-2">
+        <h2 className="text-sm font-medium">My Notes</h2>
         <button className="text-gray-500 hover:text-gray-800">
           <Plus size={18} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto px-3">
         {filteredNotes.length === 0 ? (
           <p className="text-gray-500 text-center mt-4">
             {notes.length === 0 ? "No notes yet" : "No matching notes found"}
