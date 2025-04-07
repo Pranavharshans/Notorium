@@ -1,8 +1,12 @@
 # Implementations Documentation
 
-**Last Update:** 2025-04-06 09:55:00
+**Last Update:** 2025-04-07 21:01:50
 
 ## Implemented Features
+
+- **Fix: Reduce Icon Sidebar Width**
+  - **Date:** 2025-04-07 21:01:50
+  - **Description:** Reduced the width of the leftmost icon sidebar from `w-60` to `w-20` in `src/app/home/page.tsx`. Centered the items within the sidebar and removed internal left margins to reduce the empty space between the icon sidebar and the notes list column.
 
 - **Remove Search Bar**
   - **Date:** 2025-04-06 09:50:00
@@ -35,8 +39,6 @@
 - **UI Overhaul: Sidebar, Notes List, and Note Display**
   - **Date:** 2025-04-06 09:47:00
   - **Description:** Revised the user interface to match the design of the target UI (`ui7.png`). Updated the sidebar styling in `src/app/home/page.tsx`, modified the `NotesList` component (`src/components/ui/notes-list.tsx`) to improve the notes list style, and updated the `NoteDisplay` component (`src/components/ui/note-display.tsx`) to match the target UI's note display area style.
-
-## Implemented Features
 
 - **Categories List**
   - **Date:** 2025-04-06 09:55:00

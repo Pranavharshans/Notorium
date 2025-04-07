@@ -359,8 +359,8 @@ export default function HomePage() {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <div className="w-60 border-r border-gray-200 dark:border-gray-700 flex flex-col items-start py-4 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-        <div className="mb-6 ml-4">
+      <div className="w-20 border-r border-gray-200 dark:border-gray-700 flex flex-col items-center py-4 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+        <div className="mb-6">
           {user?.photoURL ? (
             <img src={user.photoURL} alt={user.displayName || "User"} className="w-8 h-8 rounded-full"/>
           ) : (
@@ -370,7 +370,7 @@ export default function HomePage() {
           )}
         </div>
         
-        <nav className="flex flex-col items-start space-y-4 ml-4">
+        <nav className="flex flex-col items-center space-y-4">
            <button 
              onClick={() => { setCurrentView('new-lecture'); setSelectedNoteId(null); }}
              title="New Lecture"
@@ -390,7 +390,7 @@ export default function HomePage() {
            </button>
          </nav>
          
-         <div className="mt-auto flex flex-col items-start space-y-4 ml-4">
+         <div className="mt-auto flex flex-col items-center space-y-4">
             <button title="Help" className="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded">
               {icons.helpIcon}
             </button>
