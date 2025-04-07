@@ -1,8 +1,16 @@
 # Implementations Documentation
 
-**Last Update:** 2025-04-07 21:12:31
+**Last Update:** 2025-04-07 21:35:28
 
 ## Implemented Features
+
+- **Fix: Sidebar Layout Spacing**
+  - **Date:** 2025-04-07 21:35:28
+  - **Description:** Fixed spacing issues in the sidebar layout by reducing the sidebar width to `w-20` and centering all items. Removed left margins (`ml-4`) and ensured consistent spacing between sidebar elements. This eliminates unwanted gaps between the sidebar and notes list components.
+
+- **Code Refactoring: Component Organization**
+  - **Date:** 2025-04-07 21:24:28
+  - **Description:** Refactored the HomePage component in `src/app/home/page.tsx` to improve code organization. Extracted UI components into separate files under the layout directory. Resolved merge conflicts and maintained the latest functionality including bookmarking, categories, and note enhancement features. The refactoring improves maintainability while preserving all existing features.
 
 - **Implement Bookmarking/Favoriting Notes**
   - **Date:** 2025-04-07 21:12:31
@@ -27,10 +35,6 @@
 - **Notes List Column**
   - **Date:** 2025-04-03 19:38:33
   - **Description:** Added a middle column to the main layout (`src/app/home/page.tsx`) to display a list of notes, similar to the design in `ui3.png`. Created a new component `src/components/ui/notes-list.tsx` for this purpose, including placeholder notes and basic interaction.
-
-- **Formatted Output for Generated Notes**
-  - **Date:** 2025-04-03 14:19:47
-  - **Description:** Updated the output formatting for generated notes. The notes now include distinct sections, bold characters, and large title fonts for an appealing display.
 
 - **UI Improvement: Notes Above Transcript with "See More"**
   - **Date:** 2025-04-03 22:53:28
