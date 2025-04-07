@@ -1,8 +1,12 @@
 # Implementations Documentation
 
-**Last Update:** 2025-04-07 21:01:50
+**Last Update:** 2025-04-07 21:12:31
 
 ## Implemented Features
+
+- **Implement Bookmarking/Favoriting Notes**
+  - **Date:** 2025-04-07 21:12:31
+  - **Description:** Implemented functionality to bookmark/favorite notes. Added a `bookmarked` field to the note data model. Modified `notesService` to handle toggling the `bookmarked` status. Added a bookmark button to the displayed note view to toggle its status. Made the bookmark icon in the main sidebar filter the notes list to show only bookmarked items.
 
 - **Fix: Reduce Icon Sidebar Width**
   - **Date:** 2025-04-07 21:01:50

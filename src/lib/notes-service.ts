@@ -110,6 +110,39 @@ export const notesService = {
     }
   },
 
+  // Toggle the bookmark status of a note
+  async toggleBookmarkStatus(noteId: string): Promise<void> {
+    if (!auth.currentUser) {
+      throw new Error('Must be logged in to bookmark notes');
+    }
+
+    try {
+      const noteRef = doc(db, NOTES_COLLECTION, noteId);
+      const noteSnapshot = await getDoc(noteRef);
+
+      if (!noteSnapshot.exists()) {
+        throw new Error('Note not found');
+      }
+
+      const noteData = noteSnapshot.data();
+      if (auth.currentUser.uid !== noteData.userId) {
+        throw new Error('You do not have permission to modify this note');
+      }
+
+      const currentStatus = noteData.bookmarked || false; // Default to false if not set
+      await updateDoc(noteRef, {
+        bookmarked: !currentStatus,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error toggling bookmark status:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to toggle bookmark status');
+    }
+  },
+
   // Delete a note
   async deleteNote(noteId: string): Promise<void> {
     if (!auth.currentUser) {

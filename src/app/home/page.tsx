@@ -10,6 +10,7 @@ interface Note {
   updatedAt: any;
   tags?: string[];
   title?: string;
+  bookmarked?: boolean;
 }
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
@@ -249,6 +250,7 @@ export default function HomePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [notesListRefreshKey, setNotesListRefreshKey] = useState(0);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategories(prev =>
@@ -388,6 +390,9 @@ export default function HomePage() {
            <button title="Bookmarks" className="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded">
              {icons.bookmarkIcon}
            </button>
+           <button onClick={() => setBookmarkedOnly(!bookmarkedOnly)} title="Bookmarks" className="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded">
+             {icons.bookmarkIcon}
+           </button>
          </nav>
          
          <div className="mt-auto flex flex-col items-center space-y-4">
@@ -423,6 +428,7 @@ export default function HomePage() {
             }}
             refreshKey={notesListRefreshKey}
             selectedCategories={selectedCategories}
+            bookmarkedOnly={bookmarkedOnly}
           />
         </div>
         <div className="p-4">
@@ -489,6 +495,21 @@ export default function HomePage() {
                                 className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
                               >
                                 <Trash2 size={16} />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (selectedNoteId) {
+                                    await notesService.toggleBookmarkStatus(selectedNoteId);
+                                    // Refresh the selected note to reflect the change
+                                    const updatedNote = await notesService.getNotes(user.uid).then(notes => notes.find(note => note.id === selectedNoteId));
+                                    if (updatedNote) {
+                                      setSelectedNote(updatedNote);
+                                    }
+                                  }
+                                }}
+                                className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                              >
+                                <Bookmark size={16} />
                               </button>
                               <div className="relative">
                                 <button

@@ -13,6 +13,7 @@ interface Note {
   createdAt: any;
   updatedAt: any;
   tags?: string[];
+  bookmarked?: boolean;
 }
 
 interface TranscriptDisplayProps {
@@ -108,9 +109,10 @@ interface NotesListProps {
   onNoteSelect: (noteId: string, note: Note) => void;
   refreshKey: number;
   selectedCategories: string[];
+  bookmarkedOnly?: boolean;
 }
 
-export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCategories }: NotesListProps) {
+export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCategories, bookmarkedOnly }: NotesListProps) {
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,13 +164,18 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
 
     // Apply category filter
     if (selectedCategories.length > 0) {
-      filtered = filtered.filter(note => 
+      filtered = filtered.filter(note =>
         note.tags?.some(tag => selectedCategories.includes(tag))
       );
     }
 
+    // Apply bookmark filter
+    if (bookmarkedOnly) {
+      filtered = filtered.filter(note => note.bookmarked === true);
+    }
+
     setFilteredNotes(filtered);
-  }, [searchQuery, notes, selectedCategories]);
+  }, [searchQuery, notes, selectedCategories, bookmarkedOnly]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
