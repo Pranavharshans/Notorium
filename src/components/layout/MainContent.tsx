@@ -108,7 +108,7 @@ export function MainContent({
           />
         )}
 
-        {currentView === 'notes' && selectedNoteId && (
+        {currentView === 'notes' && (
           <NoteView
             note={selectedNote}
             isEditing={isEditing}

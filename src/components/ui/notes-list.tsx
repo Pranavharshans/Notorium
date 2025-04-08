@@ -133,6 +133,14 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
           setFilteredNotes(userNotes);
           setLoading(false);
           setError(null);
+
+          // If there's an active note, ensure it's selected in the list
+          if (activeNoteId) {
+            const activeNote = userNotes.find(note => note.id === activeNoteId);
+            if (activeNote && onNoteSelect) {
+              onNoteSelect(activeNoteId, activeNote);
+            }
+          }
         }
       } catch (err) {
         if (mounted) {

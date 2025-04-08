@@ -66,6 +66,26 @@ export const notesService = {
     }
   },
 
+  // Get a single note by ID
+  async getNote(noteId: string): Promise<Note | null> {
+    try {
+      const noteRef = doc(db, NOTES_COLLECTION, noteId);
+      const noteSnapshot = await getDoc(noteRef);
+      
+      if (!noteSnapshot.exists()) {
+        return null;
+      }
+      
+      return {
+        id: noteSnapshot.id,
+        ...noteSnapshot.data()
+      } as Note;
+    } catch (error) {
+      console.error('Error fetching note:', error);
+      throw new Error('Failed to fetch note');
+    }
+  },
+
   // Get all notes for a user
   async getNotes(userId: string): Promise<Note[]> {
     try {

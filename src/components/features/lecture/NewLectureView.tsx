@@ -85,6 +85,7 @@ export function NewLectureView({
         const finalTitle = title.trim() || generatedTitle;
         const noteTags = tags.length ? ['lecture', ...tags] : ['lecture', 'generated'];
         
+        // Create the note
         const noteId = await notesService.createNote({
           title: finalTitle,
           transcript: transcription.text,
@@ -98,19 +99,21 @@ export function NewLectureView({
           setTitle(generatedTitle);
         }
 
-        // Get the newly created note and select it
-        const notes = await notesService.getNotes(user.uid);
-        const newNote = notes.find(note => note.id === noteId);
+        // Get the newly created note directly
+        const newNote = await notesService.getNote(noteId);
         if (newNote && onNoteSelect) {
           setGeneratedNotes(null); // Clear generated notes
-          onNoteSelect(noteId, newNote); // Select the new note
+          onNoteSelect(noteId, newNote); // Select the new note immediately
+          
+          // Small delay to ensure state updates are processed
+          setTimeout(() => {
+            setCurrentView('notes'); // Change view after state updates
+          }, 0);
         }
 
       } else {
         console.error("Cannot save note: User not logged in.");
       }
-      
-      setCurrentView('notes');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to generate notes";
       console.error("Error generating notes:", errorMessage);
