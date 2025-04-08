@@ -1,8 +1,14 @@
 # Implementations Documentation
 
-**Last Update:** 2025-04-07 21:35:28
+**Last Update:** 2025-04-08 20:14:00
 
 ## Implemented Features
+
+### Fix: Word Animation Container Stability
+**Date:** 2025-04-08 15:31:00
+
+**Description:** Fixed the word rotation animation in WordRotate component to eliminate text shifting and cropping. Made the gradient text transparent by removing the solid background color, allowing background lines to show through. Removed the container div and applied its styles directly to the motion.h1 element. Further optimized the container width (190px) and removed horizontal padding to create a tighter fit around the rotating words. Added `align-middle` to the span containing the WordRotate component to adjust its vertical alignment. Made spacing consistent by using gap-2 for both "learn [word]" and "not harder" pairs. Added gradient text effect with custom colors (blue, purple, pink, cyan) and reduced the blur radius of the gradient overlay from 1rem to 0.5rem to improve the visibility of the background lines. Maintained left-alignment to prevent text movement during transitions.
+
 
 ### Fix: Sidebar Layout Spacing
 **Date:** 2025-04-07 21:35:28
@@ -83,10 +89,14 @@
 
 ### Categories List
 **Date:** 2025-04-06 09:55:00
-
 **Description:** Implemented a categories list in the sidebar, displaying the categories based on the tags of the notes. The categories are dynamically fetched from the backend and displayed with their respective counts.
 
+---
+
+### UI Update: Login Page
+**Date:** 2025-04-08 13:55:00
+
+**Description:** Updated the login page (`src/app/page.tsx`) to match the new design. Modified the heading to display "Learn [word]," on a single line (with proper spacing and a comma after the rotating word cycling through "faster", "easier", "better", "deeper") and "not harder" on the second line. Added a multi-color gradient effect to the rotating word using the GradientText component. Changed the heading font to Roboto (bold weight 700). Replaced the BackgroundPaths component with the new Tiles component and added a curved fade-out effect using a radial gradient overlay (`[background:radial-gradient(100%_100%_at_50%_0%,transparent_30%,white_70%)]`). Fixed alignment issues by adding baseline alignment and proper spacing using gap-2. Maintained the reduced heading font size and other styling changes.
 ## Planned Features
 
 - Additional customization options for note formatting
-- ~~Search functionality for the notes list~~ (Removed search bar from the top of the page)

@@ -83,7 +83,8 @@ export function NewLectureView({
       
       if (user?.uid) {
         const finalTitle = title.trim() || generatedTitle;
-        const noteTags = tags.length ? ['lecture', ...tags] : ['lecture', 'generated'];
+        // Always include 'lecture' tag but only add 'generated' if no custom tags
+        const noteTags = tags.length ? ['lecture', ...tags] : ['lecture'];
         
         // Create the note
         const noteId = await notesService.createNote({
