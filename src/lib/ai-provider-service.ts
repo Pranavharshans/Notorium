@@ -24,10 +24,17 @@ export class AIProviderService {
     return this.currentProvider;
   }
 
-  async generateNotesFromTranscript(transcript: string): Promise<string> {
-    return this.currentProvider === 'gemini' 
+  async generateNotesFromTranscript(transcript: string): Promise<{ title: string; content: string }> {
+    const notes = await (this.currentProvider === 'gemini'
       ? geminiService.generateNotesFromTranscript(transcript)
-      : groqService.generateNotesFromTranscript(transcript);
+      : groqService.generateNotesFromTranscript(transcript));
+
+    // Extract title from the first heading
+    const match = notes.match(/^#\s*[📌]?\s*(.+)$/m);
+    const title = match ? match[1].trim() : 'Untitled Note';
+    const content = notes.replace(/^#\s*[📌]?\s*.+\n/, '').trim();
+
+    return { title, content };
   }
 
   async enhanceNotes(notes: string, mode: EnhanceMode): Promise<string> {

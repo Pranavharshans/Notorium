@@ -7,17 +7,20 @@ import { AIVoiceInput } from "@/components/ui/ai-voice-input";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
 import { aiProviderService, AIProvider } from "@/lib/ai-provider-service";
 import { notesService } from "@/lib/notes-service";
+import { Note } from "@/types/note";
 
 interface NewLectureViewProps {
   setCurrentView: (view: string) => void;
   setGeneratedNotes: (notes: string | null) => void;
   user: any; // TODO: Type this properly with Firebase user type
+  onNoteSelect?: (noteId: string, note: Note) => void;
 }
 
 export function NewLectureView({
   setCurrentView,
   setGeneratedNotes,
-  user
+  user,
+  onNoteSelect
 }: NewLectureViewProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -28,6 +31,9 @@ export function NewLectureView({
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [provider, setProvider] = useState<AIProvider>('gemini');
+  const [title, setTitle] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
 
   const handleRecordingStart = () => {
     setIsRecording(true);
@@ -72,21 +78,38 @@ export function NewLectureView({
     try {
       console.log("Generating notes with transcript:", transcription.text);
       aiProviderService.setProvider(provider);
-      const generatedNotes = await aiProviderService.generateNotesFromTranscript(transcription.text);
-      console.log("Generated notes:", generatedNotes);
+      const { title: generatedTitle, content: generatedContent } = await aiProviderService.generateNotesFromTranscript(transcription.text);
+      console.log("Generated notes:", { title: generatedTitle, content: generatedContent });
       
       if (user?.uid) {
-        await notesService.createNote({
+        const finalTitle = title.trim() || generatedTitle;
+        const noteTags = tags.length ? ['lecture', ...tags] : ['lecture', 'generated'];
+        
+        const noteId = await notesService.createNote({
+          title: finalTitle,
           transcript: transcription.text,
-          notes: generatedNotes,
+          notes: generatedContent,
           userId: user.uid,
-          tags: ['lecture', 'generated'] 
+          tags: noteTags.filter(tag => tag.trim() !== '')  // Filter out empty tags
         });
+
+        // Set the generated title if user hasn't provided one
+        if (!title.trim()) {
+          setTitle(generatedTitle);
+        }
+
+        // Get the newly created note and select it
+        const notes = await notesService.getNotes(user.uid);
+        const newNote = notes.find(note => note.id === noteId);
+        if (newNote && onNoteSelect) {
+          setGeneratedNotes(null); // Clear generated notes
+          onNoteSelect(noteId, newNote); // Select the new note
+        }
+
       } else {
         console.error("Cannot save note: User not logged in.");
       }
       
-      setGeneratedNotes(generatedNotes);
       setCurrentView('notes');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to generate notes";
@@ -98,7 +121,7 @@ export function NewLectureView({
   };
 
   return (
-    <div className="flex flex-col items-center pt-8 md:pt-12"> 
+    <div className="flex flex-col items-center pt-8 md:pt-12">
       <div className="w-full max-w-3xl px-4 text-center">
         <h2 className="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-200">Record Live Lecture</h2>
         <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
@@ -152,9 +175,66 @@ export function NewLectureView({
               <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
                 {transcription.text}
               </p>
-              
-              <div className="mt-4 flex justify-end border-t border-gray-200 dark:border-gray-700 pt-4">
-                <div className="flex items-center gap-4">
+              <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Lecture Title
+                  </label>
+                  <input
+                    id="title"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter lecture title"
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="tags" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Tags
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => setTags(tags.filter((_, i) => i !== index))}
+                          className="ml-1 inline-flex items-center p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full"
+                        >
+                          <span className="sr-only">Remove tag</span>
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      id="tags"
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && tagInput.trim()) {
+                          e.preventDefault();
+                          const trimmedTag = tagInput.trim().toLowerCase(); // Normalize tags to lowercase
+                          if (trimmedTag && !tags.includes(trimmedTag)) {
+                            setTags([...tags, trimmedTag]);
+                          }
+                          setTagInput('');
+                        }
+                      }}
+                      placeholder="Add tags (press Enter to add)"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end items-center gap-4">
                   <button
                     onClick={() => {
                       const newProvider = provider === 'gemini' ? 'groq' : 'gemini';
@@ -186,10 +266,10 @@ export function NewLectureView({
                     )}
                   </button>
                 </div>
+                {notesError && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-2">{notesError}</p>
+                )}
               </div>
-              {notesError && (
-                <p className="text-sm text-red-600 dark:text-red-400 mt-2">{notesError}</p>
-              )}
             </div>
           </div>
         )}

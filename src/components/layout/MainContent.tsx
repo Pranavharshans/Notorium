@@ -100,6 +100,11 @@ export function MainContent({
             setCurrentView={setCurrentView}
             setGeneratedNotes={setGeneratedNotes}
             user={user}
+            onNoteSelect={(noteId, note) => {
+              setSelectedNote(note);
+              setGeneratedNotes(null);
+              refreshNotes();
+            }}
           />
         )}
 

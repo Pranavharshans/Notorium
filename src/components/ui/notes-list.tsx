@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface Note {
   id: string;
+  title: string;
   transcript: string;
   notes: string;
   createdAt: any;
@@ -53,9 +54,8 @@ function TranscriptDisplay({ transcript }: TranscriptDisplayProps) {
 }
 
 function NoteItem({ note, isActive, onClick }: NoteItemProps) {
-  const lines = note.notes.split('\n');
-  const title = lines[0] || 'Untitled Note';
-  const excerpt = lines.slice(1).join('\n').trim();
+  const title = note.title || 'Untitled Note';
+  const excerpt = note.notes.split('\n')[0] || '';
 
   return (
     <div
@@ -64,7 +64,7 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
       }`}
       onClick={() => onClick(note.id, note)}
     >
-      <h3 className="font-medium text-sm mb-1 truncate">{title}</h3>
+      <h3 className="font-medium text-sm mb-1 truncate">{note.title || 'Untitled Note'}</h3>
       <div className="mb-2">
         <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{excerpt}</p>
       </div>
@@ -156,10 +156,9 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(note => {
-        const firstLine = note.notes.split('\n')[0] || '';
-        return firstLine.toLowerCase().includes(query);
-      });
+      filtered = filtered.filter(note =>
+        (note.title || 'Untitled Note').toLowerCase().includes(query)
+      );
     }
 
     // Apply category filter

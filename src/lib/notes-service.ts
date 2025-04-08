@@ -16,6 +16,7 @@ import {
 
 export interface Note {
   id: string;
+  title: string;
   transcript: string;
   notes: string;
   userId: string;
@@ -25,23 +26,36 @@ export interface Note {
 }
 
 export interface CreateNoteInput {
+  title: string;
   transcript: string;
   notes: string;
   userId: string;
   tags?: string[];
 }
 
+// Ensure tag is non-empty and properly formatted
+const sanitizeTag = (tag: string): string => {
+  return tag.toLowerCase().trim();
+};
+
 const NOTES_COLLECTION = 'notes';
 
 export const notesService = {
   // Create a new note
-  async createNote({ transcript, notes, userId, tags }: CreateNoteInput): Promise<string> {
+  async createNote({ title, transcript, notes, userId, tags }: CreateNoteInput): Promise<string> {
     try {
+      const sanitizedTags = tags
+        ? tags
+            .map(tag => sanitizeTag(tag))
+            .filter(tag => tag !== '')
+        : [];
+
       const docRef = await addDoc(collection(db, NOTES_COLLECTION), {
+        title: title.trim(),
         transcript,
         notes,
         userId,
-        tags: tags || [],
+        tags: sanitizedTags,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });

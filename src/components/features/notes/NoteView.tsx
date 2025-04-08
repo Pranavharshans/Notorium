@@ -107,11 +107,13 @@ export function NoteView({
             </div>
           </div>
 
-          <NoteDisplay
-            content={note.notes}
-            onEnhance={onEnhance}
-            isEnhancing={enhancing}
-          />
+          <div>
+            <NoteDisplay
+              content={`# ${note.title}\n\n${note.notes}`}
+              onEnhance={onEnhance}
+              isEnhancing={enhancing}
+            />
+          </div>
         </>
       )}
 
