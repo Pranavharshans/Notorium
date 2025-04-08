@@ -4,6 +4,7 @@ import React from 'react';
 import { Pencil, Trash2, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EditNoteForm } from "@/components/ui/edit-note-form";
+import { NoteDisplay } from "@/components/ui/note-display";
 import { Note } from '@/types/note';
 import { EnhanceMode } from "@/lib/gemini-service";
 
@@ -106,12 +107,11 @@ export function NoteView({
             </div>
           </div>
 
-          <div className="prose dark:prose-invert max-w-none">
-            {/* This div will be replaced with TipTap editor */}
-            <div className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-              {note.notes}
-            </div>
-          </div>
+          <NoteDisplay
+            content={note.notes}
+            onEnhance={onEnhance}
+            isEnhancing={enhancing}
+          />
         </>
       )}
 

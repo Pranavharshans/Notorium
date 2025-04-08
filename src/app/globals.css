@@ -133,46 +133,70 @@
 }
 
 @layer components {
+  .prose {
+    @apply text-foreground max-w-none;
+  }
+
   .prose h1 {
-    font-size: 2.5rem;
-    margin-top: 2rem;
-    margin-bottom: 1.5rem;
-    font-weight: 700;
-    color: black;
+    @apply text-2xl font-bold mt-8 mb-4 text-foreground;
   }
 
   .prose h2 {
-    font-size: 2rem;
-    margin-top: 1.75rem;
-    margin-bottom: 1.25rem;
-    font-weight: 600;
-    color: black;
+    @apply text-xl font-semibold mt-6 mb-3 text-foreground;
   }
 
   .prose h3 {
-    font-size: 1.5rem;
-    margin-top: 1.5rem;
-    margin-bottom: 1rem;
-    font-weight: 600;
-    color: black;
+    @apply text-lg font-medium mt-4 mb-2 text-foreground;
   }
 
   .prose h4,
   .prose h5,
   .prose h6 {
-    font-size: 1.25rem;
-    margin-top: 1.25rem;
-    margin-bottom: 0.75rem;
-    font-weight: 600;
-    color: black;
+    @apply text-base font-medium mt-3 mb-2 text-foreground;
+  }
+
+  .prose p {
+    @apply mb-4 leading-7;
   }
 
   .prose ul {
-    list-style-type: disc;
+    @apply list-disc pl-6 mb-4;
   }
 
   .prose ol {
-    list-style-type: decimal;
+    @apply list-decimal pl-6 mb-4;
+  }
+
+  .prose li {
+    @apply mb-1;
+  }
+
+  .prose blockquote {
+    @apply border-l-4 border-muted pl-4 italic my-4;
+  }
+
+  .prose code {
+    @apply font-mono text-sm bg-muted px-1 py-0.5 rounded;
+  }
+
+  .prose pre {
+    @apply bg-muted p-4 rounded-lg overflow-x-auto my-4;
+  }
+
+  .prose a {
+    @apply text-primary hover:underline;
+  }
+
+  .prose hr {
+    @apply border-muted my-8;
+  }
+
+  .prose strong {
+    @apply font-semibold;
+  }
+
+  .prose em {
+    @apply italic;
   }
 }
 
