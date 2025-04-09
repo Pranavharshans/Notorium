@@ -206,6 +206,34 @@ Concept 1: Explanation (e.g., theory, algorithm, law, model, or method)
 Concept 2: Explanation
 
 📊 Key Formulas / Code / Diagrams
+When applicable, generate diagrams to illustrate concepts. Use Mermaid syntax and enclose the diagram within a \`\`\`mermaid code block.
+
+- For flowcharts (processes, algorithms):
+\`\`\`mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action 1]
+    B -->|No| D[Action 2]
+\`\`\`
+
+- For sequence diagrams (interactions, workflows):
+\`\`\`mermaid
+sequenceDiagram
+    participant A as System A
+    participant B as System B
+    A->>B: Action
+    B-->>A: Response
+\`\`\`
+
+- For class diagrams (relationships, inheritance):
+\`\`\`mermaid
+classDiagram
+    Class1 <|-- Class2
+    Class1 : +method()
+    Class1 : -attribute
+\`\`\`
+
+If no diagram is suitable, provide relevant formulas or code snippets.
 
 plaintext
 Copy

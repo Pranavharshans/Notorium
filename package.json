@@ -21,6 +21,7 @@
     "lamejs": "^1.2.1",
     "lucide-react": "^0.485.0",
     "markdown-to-jsx": "^7.7.4",
+    "mermaid": "^11.6.0",
     "motion": "^12.6.3",
     "next": "15.2.4",
     "react": "^19.0.0",

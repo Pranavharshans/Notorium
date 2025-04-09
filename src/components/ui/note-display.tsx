@@ -6,6 +6,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 import { EnhanceMode } from '@/lib/gemini-service';
+import MarkdownCodeBlock from './markdown-code-block';
+
+interface CodeProps {
+  children?: React.ReactNode;
+  className?: string;
+  node?: any;
+  inline?: boolean;
+}
 
 interface NoteDisplayProps {
   content: string;
@@ -96,18 +104,22 @@ export function NoteDisplay({ content, onEnhance, isEnhancing }: NoteDisplayProp
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
-            h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-8 mb-4" {...props} />,
-            h2: ({node, ...props}) => <h2 className="text-xl font-semibold mt-6 mb-3" {...props} />,
-            h3: ({node, ...props}) => <h3 className="text-lg font-medium mt-4 mb-2" {...props} />,
-            p: ({node, ...props}) => <p className="mb-4 leading-7" {...props} />,
-            ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4" {...props} />,
-            ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4" {...props} />,
-            li: ({node, ...props}) => <li className="mb-1" {...props} />,
-            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-muted pl-4 italic my-4" {...props} />,
-            code: ({node, inline, ...props}) =>
-              inline ?
-                <code className="font-mono text-sm bg-muted px-1 py-0.5 rounded" {...props} /> :
-                <code className="block bg-muted p-4 rounded-lg overflow-x-auto my-4 font-mono" {...props} />
+            h1: ({ ...props }) => <h1 className="text-2xl font-bold mt-8 mb-4" {...props} />,
+            h2: ({ ...props }) => <h2 className="text-xl font-semibold mt-6 mb-3" {...props} />,
+            h3: ({ ...props }) => <h3 className="text-lg font-medium mt-4 mb-2" {...props} />,
+            p: ({ ...props }) => <p className="mb-4 leading-7" {...props} />,
+            ul: ({ ...props }) => <ul className="list-disc pl-6 mb-4" {...props} />,
+            ol: ({ ...props }) => <ol className="list-decimal pl-6 mb-4" {...props} />,
+            li: ({ ...props }) => <li className="mb-1" {...props} />,
+            blockquote: ({ ...props }) => <blockquote className="border-l-4 border-muted pl-4 italic my-4" {...props} />,
+            code: ({ inline, className, children }: CodeProps) => (
+              <MarkdownCodeBlock
+                inline={!!inline}
+                className={className}
+              >
+                {children}
+              </MarkdownCodeBlock>
+            )
           }}
         >
           {content}
