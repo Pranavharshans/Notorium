@@ -61,13 +61,45 @@ export class RecordingService {
 
   // Removed convertToMp3 function
 
+  private isPaused: boolean = false;
+
   isRecording(): boolean {
-    return this.mediaRecorder?.state === 'recording';
+    return this.mediaRecorder?.state === 'recording' && !this.isPaused;
   }
 
   getCurrentDuration(): number {
     if (!this.startTime || !this.isRecording()) return 0;
     return (Date.now() - this.startTime) / 1000;
+  }
+
+  async pauseRecording(): Promise<void> {
+    if (!this.mediaRecorder) {
+      throw new Error('Recording not started');
+    }
+
+    if (this.isPaused) {
+      return;
+    }
+
+    if (this.mediaRecorder.state === 'recording') {
+      this.mediaRecorder.pause();
+      this.isPaused = true;
+    }
+  }
+
+  async resumeRecording(): Promise<void> {
+    if (!this.mediaRecorder) {
+      throw new Error('Recording not started');
+    }
+
+    if (!this.isPaused) {
+      return;
+    }
+
+    if (this.mediaRecorder.state === 'paused') {
+      this.mediaRecorder.resume();
+      this.isPaused = false;
+    }
   }
 }
 
