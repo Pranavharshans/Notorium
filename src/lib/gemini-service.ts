@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 export type EnhanceMode = 'detailed' | 'shorter' | 'simpler' | 'complex';
+export type LectureCategory = 'programming' | 'mathematics' | 'science' | 'humanities' | 'business' | 'law' | 'medicine' | 'engineering' | 'general';
 
 export class GeminiService {
   async processTask(data: any): Promise<any> {
@@ -21,7 +22,109 @@ export class GeminiService {
     }
   }
 
-  async generateNotesFromTranscript(transcript: string): Promise<string> {
+  private getCategorySpecificInstructions(category: LectureCategory): string {
+    const baseInstructions = `# System Instructions
+
+## Role and Purpose
+You are an advanced AI assistant specializing in processing and summarizing raw lecture transcripts. Your goal is to convert spoken, unstructured text into well-organized, clear, and comprehensive notes that help students understand and retain key concepts.`;
+
+    const categoryInstructions = {
+      programming: `
+    ## Additional Programming-Specific Instructions
+    - Extract and format code snippets using proper syntax highlighting
+    - Identify and explain key programming concepts, patterns, and algorithms
+    - Include practical, commented code examples (in relevant programming languages)
+    - Document API usage and external library references with links
+    - Highlight best practices, common mistakes, and debugging tips
+    - Include time and space complexity analysis for algorithms
+    - Reference official documentation and trusted programming sources
+    - When possible, distinguish between pseudo-code and production-ready code`,
+      mathematics: `
+    ## Additional Mathematics-Specific Instructions
+    - Format all mathematical equations and expressions using LaTeX
+    - Provide clear definitions of terms, variables, and symbols used
+    - Include step-by-step derivations, logical reasoning, and proofs
+    - Add example problems with fully worked-out solutions
+    - Use consistent units and variable naming throughout
+    - Include visual representations (diagrams, graphs, etc.) to aid understanding
+    - Reference relevant theorems, axioms, and mathematical properties
+    - Highlight real-world applications of the mathematical concepts`,
+      science: `
+    ## Additional Science-Specific Instructions
+    - Use precise scientific terminology and standardized nomenclature
+    - Include hypothesis, experimental procedures, and methodologies
+    - Clearly document observations, data, and interpretations of results
+    - Add labeled diagrams, flowcharts, or illustrations of key concepts
+    - Reference relevant scientific theories, models, and laws
+    - Include real-world applications and examples from current research
+    - Note safety considerations and ethical implications where applicable
+    - Use SI units consistently throughout the response`,
+      humanities: `
+    ## Additional Humanities-Specific Instructions
+    - Identify central themes, arguments, and ideas in historical, literary, or philosophical texts
+    - Include quotes, citations, and contextual references to support analysis
+    - Document differing interpretations and academic perspectives
+    - Provide historical, cultural, or societal background where relevant
+    - Link themes to contemporary issues or cultural shifts when applicable
+    - Reference both primary and secondary sources with proper attribution
+    - When relevant, include a chronological timeline or comparative analysis
+    - Use accessible yet nuanced language for interpretive clarity`,
+      business: `
+    ## Additional Business-Specific Instructions
+    - Include real-world case studies, market examples, or brand references
+    - Provide market analysis, SWOT, PESTLE, or competitor comparisons
+    - Include key financial calculations, ratios, or metrics where relevant
+    - Explain business models, strategies, and execution plans
+    - Add references to industry reports, trends, or benchmarks
+    - Include frameworks (e.g., Porter's Five Forces, Business Model Canvas)
+    - Discuss risks, mitigation strategies, and regulatory compliance
+    - Where helpful, include visual aids like charts, tables, or infographics`,
+      law: `
+    ## Additional Law-Specific Instructions
+    - Reference specific statutes, regulations, and governing bodies
+    - Include case law examples and legal precedents
+    - Define legal terms, principles, and doctrines with clarity
+    - Highlight jurisdictional considerations (e.g., US vs EU law)
+    - Discuss procedural requirements, timelines, and documentation
+    - Include analysis of opposing legal arguments or outcomes
+    - When helpful, format responses similar to briefs or legal memos
+    - Reference official sources (e.g., court rulings, law journals)`,
+      medicine: `
+    ## Additional Medicine-Specific Instructions
+    - Use accurate medical terminology with brief explanations for non-specialists
+    - Include relevant anatomical, physiological, or pathological concepts
+    - Provide diagnostic criteria, treatment protocols, and clinical guidelines
+    - Mention drug interactions, side effects, and contraindications
+    - Reference ICD, DSM, or other classification systems where applicable
+    - Include patient care considerations and ethical dimensions of treatment
+    - Add diagrams or flowcharts for clinical workflows or organ systems
+    - Cite sources like WHO, CDC, PubMed, or peer-reviewed journals`,
+      engineering: `
+    ## Additional Engineering-Specific Instructions
+    - Include technical specifications, formulas, and design parameters
+    - Explain core engineering principles involved (e.g., stress, circuits, mechanics)
+    - Provide relevant diagrams, schematics, and system architecture if needed
+    - Discuss material selection, design constraints, and optimization methods
+    - Include testing methods, validation steps, and safety standards
+    - Use appropriate units and follow industry standards (e.g., ISO, IEEE)
+    - Reference real-world engineering applications and case studies
+    - Where applicable, include cost estimations or feasibility analysis`,
+      general: `
+    ## Additional General Instructions
+    - Use clear, concise, and accessible language throughout
+    - Include practical examples, analogies, or case references to aid understanding
+    - Define all key terms and concepts, especially technical or abstract ones
+    - Incorporate visual aids like tables, flowcharts, or bullet lists where helpful
+    - Reference reliable sources or further reading materials
+    - Highlight real-world relevance or applications of the topic
+    - Maintain a balanced tone—professional but easy to engage with`
+    };
+
+    // Combine base instructions with category-specific instructions
+    return `${baseInstructions}\n${categoryInstructions[category]}`;
+  }
+
+  async generateNotesFromTranscript(transcript: string, category: LectureCategory = 'general'): Promise<string> {
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       if (!apiKey) {
@@ -29,11 +132,30 @@ export class GeminiService {
       }
       console.log("Gemini API Key:", apiKey);
       const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
+      const categoryInstructions = this.getCategorySpecificInstructions(category);
+      const systemInstruction = this.getSystemInstruction();
+      const combinedInstructions = `${systemInstruction}\n\n${categoryInstructions}`;
+      const geminiInput = {
         model: "gemini-2.0-flash",
         contents: transcript,
         config: {
-          systemInstruction: `# System Instructions
+          systemInstruction: combinedInstructions
+        }
+      };
+      console.log("Complete Gemini input:", {
+        systemInstruction: combinedInstructions,
+        transcript: transcript
+      });
+      const response = await ai.models.generateContent(geminiInput);
+      return response.text ?? '';
+    } catch (error) {
+      console.error("Generate notes error:", error);
+      throw error;
+    }
+  }
+
+  private getSystemInstruction(): string {
+    const systemInstruction = `# System Instructions
 
 ## Role and Purpose
 You are an advanced AI assistant specializing in processing and summarizing raw lecture transcripts. Your goal is to convert spoken, unstructured text into well-organized, clear, and comprehensive notes that help students understand and retain key concepts.
@@ -78,12 +200,13 @@ Ensure a logical flow between concepts.
 
 Include the following structured elements:
 
-📖 Key Concepts
-Concept 1: Explanation
+📖 Key Concepts / Core Ideas
+Concept 1: Explanation (e.g., theory, algorithm, law, model, or method)
 
 Concept 2: Explanation
 
-📊 Important Formulas & Diagrams
+📊 Key Formulas / Code / Diagrams
+
 plaintext
 Copy
 Edit
@@ -101,9 +224,13 @@ Case Study 2: [Historical reference]
 
 🏆 Key Takeaways
 [Main insights students should remember]
+📎 Additional Notes
+- Use this section for domain-specific items not covered above (e.g., historical references, ethics, safety protocols, legal procedures, etc.)
 
 4️⃣ Enhancing Clarity, Readability & Depth
 Fix incomplete sentences and reconstruct broken phrases logically.
+Only include sections (e.g., Case Studies, Formulas, Real-World Applications) if they are relevant to the lecture's content.
+
 
 Remove repetition while preserving key points.
 
@@ -132,29 +259,30 @@ Use tables when comparing concepts or organizing structured data.
 
 ---
 
-## 📖 Key Concepts
-- **Concept 1:** Explanation
+## 📖 Key Concepts / Core Ideas
+- **Concept 1:** Explanation (e.g., theory, algorithm, law, model, or method)
 - **Concept 2:** Explanation
 
 ---
 
-## 📊 Important Formulas & Diagrams  
+## 📊 Key Formulas / Code / Diagrams
 plaintext
-Formula: E = mc^2
-Explanation of how it applies in physics.
+Formula or Code: ...
+Explanation or use case
+
 💡 Real-World Applications
 Application 1: [Example scenario]
-
 Application 2: [Practical use case]
 
 📚 Case Studies (For Longer Lectures)
 Case Study 1: [Detailed explanation]
-
-Case Study 2: [Historical reference]
+Case Study 2: [Historical/legal/business reference]
 
 🏆 Key Takeaways
 [Main insights students should remember]
 
+📎 Additional Notes
+- For domain-specific elements like legal procedures, ethical issues, business frameworks, etc.
 🔹 Additional Enhancements for Long Lectures:
 FAQs with possible questions and answers.
 
@@ -162,31 +290,8 @@ Memory tips or mnemonics for better retention.
 
 Cheat Sheet summary at the end for quick revision.
 
-
-
-### **✅ Why This Prompt is Optimized for Transcripts?**  
-✔ **Handles raw spoken language issues** (filler words, informal speech, repetition).  
-✔ **Improves punctuation and readability** for clarity.  
-✔ **Dynamically adapts to different transcript lengths**.  
-✔ **Uses Markdown formatting** for structured output.  
-✔ **Ensures textbook-style notes** for longer lectures.  
-
-do not include staments in the begining of the output like "Here is a summary of the lecture" or "The following are the key points". Instead, directly present the content in a structured format.`
-
-
-
-
-
-
-
-
-        }
-      });
-      return response.text ?? '';
-    } catch (error) {
-      console.error("Generate notes error:", error);
-      throw error;
-    }
+do not include staments in the begining of the output like "Here is a summary of the lecture" or "The following are the key points". Instead, directly present the content in a structured format.`;
+    return systemInstruction;
   }
   async enhanceNotes(notes: string, mode: EnhanceMode): Promise<string> {
     try {

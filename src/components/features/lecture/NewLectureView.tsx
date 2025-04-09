@@ -8,6 +8,7 @@ import { groqService, TranscriptionResult } from "@/lib/groq-service";
 import { aiProviderService, AIProvider } from "@/lib/ai-provider-service";
 import { notesService } from "@/lib/notes-service";
 import { Note } from "@/types/note";
+import { LectureCategory } from "@/lib/gemini-service";
 
 interface NewLectureViewProps {
   setCurrentView: (view: string) => void;
@@ -31,9 +32,22 @@ export function NewLectureView({
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [provider, setProvider] = useState<AIProvider>('gemini');
+  const [category, setCategory] = useState<LectureCategory>('general');
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+
+  const categories: { value: LectureCategory; label: string }[] = [
+    { value: 'programming', label: 'Programming' },
+    { value: 'mathematics', label: 'Mathematics' },
+    { value: 'science', label: 'Science' },
+    { value: 'humanities', label: 'Humanities' },
+    { value: 'business', label: 'Business' },
+    { value: 'law', label: 'Law' },
+    { value: 'medicine', label: 'Medicine' },
+    { value: 'engineering', label: 'Engineering' },
+    { value: 'general', label: 'General Knowledge' }
+  ];
 
   const handleRecordingStart = () => {
     setIsRecording(true);
@@ -78,7 +92,7 @@ export function NewLectureView({
     try {
       console.log("Generating notes with transcript:", transcription.text);
       aiProviderService.setProvider(provider);
-      const { title: generatedTitle, content: generatedContent } = await aiProviderService.generateNotesFromTranscript(transcription.text);
+      const { title: generatedTitle, content: generatedContent } = await aiProviderService.generateNotesFromTranscript(transcription.text, category);
       console.log("Generated notes:", { title: generatedTitle, content: generatedContent });
       
       if (user?.uid) {
@@ -180,18 +194,38 @@ export function NewLectureView({
                 {transcription.text}
               </p>
               <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Lecture Title
-                  </label>
-                  <input
-                    id="title"
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter lecture title"
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                  />
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="category" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Lecture Category
+                    </label>
+                    <select
+                      id="category"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as LectureCategory)}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Lecture Title
+                    </label>
+                    <input
+                      id="title"
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Enter lecture title"
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2">

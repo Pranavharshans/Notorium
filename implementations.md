@@ -1,8 +1,18 @@
 # Implementations Documentation
 
-**Last Update:** 2025-04-09 09:36:00
+**Last Update:** 2025-04-09 10:33:00
 
 ## Implemented Features
+
+### Add: Category-Specific Note Templates
+**Date:** 2025-04-09 10:33:00
+
+**Description:** Implemented a template selection feature that allows users to choose from different lecture categories (Programming, Mathematics, Science, Humanities, Business, Law, Medicine, Engineering, and General Knowledge) when generating notes. Each category has specialized instructions for the AI to format and structure the notes appropriately. Added a category dropdown in the NewLectureView component and modified the Gemini service to handle category-specific note generation.
+
+### Add: Pause Recording Feature
+**Date:** 2025-04-09 09:36:00
+
+**Description:** Implemented a pause recording feature, allowing users to pause and resume the recording. Added a pause/resume button to the UI. Modified the recording service to handle pausing and resuming the recording.
 
 ### Add: Typing Animation Effect
 **Date:** 2025-04-08 21:08:00
@@ -103,13 +113,7 @@
 **Date:** 2025-04-08 13:55:00
 
 **Description:** Updated the login page (`src/app/page.tsx`) to match the new design. Modified the heading to display "Learn [word]," on a single line (with proper spacing and a comma after the rotating word cycling through "faster", "easier", "better", "deeper") and "not harder" on the second line. Added a multi-color gradient effect to the rotating word using the GradientText component. Changed the heading font to Roboto (bold weight 700). Replaced the BackgroundPaths component with the new Tiles component and added a curved fade-out effect using a radial gradient overlay (`[background:radial-gradient(100%_100%_at_50%_0%,transparent_30%,white_70%)]`). Fixed alignment issues by adding baseline alignment and proper spacing using gap-2. Maintained the reduced heading font size and other styling changes.
+
 ## Planned Features
 
 - Additional customization options for note formatting
-
-## Implemented Features
-
-### Add: Pause Recording Feature
-**Date:** 2025-04-09 09:36:00
-
-**Description:** Implemented a pause recording feature, allowing users to pause and resume the recording. Added a pause/resume button to the UI. Modified the recording service to handle pausing and resuming the recording.

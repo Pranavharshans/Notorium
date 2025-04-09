@@ -1,5 +1,5 @@
 import Groq from 'groq-sdk';
-import { EnhanceMode } from './gemini-service';
+import { EnhanceMode, LectureCategory } from './gemini-service';
 
 interface TranscriptionSegment {
   text: string;
@@ -74,7 +74,7 @@ export class GroqService {
     }
   }
 
-  async generateNotesFromTranscript(transcript: string): Promise<string> {
+  async generateNotesFromTranscript(transcript: string, category: LectureCategory = 'general'): Promise<string> {
     try {
       if (!process.env.NEXT_PUBLIC_GROQ_API_KEY) {
         throw new Error("NEXT_PUBLIC_GROQ_API_KEY is not configured");

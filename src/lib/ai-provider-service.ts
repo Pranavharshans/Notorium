@@ -1,4 +1,4 @@
-import { EnhanceMode, geminiService } from "./gemini-service";
+import { EnhanceMode, geminiService, LectureCategory } from "./gemini-service";
 import { groqService } from "./groq-service";
 
 export type AIProvider = 'gemini' | 'groq';
@@ -24,9 +24,9 @@ export class AIProviderService {
     return this.currentProvider;
   }
 
-  async generateNotesFromTranscript(transcript: string): Promise<{ title: string; content: string }> {
+  async generateNotesFromTranscript(transcript: string, category: LectureCategory = 'general'): Promise<{ title: string; content: string }> {
     const notes = await (this.currentProvider === 'gemini'
-      ? geminiService.generateNotesFromTranscript(transcript)
+      ? geminiService.generateNotesFromTranscript(transcript, category)
       : groqService.generateNotesFromTranscript(transcript));
 
     // Extract title from the first heading
