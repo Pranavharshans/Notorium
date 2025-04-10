@@ -6,13 +6,15 @@ import { notesService } from '@/lib/notes-service';
 import { useAuth } from '@/context/auth-context';
 import { formatDistanceToNow } from 'date-fns';
 
+import { Timestamp } from 'firebase/firestore';
+
 interface Note {
   id: string;
   title: string;
   transcript: string;
   notes: string;
-  createdAt: any;
-  updatedAt: any;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
   tags?: string[];
   bookmarked?: boolean;
 }
@@ -98,7 +100,7 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
             );
           })}
         </div>
-        <span>{formatDistanceToNow(note.createdAt?.toDate() || new Date(), { addSuffix: true })}</span>
+        <span>{formatDistanceToNow(note.createdAt instanceof Timestamp ? note.createdAt.toDate() : new Date(note.createdAt.seconds * 1000), { addSuffix: true })}</span>
       </div>
     </div>
   );

@@ -26,6 +26,26 @@ export interface Note {
   bookmarked?: boolean;
 }
 
+// Cache configuration
+interface CacheData {
+  notes: Array<Omit<Note, 'createdAt' | 'updatedAt'> & {
+    createdAt: { seconds: number; nanoseconds: number };
+    updatedAt: { seconds: number; nanoseconds: number };
+  }>;
+  timestamp: number;
+  version: number;
+}
+
+// Convert Firestore Timestamp to cache-safe format
+const timestampToCache = (timestamp: Timestamp) => ({
+  seconds: timestamp.seconds,
+  nanoseconds: timestamp.nanoseconds,
+});
+
+// Convert cache timestamp back to Firestore Timestamp
+const cacheToTimestamp = (cache: { seconds: number; nanoseconds: number }) =>
+  new Timestamp(cache.seconds, cache.nanoseconds);
+
 export interface CreateNoteInput {
   title: string;
   transcript: string;
@@ -38,11 +58,6 @@ export interface CreateNoteInput {
 const CACHE_KEY = 'notes_cache';
 const CACHE_EXPIRY = 1000 * 60 * 60 * 24 * 7; // 7 days in milliseconds
 
-interface CacheData {
-  notes: Note[];
-  timestamp: number;
-  version: number; // For future cache versioning
-}
 
 const CACHE_VERSION = 1; // Increment when cache structure changes
 
@@ -55,7 +70,11 @@ const NOTES_COLLECTION = 'notes';
 // Cache management functions
 const saveToCache = (userId: string, notes: Note[]) => {
   const cacheData: CacheData = {
-    notes,
+    notes: notes.map(note => ({
+      ...note,
+      createdAt: timestampToCache(note.createdAt),
+      updatedAt: timestampToCache(note.updatedAt),
+    })),
     timestamp: Date.now(),
     version: CACHE_VERSION
   };
@@ -88,8 +107,15 @@ const getFromCache = (userId: string): Note[] | null => {
       return null;
     }
 
+    // Convert cached timestamps back to Firestore Timestamps
+    const parsedNotes = notes.map(note => ({
+      ...note,
+      createdAt: cacheToTimestamp(note.createdAt),
+      updatedAt: cacheToTimestamp(note.updatedAt),
+    }));
+
     console.log('Cache hit:', new Date().toISOString());
-    return notes;
+    return parsedNotes;
   } catch (error) {
     console.error('Error reading from cache:', error);
     localStorage.removeItem(`${CACHE_KEY}_${userId}`);
