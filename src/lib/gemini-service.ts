@@ -208,29 +208,69 @@ Concept 2: Explanation
 📊 Key Formulas / Code / Diagrams
 When applicable, generate diagrams to illustrate concepts. Use Mermaid syntax and enclose the diagram within a \`\`\`mermaid code block.
 
+IMPORTANT: Follow these formatting rules for all Mermaid diagrams:
+1. Use consistent 2-space indentation for all lines
+2. No extra spaces before node definitions
+3. Maintain uniform spacing around arrows and labels
+4. Example of correct formatting:
+\`\`\`mermaid
+graph TD
+  A[Start] --> B[Step]
+  B --> C[End]
+\`\`\`
+
 - For flowcharts (processes, algorithms):
 \`\`\`mermaid
 graph TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Action 1]
-    B -->|No| D[Action 2]
+  A[Start] --> B{Decision}
+  B -->|Yes| C[Action 1]
+  B -->|No| D[Action 2]
+\`\`\`
+
+- For swimlane diagrams (process flow across departments or roles):
+  For swim lane diagrams, follow these strict guidelines:
+  1. Each swim lane must be defined using "subgraph" keyword with a clear, descriptive name
+  2. Keep all related activities within their respective swim lanes
+  3. For transitions between swim lanes:
+     - Create distinct nodes in each lane (e.g., 'Send_to_Carrier' in lane 1, 'Receive_from_Warehouse' in lane 2)
+     - Use clear node IDs that don't conflict across lanes
+     - Connect the transition nodes with appropriate arrows
+  4. Use consistent naming and arrow styles throughout the diagram
+  
+  Example of a properly structured swim lane diagram:
+\`\`\`mermaid
+graph LR
+  subgraph Warehouse
+    A[Start] --> B{Pick Order}
+    B -- Yes --> C[Pack Order]
+    B -- No --> D[Repick Order]
+    D --> B
+    C --> E[Send_to_Carrier]
+  end
+
+  subgraph Carrier
+    F[Receive_from_Warehouse] --> G[Deliver Order]
+    G --> H[End]
+  end
+  
+  E --> F
 \`\`\`
 
 - For sequence diagrams (interactions, workflows):
 \`\`\`mermaid
 sequenceDiagram
-    participant A as System A
-    participant B as System B
-    A->>B: Action
-    B-->>A: Response
+  participant A as System A
+  participant B as System B
+  A->>B: Action
+  B-->>A: Response
 \`\`\`
 
 - For class diagrams (relationships, inheritance):
 \`\`\`mermaid
 classDiagram
-    Class1 <|-- Class2
-    Class1 : +method()
-    Class1 : -attribute
+  Class1 <|-- Class2
+  Class1 : +method()
+  Class1 : -attribute
 \`\`\`
 
 If no diagram is suitable, provide relevant formulas or code snippets.
@@ -240,6 +280,7 @@ Copy
 Edit
 Formula: E = mc^2
 Explanation of how it applies in physics.
+
 💡 Real-World Applications
 Application 1: [Example scenario]
 
@@ -248,17 +289,17 @@ Application 2: [Practical use case]
 📚 Case Studies (For Longer Lectures)
 Case Study 1: [Detailed explanation]
 
-Case Study 2: [Historical reference]
+Case Study 2: [Historical/legal/business reference]
 
 🏆 Key Takeaways
 [Main insights students should remember]
+
 📎 Additional Notes
-- Use this section for domain-specific items not covered above (e.g., historical references, ethics, safety protocols, legal procedures, etc.)
+- Use this section for domain-specific elements like legal procedures, ethical issues, business frameworks, etc.
 
 4️⃣ Enhancing Clarity, Readability & Depth
 Fix incomplete sentences and reconstruct broken phrases logically.
 Only include sections (e.g., Case Studies, Formulas, Real-World Applications) if they are relevant to the lecture's content.
-
 
 Remove repetition while preserving key points.
 
@@ -272,7 +313,7 @@ Formatting Type	Usage
 ###	Subsection Heading
 **bold**	Highlight important terms
 *italics*	Emphasize words or phrases
-\Code Blocks\	Display formulas, key terms, or code
+\`Code Blocks\`	Display formulas, key terms, or code
 ---	Separate sections for better readability
 Use tables when comparing concepts or organizing structured data.
 
@@ -311,6 +352,7 @@ Case Study 2: [Historical/legal/business reference]
 
 📎 Additional Notes
 - For domain-specific elements like legal procedures, ethical issues, business frameworks, etc.
+
 🔹 Additional Enhancements for Long Lectures:
 FAQs with possible questions and answers.
 
