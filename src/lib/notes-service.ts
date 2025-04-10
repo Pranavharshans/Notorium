@@ -23,6 +23,7 @@ export interface Note {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   tags: string[];
+  bookmarked?: boolean;
 }
 
 export interface CreateNoteInput {
@@ -33,12 +34,95 @@ export interface CreateNoteInput {
   tags?: string[];
 }
 
-// Ensure tag is non-empty and properly formatted
+// Cache configuration
+const CACHE_KEY = 'notes_cache';
+const CACHE_EXPIRY = 1000 * 60 * 60 * 24 * 7; // 7 days in milliseconds
+
+interface CacheData {
+  notes: Note[];
+  timestamp: number;
+  version: number; // For future cache versioning
+}
+
+const CACHE_VERSION = 1; // Increment when cache structure changes
+
 const sanitizeTag = (tag: string): string => {
   return tag.toLowerCase().trim();
 };
 
 const NOTES_COLLECTION = 'notes';
+
+// Cache management functions
+const saveToCache = (userId: string, notes: Note[]) => {
+  const cacheData: CacheData = {
+    notes,
+    timestamp: Date.now(),
+    version: CACHE_VERSION
+  };
+  try {
+    localStorage.setItem(`${CACHE_KEY}_${userId}`, JSON.stringify(cacheData));
+    console.log('Cache updated:', new Date().toISOString());
+  } catch (error) {
+    console.error('Error saving to cache:', error);
+    // Clear cache if storage is full
+    localStorage.removeItem(`${CACHE_KEY}_${userId}`);
+  }
+};
+
+const getFromCache = (userId: string): Note[] | null => {
+  try {
+    const cachedData = localStorage.getItem(`${CACHE_KEY}_${userId}`);
+    if (!cachedData) return null;
+
+    const { notes, timestamp, version }: CacheData = JSON.parse(cachedData);
+    
+    // Version check for cache structure updates
+    if (version !== CACHE_VERSION) {
+      localStorage.removeItem(`${CACHE_KEY}_${userId}`);
+      return null;
+    }
+    
+    // Check if cache is expired
+    if (Date.now() - timestamp > CACHE_EXPIRY) {
+      localStorage.removeItem(`${CACHE_KEY}_${userId}`);
+      return null;
+    }
+
+    console.log('Cache hit:', new Date().toISOString());
+    return notes;
+  } catch (error) {
+    console.error('Error reading from cache:', error);
+    localStorage.removeItem(`${CACHE_KEY}_${userId}`);
+    return null;
+  }
+};
+
+const updateCacheForNote = (userId: string, noteId: string, updatedFields: Partial<Omit<Note, 'id' | 'userId' | 'createdAt'>>) => {
+  const cachedData = getFromCache(userId);
+  if (!cachedData) return;
+
+  const updatedNotes = cachedData.map(note => 
+    note.id === noteId 
+      ? { 
+          ...note, 
+          ...updatedFields,
+          updatedAt: Timestamp.now() // Use Timestamp.now() for cache
+        } 
+      : note
+  );
+  
+  saveToCache(userId, updatedNotes);
+  console.log('Cache updated for note:', noteId);
+};
+
+const removeCachedNote = (userId: string, noteId: string) => {
+  const cachedData = getFromCache(userId);
+  if (!cachedData) return;
+
+  const updatedNotes = cachedData.filter(note => note.id !== noteId);
+  saveToCache(userId, updatedNotes);
+  console.log('Note removed from cache:', noteId);
+};
 
 export const notesService = {
   // Create a new note
@@ -59,6 +143,24 @@ export const notesService = {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+
+      // Update cache with new note
+      const cachedNotes = getFromCache(userId);
+      if (cachedNotes) {
+        const newNote = {
+          id: docRef.id,
+          title: title.trim(),
+          transcript,
+          notes,
+          userId,
+          tags: sanitizedTags,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        };
+        saveToCache(userId, [newNote, ...cachedNotes]);
+        console.log('New note added to cache:', docRef.id);
+      }
+
       return docRef.id;
     } catch (error) {
       console.error('Error creating note:', error);
@@ -69,6 +171,19 @@ export const notesService = {
   // Get a single note by ID
   async getNote(noteId: string): Promise<Note | null> {
     try {
+      // Check cache first
+      const userId = auth.currentUser?.uid;
+      if (userId) {
+        const cachedNotes = getFromCache(userId);
+        if (cachedNotes) {
+          const cachedNote = cachedNotes.find(note => note.id === noteId);
+          if (cachedNote) {
+            console.log('Note retrieved from cache:', noteId);
+            return cachedNote;
+          }
+        }
+      }
+
       const noteRef = doc(db, NOTES_COLLECTION, noteId);
       const noteSnapshot = await getDoc(noteRef);
       
@@ -89,6 +204,15 @@ export const notesService = {
   // Get all notes for a user
   async getNotes(userId: string): Promise<Note[]> {
     try {
+      // Check cache first
+      const cachedNotes = getFromCache(userId);
+      if (cachedNotes) {
+        console.log('Notes retrieved from cache, count:', cachedNotes.length);
+        return cachedNotes;
+      }
+
+      // If not in cache or expired, fetch from Firebase
+      console.log('Cache miss, fetching from Firebase');
       const q = query(
         collection(db, NOTES_COLLECTION),
         where('userId', '==', userId),
@@ -100,6 +224,11 @@ export const notesService = {
         id: doc.id,
         ...doc.data()
       })) as Note[];
+
+      // Save to cache
+      saveToCache(userId, notes);
+      console.log('Notes cached, count:', notes.length);
+
       return notes;
     } catch (error) {
       console.error('Error fetching notes:', error);
@@ -131,10 +260,20 @@ export const notesService = {
         throw new Error('Notes content cannot be empty');
       }
 
-      await updateDoc(noteRef, {
+      const firebaseUpdate = {
         ...updates,
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      await updateDoc(noteRef, firebaseUpdate);
+
+      // Update cache with Timestamp instead of FieldValue
+      const cacheUpdate = {
+        ...updates,
+        updatedAt: Timestamp.now(),
+      };
+      updateCacheForNote(auth.currentUser.uid, noteId, cacheUpdate);
+      console.log('Note updated in cache:', noteId);
     } catch (error) {
       console.error('Error updating note:', error);
       if (error instanceof Error) {
@@ -163,11 +302,22 @@ export const notesService = {
         throw new Error('You do not have permission to modify this note');
       }
 
-      const currentStatus = noteData.bookmarked || false; // Default to false if not set
-      await updateDoc(noteRef, {
+      const currentStatus = noteData.bookmarked || false;
+      
+      // Update Firebase
+      const firebaseUpdate = {
         bookmarked: !currentStatus,
         updatedAt: serverTimestamp(),
-      });
+      };
+      await updateDoc(noteRef, firebaseUpdate);
+
+      // Update cache with Timestamp instead of FieldValue
+      const cacheUpdate = {
+        bookmarked: !currentStatus,
+        updatedAt: Timestamp.now(),
+      };
+      updateCacheForNote(auth.currentUser.uid, noteId, cacheUpdate);
+      console.log('Bookmark status updated in cache:', noteId);
     } catch (error) {
       console.error('Error toggling bookmark status:', error);
       if (error instanceof Error) {
@@ -197,6 +347,10 @@ export const notesService = {
       }
 
       await deleteDoc(noteRef);
+
+      // Remove from cache
+      removeCachedNote(auth.currentUser.uid, noteId);
+      console.log('Note removed from cache:', noteId);
     } catch (error) {
       console.error('Error deleting note:', error);
       if (error instanceof Error) {
@@ -205,4 +359,10 @@ export const notesService = {
       throw new Error('Failed to delete note');
     }
   },
+
+  // Clear user's cache (useful for logout)
+  clearCache(userId: string): void {
+    localStorage.removeItem(`${CACHE_KEY}_${userId}`);
+    console.log('Cache cleared for user:', userId);
+  }
 };
