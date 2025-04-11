@@ -1,0 +1,86 @@
+// Firestore Security Rules for Notorium
+//
+// To deploy these rules:
+// 1. Go to Firebase Console (https://console.firebase.google.com)
+// 2. Select your project
+// 3. Navigate to Firestore Database
+// 4. Click on the "Rules" tab
+// 5. Replace the existing rules with these rules
+// 6. Click "Publish" to deploy
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Basic user document rules
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Quota tracking rules
+    match /quotas/{userId} {
+      // Allow users to read their own quota
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow users to create their initial quota
+      allow create: if request.auth != null 
+        && request.auth.uid == userId
+        && request.resource.data.recordingMinutesUsed == 0
+        && request.resource.data.enhanceNotesUsed == 0
+        && request.resource.data.subscriptionStatus == 'trial';
+      
+      // Allow users to update their own quota with valid increments
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && (
+          // Allow recording minutes increment
+          (request.resource.data.recordingMinutesUsed > resource.data.recordingMinutesUsed 
+           && request.resource.data.enhanceNotesUsed == resource.data.enhanceNotesUsed
+           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus)
+          ||
+          // Allow enhance notes increment
+          (request.resource.data.enhanceNotesUsed > resource.data.enhanceNotesUsed 
+           && request.resource.data.recordingMinutesUsed == resource.data.recordingMinutesUsed
+           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus)
+          ||
+          // Allow subscription status update
+          (request.resource.data.subscriptionStatus != resource.data.subscriptionStatus
+           && request.resource.data.recordingMinutesUsed == resource.data.recordingMinutesUsed
+           && request.resource.data.enhanceNotesUsed == resource.data.enhanceNotesUsed)
+        );
+    }
+
+    // Notes collection rules
+    match /notes/{noteId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // Default deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// Rule Explanations:
+//
+// 1. User Rules (/users/{userId}):
+//    - Users can only read and write their own user document
+//
+// 2. Quota Rules (/quotas/{userId}):
+//    - Users can only read their own quota
+//    - New quotas must start with zero usage and trial status
+//    - Updates are restricted to one type of change at a time:
+//      a) Increment recording minutes
+//      b) Increment enhance notes usage
+//      c) Change subscription status
+//
+// 3. Notes Rules (/notes/{noteId}):
+//    - Users can only access notes they own
+//    - New notes must include the creator's userId
+//    - Only note owners can update or delete them
+//
+// 4. Default Rule:
+//    - All other access is denied by default

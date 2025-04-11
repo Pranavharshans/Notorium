@@ -7,6 +7,7 @@ import { Note } from "@/types/note";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { NotesSidebar } from "@/components/layout/NotesSidebar";
 import { MainContent } from "@/components/layout/MainContent";
+import { ClientLayout } from "@/components/layout/ClientLayout";
 import { notesService } from "@/lib/notes-service";
 import { aiProviderService, AIProvider } from "@/lib/ai-provider-service";
 
@@ -34,6 +35,9 @@ export default function HomePage() {
   useEffect(() => {
     if (user === null) {
       router.push("/");
+    } else if (user) {
+      // Initialize services with user ID
+      aiProviderService.setUserId(user.uid);
     }
   }, [user, router]);
 
@@ -111,50 +115,52 @@ export default function HomePage() {
   if (!user) return null;
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 divide-x divide-gray-200 dark:divide-gray-700">
-      <Sidebar
-        currentView={currentView}
-        onViewChange={(view) => {
-          setCurrentView(view);
-          if (view === 'new-lecture') setSelectedNoteId(null);
-        }}
-        onSignOut={signOutUser}
-      />
+    <ClientLayout>
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 divide-x divide-gray-200 dark:divide-gray-700">
+        <Sidebar
+          currentView={currentView}
+          onViewChange={(view) => {
+            setCurrentView(view);
+            if (view === 'new-lecture') setSelectedNoteId(null);
+          }}
+          onSignOut={signOutUser}
+        />
 
-      <NotesSidebar
-        selectedNoteId={selectedNoteId}
-        onNoteSelect={(noteId, note) => {
-          setSelectedNoteId(noteId);
-          setSelectedNote(note);
-          setGeneratedNotes(null);
-          setCurrentView('notes');
-          setIsEditing(false);
-        }}
-        notesListRefreshKey={notesListRefreshKey}
-        selectedCategories={selectedCategories}
-        categories={categories}
-        onCategorySelect={handleCategorySelect}
-      />
+        <NotesSidebar
+          selectedNoteId={selectedNoteId}
+          onNoteSelect={(noteId, note) => {
+            setSelectedNoteId(noteId);
+            setSelectedNote(note);
+            setGeneratedNotes(null);
+            setCurrentView('notes');
+            setIsEditing(false);
+          }}
+          notesListRefreshKey={notesListRefreshKey}
+          selectedCategories={selectedCategories}
+          categories={categories}
+          onCategorySelect={handleCategorySelect}
+        />
 
-      <MainContent
-        currentView={currentView}
-        selectedNote={selectedNote}
-        selectedNoteId={selectedNoteId}
-        isEditing={isEditing}
-        isDeleting={isDeleting}
-        notesError={notesError}
-        showEnhanceOptions={showEnhanceOptions}
-        enhancing={enhancing}
-        setCurrentView={setCurrentView}
-        setGeneratedNotes={setGeneratedNotes}
-        setSelectedNote={setSelectedNote}
-        setIsEditing={setIsEditing}
-        setNotesError={setNotesError}
-        setShowEnhanceOptions={setShowEnhanceOptions}
-        setEnhancing={setEnhancing}
-        refreshNotes={refreshNotes}
-        user={user}
-      />
-    </div>
+        <MainContent
+          currentView={currentView}
+          selectedNote={selectedNote}
+          selectedNoteId={selectedNoteId}
+          isEditing={isEditing}
+          isDeleting={isDeleting}
+          notesError={notesError}
+          showEnhanceOptions={showEnhanceOptions}
+          enhancing={enhancing}
+          setCurrentView={setCurrentView}
+          setGeneratedNotes={setGeneratedNotes}
+          setSelectedNote={setSelectedNote}
+          setIsEditing={setIsEditing}
+          setNotesError={setNotesError}
+          setShowEnhanceOptions={setShowEnhanceOptions}
+          setEnhancing={setEnhancing}
+          refreshNotes={refreshNotes}
+          user={user}
+        />
+      </div>
+    </ClientLayout>
   );
 }
