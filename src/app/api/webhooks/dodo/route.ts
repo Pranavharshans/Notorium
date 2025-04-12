@@ -3,6 +3,34 @@ import DodoPaymentsService from '@/lib/dodo-service';
 import UsageService from '@/lib/usage-service';
 import SubscriptionDBService from '@/lib/subscription-db-service';
 import { WebhookError } from '@/lib/errors/subscription-errors';
+import { SubscriptionTier } from '@/lib/subscription-config';
+
+interface DodoCustomer {
+  customer_id: string;
+  id: string;
+}
+
+interface DodoSubscriptionData {
+  customer: DodoCustomer;
+  subscription_id: string;
+  created_at: number;
+  next_billing_date?: number;
+  metadata?: {
+    tier?: SubscriptionTier;
+  };
+}
+
+interface DodoPaymentData {
+  id: string;
+  customer: DodoCustomer;
+}
+
+interface DodoWebhookPayload {
+  type: string;
+  data: DodoSubscriptionData;
+  business_id: string;
+  payment?: DodoPaymentData;
+}
 
 export async function POST(req: NextRequest) {
   if (req.method !== 'POST') {
@@ -19,13 +47,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const payload = await req.json();
+    const payload = await req.json() as DodoWebhookPayload;
     const dodoService = DodoPaymentsService.getInstance();
     const dbService = SubscriptionDBService.getInstance();
     const usageService = UsageService.getInstance();
 
     try {
-      // Verify webhook signature with timestamp
       dodoService.verifyWebhook(payload, signature, timestamp);
     } catch (error: unknown) {
       if (error instanceof WebhookError) {
@@ -34,14 +61,12 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
-    // Validate webhook payload
     const { type, data, business_id } = payload;
 
     if (!type || !data || !business_id) {
       return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
     }
 
-    // Handle different webhook events
     switch (type) {
       case 'subscription.active':
         await handleSubscriptionActive(data, dbService);
@@ -94,12 +119,12 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleSubscriptionActive(
-  data: any,
+  data: DodoSubscriptionData,
   dbService: SubscriptionDBService
 ) {
   const { customer, subscription_id, created_at, next_billing_date, metadata } = data;
   await dbService.updateSubscription(customer.customer_id, {
-    tier: metadata?.tier || 'pro',
+    tier: metadata?.tier || 'pro' as SubscriptionTier,
     subscriptionId: subscription_id,
     status: 'active',
     startDate: new Date(created_at * 1000),
@@ -108,7 +133,7 @@ async function handleSubscriptionActive(
 }
 
 async function handleSubscriptionOnHold(
-  data: any,
+  data: DodoSubscriptionData,
   dbService: SubscriptionDBService
 ) {
   const { customer, subscription_id } = data;
@@ -119,12 +144,12 @@ async function handleSubscriptionOnHold(
 }
 
 async function handleSubscriptionCancelled(
-  data: any,
+  data: DodoSubscriptionData,
   dbService: SubscriptionDBService
 ) {
   const { customer, subscription_id } = data;
   await dbService.updateSubscription(customer.customer_id, {
-    tier: 'free',
+    tier: 'free' as SubscriptionTier,
     status: 'cancelled',
     endDate: new Date(),
     subscriptionId: subscription_id
@@ -132,13 +157,12 @@ async function handleSubscriptionCancelled(
 }
 
 async function handleSubscriptionRenewed(
-  data: any,
+  data: DodoSubscriptionData,
   dbService: SubscriptionDBService,
   usageService: UsageService
 ) {
   const { customer, subscription_id, next_billing_date } = data;
   
-  // Update subscription dates
   await dbService.updateSubscription(customer.customer_id, {
     status: 'active',
     startDate: new Date(),
@@ -146,25 +170,24 @@ async function handleSubscriptionRenewed(
     subscriptionId: subscription_id
   });
 
-  // Reset usage counters for new billing period
   await usageService.resetMonthlyUsage(customer.customer_id);
 }
 
 async function handleSubscriptionFailed(
-  data: any,
+  data: DodoSubscriptionData,
   dbService: SubscriptionDBService
 ) {
   const { customer, subscription_id } = data;
   await dbService.updateSubscription(customer.customer_id, {
     status: 'failed',
-    tier: 'free',
+    tier: 'free' as SubscriptionTier,
     endDate: new Date(),
     subscriptionId: subscription_id
   });
 }
 
 async function handleSubscriptionPaused(
-  data: any,
+  data: DodoSubscriptionData,
   dbService: SubscriptionDBService
 ) {
   const { customer, subscription_id } = data;
@@ -175,31 +198,32 @@ async function handleSubscriptionPaused(
 }
 
 async function handleSubscriptionExpired(
-  data: any,
+  data: DodoSubscriptionData,
   dbService: SubscriptionDBService
 ) {
   const { customer, subscription_id } = data;
   await dbService.updateSubscription(customer.customer_id, {
     status: 'expired',
-    tier: 'free',
+    tier: 'free' as SubscriptionTier,
     endDate: new Date(),
     subscriptionId: subscription_id
   });
 }
 
 async function handlePaymentSucceeded(
-  payload: any,
+  payload: DodoWebhookPayload,
   dbService: SubscriptionDBService
 ) {
-  // Update payment status if needed
-  console.log('Payment succeeded:', payload.payment.id);
+  if (payload.payment) {
+    console.log('Payment succeeded:', payload.payment.id);
+  }
 }
 
 async function handlePaymentFailed(
-  payload: any,
+  payload: DodoWebhookPayload,
   dbService: SubscriptionDBService
 ) {
-  const { customer } = payload;
-  // Optionally update subscription status or send notification
-  console.log('Payment failed for customer:', customer.id);
+  if (payload.payment?.customer) {
+    console.log('Payment failed for customer:', payload.payment.customer.id);
+  }
 }

@@ -53,13 +53,17 @@ export const ErrorMessages = {
 
 export type ErrorCode = keyof typeof ErrorMessages;
 
+interface ErrorDetail {
+  [key: string]: string | number | boolean | null | undefined;
+}
+
 export interface ErrorResponse {
   code: ErrorCode;
   message: string;
-  details?: any;
+  details?: ErrorDetail;
 }
 
-export function createErrorResponse(code: ErrorCode, details?: any): ErrorResponse {
+export function createErrorResponse(code: ErrorCode, details?: ErrorDetail): ErrorResponse {
   return {
     code,
     message: ErrorMessages[code],
@@ -67,36 +71,44 @@ export function createErrorResponse(code: ErrorCode, details?: any): ErrorRespon
   };
 }
 
-export function isSubscriptionError(error: any): error is SubscriptionError {
+export function isSubscriptionError(error: unknown): error is SubscriptionError {
   return error instanceof SubscriptionError;
 }
 
-export function isPaymentError(error: any): error is PaymentError {
+export function isPaymentError(error: unknown): error is PaymentError {
   return error instanceof PaymentError;
 }
 
-export function isUsageLimitError(error: any): error is UsageLimitError {
+export function isUsageLimitError(error: unknown): error is UsageLimitError {
   return error instanceof UsageLimitError;
 }
 
-export function handleApiError(error: any): ErrorResponse {
+interface NetworkError {
+  message: string;
+}
+
+export function handleApiError(error: unknown): ErrorResponse {
   if (isSubscriptionError(error)) {
-    return createErrorResponse('SUBSCRIPTION_NOT_FOUND', error.message);
+    return createErrorResponse('SUBSCRIPTION_NOT_FOUND', { message: error.message });
   }
   
   if (isPaymentError(error)) {
-    return createErrorResponse('PAYMENT_FAILED', error.message);
+    return createErrorResponse('PAYMENT_FAILED', { message: error.message });
   }
   
   if (isUsageLimitError(error)) {
-    return createErrorResponse('USAGE_LIMIT_EXCEEDED', error.message);
+    return createErrorResponse('USAGE_LIMIT_EXCEEDED', { message: error.message });
   }
 
   // Handle network errors
-  if (error?.message?.includes('network')) {
-    return createErrorResponse('NETWORK_ERROR', error.message);
+  if (error && typeof error === 'object' && 'message' in error) {
+    const networkError = error as NetworkError;
+    if (networkError.message.includes('network')) {
+      return createErrorResponse('NETWORK_ERROR', { message: networkError.message });
+    }
   }
 
   // Handle unknown errors
-  return createErrorResponse('UNKNOWN_ERROR', error.message);
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+  return createErrorResponse('UNKNOWN_ERROR', { message: errorMessage });
 }

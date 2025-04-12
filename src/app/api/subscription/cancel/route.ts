@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Failed to cancel subscription:', error);
     return NextResponse.json(
-      createErrorResponse('UNKNOWN_ERROR', error),
+      createErrorResponse('UNKNOWN_ERROR', { 
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }),
       { status: 500 }
     );
   }
@@ -94,7 +96,9 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Failed to get cancellation status:', error);
     return NextResponse.json(
-      createErrorResponse('UNKNOWN_ERROR', error),
+      createErrorResponse('UNKNOWN_ERROR', {
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }),
       { status: 500 }
     );
   }

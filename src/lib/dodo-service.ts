@@ -1,9 +1,11 @@
 import axios from 'axios';
 import crypto from 'crypto';
 import { WebhookError, PaymentError, ErrorMessages } from './errors/subscription-errors';
+import { SubscriptionTier } from './subscription-config';
 
 const DODO_API_BASE_URL = process.env.NEXT_PUBLIC_DODO_API_URL || 'https://test.dodopayments.com';
 const API_VERSION = '2025-04-12';
+
 export interface DodoConfig {
   apiKey: string;
   webhookSecret: string;
@@ -28,7 +30,7 @@ export interface CustomerInfo {
 interface SubscriptionResponse {
   client_secret: string;
   customer: CustomerInfo;
-  metadata: Record<string, any>;
+  metadata: Record<string, string>;
   payment_link: string;
   recurring_pre_tax_amount: number;
   subscription_id: string;
@@ -39,11 +41,56 @@ interface DodoApiResponse extends SubscriptionResponse {
   message?: string;
 }
 
+interface DodoErrorResponse {
+  message: string;
+  code?: string;
+  details?: Record<string, unknown>;
+}
+
 export interface CheckoutSession {
   id: string;
   url: string;
   paymentLink?: string;
   clientSecret?: string;
+}
+
+export interface DodoCustomer {
+  customer_id: string;
+  id: string;
+}
+
+export interface DodoSubscriptionData {
+  customer: DodoCustomer;
+  subscription_id: string;
+  created_at: number;
+  next_billing_date?: number;
+  metadata?: {
+    tier?: SubscriptionTier;
+  };
+}
+
+export interface DodoPaymentData {
+  id: string;
+  customer: DodoCustomer;
+}
+
+export interface WebhookPayload {
+  type: string;
+  data: DodoSubscriptionData;
+  business_id: string;
+  payment?: DodoPaymentData;
+}
+
+type AxiosError = Error & {
+  response?: {
+    data: unknown;
+    status: number;
+    headers: Record<string, string>;
+  };
+};
+
+function isAxiosError(error: unknown): error is AxiosError {
+  return error instanceof Error && 'response' in error;
 }
 
 export class DodoPaymentsService {
@@ -59,10 +106,8 @@ export class DodoPaymentsService {
       throw new PaymentError(ErrorMessages.INVALID_API_KEY);
     }
 
-    // Validate API key format and environment
     this.validateApiKey(apiKey);
     
-    // Ensure test keys in development and live keys in production
     const isTestKey = apiKey.startsWith('sk_test_');
     if (environment === 'production' && isTestKey) {
       throw new PaymentError('Test API key cannot be used in production');
@@ -78,9 +123,6 @@ export class DodoPaymentsService {
     };
   }
 
-  /**
-   * Get current API mode
-   */
   public getMode(): 'test' | 'live' {
     return this.config.isTestMode ? 'test' : 'live';
   }
@@ -92,7 +134,7 @@ export class DodoPaymentsService {
     return DodoPaymentsService.instance;
   }
 
-  private getHeaders() {
+  private getHeaders(): Record<string, string> {
     return {
       'Authorization': `Bearer ${this.config.apiKey}`,
       'Content-Type': 'application/json',
@@ -101,18 +143,11 @@ export class DodoPaymentsService {
     };
   }
 
-  /**
-   * Format price for Dodo Payments API
-   * Converts price to cents/smallest currency unit
-   */
   private formatPrice(price: number): number {
     return Math.round(price * 100);
   }
 
-  /**
-   * Create a subscription product
-   */
-  async createProduct(name: string, price: number, interval: 'month' | 'year') {
+  async createProduct(name: string, price: number, interval: 'month' | 'year'): Promise<SubscriptionResponse> {
     try {
       const response = await axios.post(
         `${DODO_API_BASE_URL}/products`,
@@ -124,16 +159,13 @@ export class DodoPaymentsService {
         },
         { headers: this.getHeaders() }
       );
-      return response.data;
+      return response.data as SubscriptionResponse;
     } catch (error) {
       console.error('Failed to create product:', error);
       throw error;
     }
   }
 
-  /**
-   * Create a subscription for a user with payment method
-   */
   async createSubscription(
     userId: string,
     price: number,
@@ -173,18 +205,16 @@ export class DodoPaymentsService {
         paymentLink: data.payment_link,
         clientSecret: data.client_secret
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to create subscription:', error);
-      if (error.response?.data?.message) {
-        throw new PaymentError(error.response.data.message);
+      if (isAxiosError(error) && error.response?.data) {
+        const errorData = error.response.data as DodoErrorResponse;
+        throw new PaymentError(errorData.message);
       }
       throw new PaymentError(ErrorMessages.SUBSCRIPTION_CREATION_FAILED);
     }
   }
 
-  /**
-   * Get a user's subscription status
-   */
   async getSubscriptionStatus(subscriptionId: string): Promise<DodoApiResponse> {
     try {
       const response = await axios.get(
@@ -192,37 +222,29 @@ export class DodoPaymentsService {
         { headers: this.getHeaders() }
       );
       return response.data as DodoApiResponse;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to get subscription status:', error);
       throw error;
     }
   }
 
-  /**
-   * Verify webhook signature using HMAC
-   * @throws {WebhookError} If signature verification fails
-   */
-  verifyWebhook(payload: any, signature: string, timestamp: string): boolean {
+  verifyWebhook(payload: WebhookPayload, signature: string, timestamp: string): boolean {
     try {
-      // Verify timestamp is within tolerance (5 minutes)
       const timestampMs = parseInt(timestamp, 10) * 1000;
       const now = Date.now();
-      const tolerance = 5 * 60 * 1000; // 5 minutes
+      const tolerance = 5 * 60 * 1000;
 
       if (Math.abs(now - timestampMs) > tolerance) {
         throw new WebhookError(ErrorMessages.WEBHOOK_SIGNATURE_INVALID + ': Timestamp expired');
       }
 
-      // Create the signature payload
       const signaturePayload = `${timestamp}.${JSON.stringify(payload)}`;
       
-      // Calculate expected signature using HMAC
       const expectedSignature = crypto
         .createHmac('sha256', this.config.webhookSecret)
         .update(signaturePayload)
         .digest('hex');
 
-      // Constant-time string comparison to prevent timing attacks
       const isValid = crypto.timingSafeEqual(
         Buffer.from(signature),
         Buffer.from(expectedSignature)
@@ -242,10 +264,6 @@ export class DodoPaymentsService {
     }
   }
 
-  /**
-   * Validate API key format and type
-   * @throws {PaymentError} If API key is invalid
-   */
   private validateApiKey(apiKey: string): void {
     if (!apiKey || typeof apiKey !== 'string') {
       throw new PaymentError(ErrorMessages.INVALID_API_KEY);
@@ -257,9 +275,6 @@ export class DodoPaymentsService {
     }
   }
 
-  /**
-   * Cancel a subscription
-   */
   async cancelSubscription(subscriptionId: string): Promise<void> {
     try {
       const response = await axios.post(
@@ -272,8 +287,12 @@ export class DodoPaymentsService {
       if (data.status === 'failed') {
         throw new PaymentError(data.message || ErrorMessages.SUBSCRIPTION_NOT_FOUND);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to cancel subscription:', error);
+      if (isAxiosError(error) && error.response?.data) {
+        const errorData = error.response.data as DodoErrorResponse;
+        throw new PaymentError(errorData.message);
+      }
       throw error;
     }
   }
