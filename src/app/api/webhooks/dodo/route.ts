@@ -1,36 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import DodoPaymentsService from '@/lib/dodo-service';
+import DodoPaymentsService, { WebhookPayload, DodoSubscriptionData, DodoPaymentData } from '@/lib/dodo-service';
 import UsageService from '@/lib/usage-service';
 import SubscriptionDBService from '@/lib/subscription-db-service';
 import { WebhookError } from '@/lib/errors/subscription-errors';
 import { SubscriptionTier } from '@/lib/subscription-config';
-
-interface DodoCustomer {
-  customer_id: string;
-  id: string;
-}
-
-interface DodoSubscriptionData {
-  customer: DodoCustomer;
-  subscription_id: string;
-  created_at: number;
-  next_billing_date?: number;
-  metadata?: {
-    tier?: SubscriptionTier;
-  };
-}
-
-interface DodoPaymentData {
-  id: string;
-  customer: DodoCustomer;
-}
-
-interface DodoWebhookPayload {
-  type: string;
-  data: DodoSubscriptionData;
-  business_id: string;
-  payment?: DodoPaymentData;
-}
 
 export async function POST(req: NextRequest) {
   if (req.method !== 'POST') {
@@ -47,7 +20,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const payload = await req.json() as DodoWebhookPayload;
+    const payload = await req.json() as WebhookPayload;
     const dodoService = DodoPaymentsService.getInstance();
     const dbService = SubscriptionDBService.getInstance();
     const usageService = UsageService.getInstance();
@@ -61,7 +34,7 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
-    const { type, data, business_id } = payload;
+    const { type, data, business_id, payment } = payload;
 
     if (!type || !data || !business_id) {
       return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
@@ -97,11 +70,11 @@ export async function POST(req: NextRequest) {
         break;
 
       case 'payment.succeeded':
-        await handlePaymentSucceeded(payload, dbService);
+        await handlePaymentSucceeded(payload);
         break;
 
       case 'payment.failed':
-        await handlePaymentFailed(payload, dbService);
+        await handlePaymentFailed(payload);
         break;
 
       default:
@@ -211,8 +184,8 @@ async function handleSubscriptionExpired(
 }
 
 async function handlePaymentSucceeded(
-  payload: DodoWebhookPayload,
-  dbService: SubscriptionDBService
+  payload: WebhookPayload
+  // dbService: SubscriptionDBService // dbService is not used here
 ) {
   if (payload.payment) {
     console.log('Payment succeeded:', payload.payment.id);
@@ -220,8 +193,8 @@ async function handlePaymentSucceeded(
 }
 
 async function handlePaymentFailed(
-  payload: DodoWebhookPayload,
-  dbService: SubscriptionDBService
+  payload: WebhookPayload
+  // dbService: SubscriptionDBService // dbService is not used here
 ) {
   if (payload.payment?.customer) {
     console.log('Payment failed for customer:', payload.payment.customer.id);

@@ -54,6 +54,13 @@ export interface CheckoutSession {
   clientSecret?: string;
 }
 
+export interface WebhookPayload {
+  type: string;
+  data: DodoSubscriptionData;
+  business_id: string;
+  payment?: DodoPaymentData;
+}
+
 export interface DodoCustomer {
   customer_id: string;
   id: string;
@@ -74,23 +81,20 @@ export interface DodoPaymentData {
   customer: DodoCustomer;
 }
 
-export interface WebhookPayload {
-  type: string;
-  data: DodoSubscriptionData;
-  business_id: string;
-  payment?: DodoPaymentData;
-}
-
-type AxiosError = Error & {
+interface AxiosError extends Error {
+  config: any;
+  code?: string;
+  request?: any;
   response?: {
-    data: unknown;
+    data: any;
     status: number;
     headers: Record<string, string>;
   };
-};
+  isAxiosError: boolean;
+}
 
-function isAxiosError(error: unknown): error is AxiosError {
-  return error instanceof Error && 'response' in error;
+function isAxiosError(error: any): error is AxiosError {
+  return (error as AxiosError).isAxiosError === true;
 }
 
 export class DodoPaymentsService {
@@ -149,7 +153,7 @@ export class DodoPaymentsService {
 
   async createProduct(name: string, price: number, interval: 'month' | 'year'): Promise<SubscriptionResponse> {
     try {
-      const response = await axios.post(
+      const response = await axios.post<SubscriptionResponse>(
         `${DODO_API_BASE_URL}/products`,
         {
           name,
@@ -159,9 +163,13 @@ export class DodoPaymentsService {
         },
         { headers: this.getHeaders() }
       );
-      return response.data as SubscriptionResponse;
-    } catch (error) {
+      return response.data;
+    } catch (error: any) {
       console.error('Failed to create product:', error);
+      if (isAxiosError(error) && error.response?.data) {
+        const errorData = error.response.data as DodoErrorResponse;
+        throw new PaymentError(errorData.message);
+      }
       throw error;
     }
   }
@@ -173,7 +181,7 @@ export class DodoPaymentsService {
     customer: Partial<CustomerInfo> = {}
   ): Promise<CheckoutSession> {
     try {
-      const response = await axios.post(
+      const response = await axios.post<DodoApiResponse>(
         `${DODO_API_BASE_URL}/subscriptions`,
         {
           billing,
@@ -193,7 +201,7 @@ export class DodoPaymentsService {
         { headers: this.getHeaders() }
       );
 
-      const data = response.data as DodoApiResponse;
+      const data = response.data;
       
       if (data.status === 'failed') {
         throw new PaymentError(data.message || ErrorMessages.PAYMENT_FAILED);
@@ -205,7 +213,7 @@ export class DodoPaymentsService {
         paymentLink: data.payment_link,
         clientSecret: data.client_secret
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create subscription:', error);
       if (isAxiosError(error) && error.response?.data) {
         const errorData = error.response.data as DodoErrorResponse;
@@ -217,11 +225,11 @@ export class DodoPaymentsService {
 
   async getSubscriptionStatus(subscriptionId: string): Promise<DodoApiResponse> {
     try {
-      const response = await axios.get(
+      const response = await axios.get<DodoApiResponse>(
         `${DODO_API_BASE_URL}/subscriptions/${subscriptionId}`,
         { headers: this.getHeaders() }
       );
-      return response.data as DodoApiResponse;
+      return response.data;
     } catch (error) {
       console.error('Failed to get subscription status:', error);
       throw error;
@@ -277,17 +285,17 @@ export class DodoPaymentsService {
 
   async cancelSubscription(subscriptionId: string): Promise<void> {
     try {
-      const response = await axios.post(
+      const response = await axios.post<DodoApiResponse>(
         `${DODO_API_BASE_URL}/subscriptions/${subscriptionId}/cancel`,
         {},
         { headers: this.getHeaders() }
       );
-      const data = response.data as DodoApiResponse;
+      const data = response.data;
       
       if (data.status === 'failed') {
         throw new PaymentError(data.message || ErrorMessages.SUBSCRIPTION_NOT_FOUND);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to cancel subscription:', error);
       if (isAxiosError(error) && error.response?.data) {
         const errorData = error.response.data as DodoErrorResponse;

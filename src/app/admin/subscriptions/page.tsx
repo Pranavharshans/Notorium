@@ -27,13 +27,13 @@ export default function AdminSubscriptionsPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [showToast]);
+  }, [fetchUsers, showToast]);
 
   const handleSimulateRenewal = async () => {
     try {
       setLoading(true);
       const dbService = SubscriptionDBService.getInstance();
-      const dodoService = AdminService.getInstance(); // Assuming AdminService can access Dodo
+      // const dodoService = AdminService.getInstance(); // Assuming AdminService can access Dodo
 
       // Iterate through all users and simulate renewal for Pro subscriptions
       for (const user of users) {

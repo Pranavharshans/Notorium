@@ -3,16 +3,13 @@
 import { useState, useEffect } from 'react';
 import { UserData, UserListFilters, AdminService } from '@/lib/admin-service';
 import { useToast } from '@/components/ui/toast';
+import { SubscriptionTier } from '@/lib/subscription-config';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<UserListFilters>({});
   const { showToast } = useToast();
-
-  useEffect(() => {
-    fetchUsers();
-  }, [showToast]);
 
   const fetchUsers = async () => {
     try {
@@ -27,6 +24,10 @@ export default function AdminUsersPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers, showToast]);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -75,7 +76,7 @@ export default function AdminUsersPage() {
             <select
               className="px-3 py-2 border rounded-md"
               value={filters.tier || ''}
-              onChange={(e) => setFilters({ ...filters, tier: e.target.value as any })}
+              onChange={(e) => setFilters({ ...filters, tier: e.target.value as SubscriptionTier | undefined })}
             >
               <option value="">All Tiers</option>
               <option value="free">Free</option>

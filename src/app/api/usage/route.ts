@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const usage = await usageService.getUserUsage(userId);
 
     // Get current subscription status
-    const dodoService = DodoPaymentsService.getInstance();
+    // const dodoService = DodoPaymentsService.getInstance();
     
     try {
       // Note: This will be implemented when we have subscription data in the database

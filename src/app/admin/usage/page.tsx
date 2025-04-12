@@ -46,7 +46,7 @@ export default function AdminUsagePage() {
 
   useEffect(() => {
     fetchUsageData();
-  }, [showToast]);
+  }, [fetchUsageData, showToast]);
 
   // Prepare data for the graphs
   const graphData = {
