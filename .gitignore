@@ -36,6 +36,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Payment and subscription data
+/stripe-webhook-events
+/payment-logs
+test-cards.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

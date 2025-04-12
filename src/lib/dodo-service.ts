@@ -10,16 +10,40 @@ export interface DodoConfig {
   isTestMode: boolean;
 }
 
-interface DodoApiResponse {
-  id: string;
-  url: string;
-  status?: 'succeeded' | 'requires_action' | 'failed';
+export interface BillingInfo {
+  city: string;
+  country: string;
+  state: string;
+  street: string;
+  zipcode: string;
+}
+
+export interface CustomerInfo {
+  customer_id: string;
+  email?: string;
+  name?: string;
+  phone_number?: string;
+}
+
+interface SubscriptionResponse {
+  client_secret: string;
+  customer: CustomerInfo;
+  metadata: Record<string, any>;
+  payment_link: string;
+  recurring_pre_tax_amount: number;
+  subscription_id: string;
+}
+
+interface DodoApiResponse extends SubscriptionResponse {
+  status?: 'succeeded' | 'requires_action' | 'failed' | 'pending';
   message?: string;
 }
 
 export interface CheckoutSession {
   id: string;
   url: string;
+  paymentLink?: string;
+  clientSecret?: string;
 }
 
 export class DodoPaymentsService {
@@ -113,33 +137,25 @@ export class DodoPaymentsService {
   async createSubscription(
     userId: string,
     price: number,
-    paymentMethodId: string,
-    paymentIntentId: string
+    billing: BillingInfo,
+    customer: Partial<CustomerInfo> = {}
   ): Promise<CheckoutSession> {
     try {
       const response = await axios.post(
         `${DODO_API_BASE_URL}/subscriptions`,
         {
-          customer_id: userId,
-          payment_method: paymentMethodId,
-          payment_intent: paymentIntentId,
-          line_items: [{
-            price_data: {
-              currency: 'USD',
-              product_data: {
-                name: 'Pro Subscription',
-                description: 'Access to premium features'
-              },
-              unit_amount: this.formatPrice(price),
-              recurring: {
-                interval: 'month'
-              }
-            },
-            quantity: 1
-          }],
+          billing,
+          customer: {
+            customer_id: userId,
+            ...customer
+          },
+          payment_link: true,
+          return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/subscription`,
+          product_id: process.env.DODO_PRO_PRODUCT_ID,
+          quantity: 1,
           metadata: {
-            userId,
-            tier: 'pro'
+            tier: 'pro',
+            userId
           }
         },
         { headers: this.getHeaders() }
@@ -147,13 +163,15 @@ export class DodoPaymentsService {
 
       const data = response.data as DodoApiResponse;
       
-      if (data.status === 'requires_action') {
-        throw new PaymentError(ErrorMessages.PAYMENT_FAILED);
+      if (data.status === 'failed') {
+        throw new PaymentError(data.message || ErrorMessages.PAYMENT_FAILED);
       }
 
       return {
-        id: data.id,
-        url: data.url
+        id: data.subscription_id,
+        url: data.payment_link,
+        paymentLink: data.payment_link,
+        clientSecret: data.client_secret
       };
     } catch (error: any) {
       console.error('Failed to create subscription:', error);

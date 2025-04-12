@@ -10,11 +10,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { userId, paymentMethodId } = await req.json();
+    const { userId, billing, customer } = await req.json();
 
-    if (!userId || !paymentMethodId) {
+    if (!userId || !billing) {
       return NextResponse.json(
         { error: ErrorMessages.INVALID_REQUEST_PARAMETERS },
+        { status: 400 }
+      );
+    }
+
+    // Validate billing information
+    if (!billing.city || !billing.country || !billing.state || !billing.street || !billing.zipcode) {
+      return NextResponse.json(
+        { error: 'Complete billing information is required' },
         { status: 400 }
       );
     }
@@ -33,32 +41,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create subscription checkout session
+    // Create subscription with payment link
     const proTier = SUBSCRIPTION_TIERS.pro;
-
-    // Create payment intent first
-    const paymentIntent = {
-      id: `pi_${Date.now()}`,
-      amount: (proTier.price || 0) * 100, // Convert to cents
-      currency: 'USD',
-      status: 'requires_confirmation' as const,
-      paymentMethod: paymentMethodId
-    };
-
-    // Store payment intent
-    await dbService.createPaymentIntent(userId, paymentIntent);
-
-    // Create subscription
     const session = await dodoService.createSubscription(
       userId,
       proTier.price || 0,
-      paymentMethodId,
-      paymentIntent.id
+      billing,
+      customer // Optional customer info
     );
 
     return NextResponse.json({
-      checkoutUrl: session.url,
-      sessionId: session.id
+      checkoutUrl: session.paymentLink || session.url,
+      sessionId: session.id,
+      clientSecret: session.clientSecret
     });
   } catch (error: any) {
     console.error('Failed to create subscription:', error);
@@ -88,14 +83,12 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get('userId');
-if (!userId) {
-  return NextResponse.json(
-    { error: ErrorMessages.USER_NOT_FOUND },
-    { status: 400 }
-  );
-}
 
-// Get payment history along with subscription status
+  if (!userId) {
+    return NextResponse.json(
+      { error: ErrorMessages.USER_NOT_FOUND },
+      { status: 400 }
+    );
   }
 
   try {

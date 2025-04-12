@@ -39,7 +39,8 @@ interface UserSubscription {
   subscriptionId: string | null;
   startDate: Date;
   endDate: Date | null;
-  status: 'active' | 'cancelled' | 'expired';
+  status: 'pending' | 'active' | 'on_hold' | 'paused' | 'cancelled' | 'failed' | 'expired';
+  metadata?: Record<string, any>;
 }
 
 interface UserUsage {

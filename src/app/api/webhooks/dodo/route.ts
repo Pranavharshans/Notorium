@@ -34,22 +34,41 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
+    // Validate webhook payload
+    const { type, data, business_id } = payload;
+
+    if (!type || !data || !business_id) {
+      return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
+    }
+
     // Handle different webhook events
-    switch (payload.type) {
+    switch (type) {
       case 'subscription.active':
-        await handleSubscriptionActive(payload, dbService);
+        await handleSubscriptionActive(data, dbService);
+        break;
+
+      case 'subscription.on_hold':
+        await handleSubscriptionOnHold(data, dbService);
         break;
 
       case 'subscription.cancelled':
-        await handleSubscriptionCancelled(payload, dbService);
+        await handleSubscriptionCancelled(data, dbService);
         break;
 
       case 'subscription.renewed':
-        await handleSubscriptionRenewed(payload, dbService, usageService);
+        await handleSubscriptionRenewed(data, dbService, usageService);
         break;
 
       case 'subscription.failed':
-        await handleSubscriptionFailed(payload, dbService);
+        await handleSubscriptionFailed(data, dbService);
+        break;
+
+      case 'subscription.paused':
+        await handleSubscriptionPaused(data, dbService);
+        break;
+
+      case 'subscription.expired':
+        await handleSubscriptionExpired(data, dbService);
         break;
 
       case 'payment.succeeded':
@@ -75,58 +94,96 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleSubscriptionActive(
-  payload: any,
+  data: any,
   dbService: SubscriptionDBService
 ) {
-  const { customer, subscription } = payload;
-  await dbService.updateSubscription(customer.id, {
-    tier: 'pro',
-    subscriptionId: subscription.id,
+  const { customer, subscription_id, created_at, next_billing_date, metadata } = data;
+  await dbService.updateSubscription(customer.customer_id, {
+    tier: metadata?.tier || 'pro',
+    subscriptionId: subscription_id,
     status: 'active',
-    startDate: new Date(subscription.current_period_start * 1000),
-    endDate: new Date(subscription.current_period_end * 1000)
+    startDate: new Date(created_at * 1000),
+    endDate: next_billing_date ? new Date(next_billing_date * 1000) : null
+  });
+}
+
+async function handleSubscriptionOnHold(
+  data: any,
+  dbService: SubscriptionDBService
+) {
+  const { customer, subscription_id } = data;
+  await dbService.updateSubscription(customer.customer_id, {
+    status: 'on_hold',
+    subscriptionId: subscription_id
   });
 }
 
 async function handleSubscriptionCancelled(
-  payload: any,
+  data: any,
   dbService: SubscriptionDBService
 ) {
-  const { customer, subscription } = payload;
-  await dbService.updateSubscription(customer.id, {
+  const { customer, subscription_id } = data;
+  await dbService.updateSubscription(customer.customer_id, {
     tier: 'free',
     status: 'cancelled',
-    endDate: new Date(subscription.canceled_at * 1000)
+    endDate: new Date(),
+    subscriptionId: subscription_id
   });
 }
 
 async function handleSubscriptionRenewed(
-  payload: any,
+  data: any,
   dbService: SubscriptionDBService,
   usageService: UsageService
 ) {
-  const { customer, subscription } = payload;
+  const { customer, subscription_id, next_billing_date } = data;
   
   // Update subscription dates
-  await dbService.updateSubscription(customer.id, {
+  await dbService.updateSubscription(customer.customer_id, {
     status: 'active',
-    startDate: new Date(subscription.current_period_start * 1000),
-    endDate: new Date(subscription.current_period_end * 1000)
+    startDate: new Date(),
+    endDate: next_billing_date ? new Date(next_billing_date * 1000) : null,
+    subscriptionId: subscription_id
   });
 
   // Reset usage counters for new billing period
-  await usageService.resetMonthlyUsage(customer.id);
+  await usageService.resetMonthlyUsage(customer.customer_id);
 }
 
 async function handleSubscriptionFailed(
-  payload: any,
+  data: any,
   dbService: SubscriptionDBService
 ) {
-  const { customer, subscription } = payload;
-  await dbService.updateSubscription(customer.id, {
+  const { customer, subscription_id } = data;
+  await dbService.updateSubscription(customer.customer_id, {
+    status: 'failed',
+    tier: 'free',
+    endDate: new Date(),
+    subscriptionId: subscription_id
+  });
+}
+
+async function handleSubscriptionPaused(
+  data: any,
+  dbService: SubscriptionDBService
+) {
+  const { customer, subscription_id } = data;
+  await dbService.updateSubscription(customer.customer_id, {
+    status: 'paused',
+    subscriptionId: subscription_id
+  });
+}
+
+async function handleSubscriptionExpired(
+  data: any,
+  dbService: SubscriptionDBService
+) {
+  const { customer, subscription_id } = data;
+  await dbService.updateSubscription(customer.customer_id, {
     status: 'expired',
     tier: 'free',
-    endDate: new Date()
+    endDate: new Date(),
+    subscriptionId: subscription_id
   });
 }
 

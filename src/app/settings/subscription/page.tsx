@@ -6,6 +6,7 @@ import PricingCard from '@/components/subscription/PricingCard';
 import UsageDisplay from '@/components/subscription/UsageDisplay';
 import CancellationModal from '@/components/subscription/CancellationModal';
 import { SubscriptionTier } from '@/lib/subscription-config';
+import { BillingInfo } from '@/lib/dodo-service';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { useToast } from '@/components/ui/toast';
 import { useSubscriptionRequest } from '@/hooks/useApiRequest';
@@ -37,14 +38,22 @@ export default function SubscriptionPage() {
     loading: upgradeLoading,
     execute: executeUpgrade
   } = useSubscriptionRequest(
-    async () => {
+    async (billingInfo: BillingInfo) => {
       const response = await fetch('/api/subscription/upgrade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({
+          userId,
+          billing: billingInfo,
+          customer: {} // Optional customer info
+        })
       });
-      if (!response.ok) throw await response.json();
-      return response.json();
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to upgrade subscription');
+      }
+      const data = await response.json();
+      return { checkoutUrl: data.checkoutUrl };
     },
     {
       onSuccess: (data) => {
@@ -97,14 +106,14 @@ export default function SubscriptionPage() {
       </div>
     );
   }
-
-  const handleUpgrade = async () => {
-    try {
-      await executeUpgrade();
-    } catch (error) {
-      // Error is handled by the hook
-    }
-  };
+const handleUpgrade = async (billingInfo: BillingInfo) => {
+  try {
+    return await executeUpgrade(billingInfo);
+  } catch (error) {
+    // Error is handled by the hook
+    throw error;
+  }
+};
 
   const handleLimitReached = () => {
     showToast('Usage limit reached. Please upgrade to continue.', 'info');
@@ -165,12 +174,16 @@ export default function SubscriptionPage() {
               )}
             </div>
           </section>
-
           {/* Loading State */}
           {(subscriptionLoading || upgradeLoading) && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-              <div className="bg-white p-4 rounded-md">
-                <p>Please wait...</p>
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg shadow-xl">
+                <div className="flex items-center space-x-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <p className="text-lg">
+                    {upgradeLoading ? 'Processing payment...' : 'Loading...'}
+                  </p>
+                </div>
               </div>
             </div>
           )}
