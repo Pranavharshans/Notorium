@@ -1,9 +1,10 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShimmerButton } from './shimmer-button';
 import { X } from 'lucide-react';
+
 
 interface QuotaWarningModalProps {
   type: 'recording' | 'enhance';
@@ -21,6 +22,44 @@ export function QuotaWarningModal({
   onClose,
 }: QuotaWarningModalProps) {
   const router = useRouter();
+
+  // Handle cleanup when the modal closes
+  useEffect(() => {
+    // Lock body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    
+    // Handle escape key
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    // Clean up on unmount or when modal closes
+    return () => {
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [onClose]);
+  useEffect(() => {
+    // Lock body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    
+    // Handle escape key
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      // Clean up
+      document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [onClose]);
 
   const title = {
     warning: {
@@ -45,11 +84,23 @@ export function QuotaWarningModal({
   }[mode][type];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div
+        className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
-          onClick={onClose}
-          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="absolute right-4 top-4 z-10 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 cursor-pointer"
         >
           <X size={20} />
         </button>
@@ -90,7 +141,10 @@ export function QuotaWarningModal({
               </div>
             )}
 
-            <h3 className="text-lg font-semibold text-center text-gray-900 dark:text-white">
+            <h3
+              id="modal-title"
+              className="text-lg font-semibold text-center text-gray-900 dark:text-white"
+            >
               {title}
             </h3>
             <p className="mt-2 text-center text-gray-600 dark:text-gray-400">

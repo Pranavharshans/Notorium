@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { QuotaFeature, QuotaWarningType } from "@/components/ui/usage-display";
 
 const UsageDisplay = dynamic(() => import("@/components/ui/usage-display").then(mod => mod.UsageDisplay), { ssr: false });
-const QuotaWarningModal = dynamic(() => import("@/components/ui/quota-warning-modal").then(mod => mod.QuotaWarningModal), { ssr: false });
+const QuotaWarningModal = dynamic(() => import("@/components/ui/quota-warning-modal").then(mod => mod.QuotaWarningModal), {
+  ssr: false,
+  loading: () => null,
+});
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -18,6 +21,10 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     current: number;
     limit: number;
   } | null>(null);
+  const handleCloseModal = useCallback(() => {
+    setQuotaWarning(null);
+  }, []);
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -34,7 +41,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
           mode={quotaWarning.type}
           current={quotaWarning.current}
           limit={quotaWarning.limit}
-          onClose={() => setQuotaWarning(null)}
+          onClose={handleCloseModal}
         />
       )}
       {children}

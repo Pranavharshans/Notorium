@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { quotaService } from '@/lib/quota-service';
+import { debounce } from 'lodash';
 
 export type QuotaFeature = 'recording' | 'enhance';
 export type QuotaWarningType = 'warning' | 'limit';
@@ -30,7 +31,18 @@ interface UsageDisplayProps {
 export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
   const { user } = useAuth();
   const [usage, setUsage] = useState<UsageStats | null>(null);
+  const resetWarningState = useCallback(() => {
+    setHasShownWarning(false);
+  }, []);
   const [loading, setLoading] = useState(true);
+  const [hasShownWarning, setHasShownWarning] = useState(false);
+
+  const debouncedWarning = useCallback(
+    debounce((type: QuotaWarningType, feature: QuotaFeature, current: number, limit: number) => {
+      onQuotaWarning(type, feature, current, limit);
+    }, 1000),
+    [onQuotaWarning]
+  );
 
   useEffect(() => {
     async function fetchUsage() {
@@ -42,26 +54,30 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
           quotaService.checkEnhanceQuota(user.uid),
         ]);
 
-        // Check recording quota warning levels
-        if (recordingQuota.percentageUsed >= 80) {
-          const tierLimits = quotaService.getQuotaLimits(recordingQuota.subscriptionStatus);
-          onQuotaWarning(
-            recordingQuota.percentageUsed >= 100 ? 'limit' : 'warning',
-            'recording',
-            Math.floor(tierLimits.recordingMinutes - recordingQuota.minutesRemaining),
-            tierLimits.recordingMinutes
-          );
-        }
-
-        // Check enhance quota warning levels
-        if (enhanceQuota.percentageUsed >= 80) {
-          const tierLimits = quotaService.getQuotaLimits(enhanceQuota.subscriptionStatus);
-          onQuotaWarning(
-            enhanceQuota.percentageUsed >= 100 ? 'limit' : 'warning',
-            'enhance',
-            tierLimits.enhanceNotes - enhanceQuota.enhancesRemaining,
-            tierLimits.enhanceNotes
-          );
+        // Only show warning if we haven't shown one yet
+        if (!hasShownWarning) {
+          // Check recording quota warning levels
+          if (recordingQuota.percentageUsed >= 80) {
+            const tierLimits = quotaService.getQuotaLimits(recordingQuota.subscriptionStatus);
+            setHasShownWarning(true);
+            debouncedWarning(
+              recordingQuota.percentageUsed >= 100 ? 'limit' : 'warning',
+              'recording',
+              Math.floor(tierLimits.recordingMinutes - recordingQuota.minutesRemaining),
+              tierLimits.recordingMinutes
+            );
+          }
+          // Check enhance quota warning levels
+          else if (enhanceQuota.percentageUsed >= 80) {
+            const tierLimits = quotaService.getQuotaLimits(enhanceQuota.subscriptionStatus);
+            setHasShownWarning(true);
+            debouncedWarning(
+              enhanceQuota.percentageUsed >= 100 ? 'limit' : 'warning',
+              'enhance',
+              tierLimits.enhanceNotes - enhanceQuota.enhancesRemaining,
+              tierLimits.enhanceNotes
+            );
+          }
         }
 
         setUsage({
@@ -82,10 +98,14 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
     }
 
     fetchUsage();
-    // Set up periodic refresh
-    const interval = setInterval(fetchUsage, 60000); // Check every minute
-    return () => clearInterval(interval);
-  }, [user, onQuotaWarning]);
+
+    // Listen for reset events
+    window.addEventListener('resetQuotaWarning', resetWarningState);
+    return () => {
+      window.removeEventListener('resetQuotaWarning', resetWarningState);
+      debouncedWarning.cancel(); // Cancel any pending warnings
+    };
+  }, [user, debouncedWarning, hasShownWarning, resetWarningState]);
 
   if (loading || !usage) {
     return (
