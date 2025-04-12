@@ -11,7 +11,7 @@ export default function AdminSubscriptionsPage() {
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
-  const fetchUsers = async () => {
+  const fetchUsers = React.useCallback(async () => {
     try {
       setLoading(true);
       const adminService = AdminService.getInstance();
@@ -23,11 +23,11 @@ export default function AdminSubscriptionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers, showToast]);
+  }, [fetchUsers]);
 
   const handleSimulateRenewal = async () => {
     try {

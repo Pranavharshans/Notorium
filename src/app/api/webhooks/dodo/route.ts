@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import DodoPaymentsService, { WebhookPayload, DodoSubscriptionData, DodoPaymentData } from '@/lib/dodo-service';
+import DodoPaymentsService, { WebhookPayload, DodoSubscriptionData } from '@/lib/dodo-service';
 import UsageService from '@/lib/usage-service';
 import SubscriptionDBService from '@/lib/subscription-db-service';
 import { WebhookError } from '@/lib/errors/subscription-errors';
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       throw error;
     }
 
-    const { type, data, business_id, payment } = payload;
+    const { type, data, business_id } = payload;
 
     if (!type || !data || !business_id) {
       return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });

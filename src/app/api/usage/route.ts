@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import UsageService from '@/lib/usage-service';
-import DodoPaymentsService from '@/lib/dodo-service';
 
 export async function GET(req: NextRequest) {
   try {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import UsageStatsGraph from '@/components/admin/UsageStatsGraph';
 import AdminActions from '@/components/admin/AdminActions';
@@ -21,7 +21,7 @@ export default function AdminUsagePage() {
   const [usageData, setUsageData] = useState<UserUsageData[]>([]);
   const { showToast } = useToast();
 
-  const fetchUsageData = async () => {
+  const fetchUsageData = React.useCallback(async () => {
     try {
       setLoading(true);
       const adminService = AdminService.getInstance();
@@ -42,11 +42,11 @@ export default function AdminUsagePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchUsageData();
-  }, [fetchUsageData, showToast]);
+  }, [fetchUsageData]);
 
   // Prepare data for the graphs
   const graphData = {

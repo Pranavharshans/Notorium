@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserData, UserListFilters, AdminService } from '@/lib/admin-service';
 import { useToast } from '@/components/ui/toast';
 import { SubscriptionTier } from '@/lib/subscription-config';
@@ -11,7 +11,7 @@ export default function AdminUsersPage() {
   const [filters, setFilters] = useState<UserListFilters>({});
   const { showToast } = useToast();
 
-  const fetchUsers = async () => {
+  const fetchUsers = React.useCallback(async () => {
     try {
       setLoading(true);
       const adminService = AdminService.getInstance();
@@ -23,11 +23,11 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, showToast]);
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers, showToast]);
+  }, [fetchUsers]);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {

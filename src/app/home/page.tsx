@@ -18,7 +18,6 @@ export default function HomePage() {
   // State
   const [currentView, setCurrentView] = useState('notes');
   const [generatedNotes, setGeneratedNotes] = useState<string | null>(null);
-  const [provider, setProvider] = useState<AIProvider>('gemini');
   const [notesError, setNotesError] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -26,7 +25,6 @@ export default function HomePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [notesListRefreshKey, setNotesListRefreshKey] = useState(0);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
   const [showEnhanceOptions, setShowEnhanceOptions] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([]);
@@ -80,28 +78,6 @@ export default function HomePage() {
         ? prev.filter(cat => cat !== category)
         : [...prev, category]
     );
-  };
-
-  const handleDeleteNote = async () => {
-    if (!selectedNoteId) {
-      console.error("Cannot delete: selectedNoteId is null.");
-      setNotesError("Could not delete note: ID missing.");
-      setIsDeleting(false);
-      return;
-    }
-
-    try {
-      await notesService.deleteNote(selectedNoteId);
-      setSelectedNoteId(null);
-      setSelectedNote(null);
-      setIsDeleting(false);
-      refreshNotes();
-      setNotesError(null);
-    } catch (err) {
-      console.error("Failed to delete note:", err);
-      setNotesError("Failed to delete note. Please try again.");
-      setIsDeleting(false);
-    }
   };
 
   const refreshNotes = () => {
