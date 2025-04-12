@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { UserData, UserListFilters, AdminService } from '@/lib/admin-service';
 import { useToast } from '@/components/ui/toast';
-import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserData[]>([]);
@@ -13,7 +12,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [showToast]);
 
   const fetchUsers = async () => {
     try {
@@ -137,10 +136,8 @@ export default function AdminUsersPage() {
               {users.map((user) => (
                 <tr key={user.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="font-medium text-gray-900">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
-                    </div>
+                    <div className="font-medium text-gray-900">{user.name}</div>
+                    <div className="text-sm text-gray-500">{user.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col gap-1">

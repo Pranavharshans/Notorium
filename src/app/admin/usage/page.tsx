@@ -21,10 +21,6 @@ export default function AdminUsagePage() {
   const [usageData, setUsageData] = useState<UserUsageData[]>([]);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    fetchUsageData();
-  }, []);
-
   const fetchUsageData = async () => {
     try {
       setLoading(true);
@@ -47,6 +43,10 @@ export default function AdminUsagePage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUsageData();
+  }, [showToast]);
 
   // Prepare data for the graphs
   const graphData = {

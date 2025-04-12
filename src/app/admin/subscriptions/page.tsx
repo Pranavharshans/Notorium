@@ -11,10 +11,6 @@ export default function AdminSubscriptionsPage() {
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -28,6 +24,10 @@ export default function AdminSubscriptionsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [showToast]);
 
   const handleSimulateRenewal = async () => {
     try {
@@ -54,7 +54,7 @@ export default function AdminSubscriptionsPage() {
       }
 
       showToast('Simulated renewal for all Pro subscriptions', 'success');
-      fetchUsers(); // Refresh user list
+      fetchUsers();
     } catch (error) {
       console.error('Failed to simulate renewal:', error);
       showToast('Failed to simulate renewal', 'error');
@@ -68,7 +68,7 @@ export default function AdminSubscriptionsPage() {
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl font-bold mb-8">Subscriptions</h1>
 
-        <div className="mb-4">
+      <div className="mb-4">
           <button
             onClick={handleSimulateRenewal}
             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"

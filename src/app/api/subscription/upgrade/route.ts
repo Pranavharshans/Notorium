@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       sessionId: session.id,
       clientSecret: session.clientSecret
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create subscription:', error);
 
     // Handle specific error types
@@ -67,11 +67,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Log detailed error for debugging
-    console.error('Subscription creation error details:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack
-    });
+    if (error instanceof Error) {
+      console.error('Subscription creation error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+    } else {
+      console.error('Unknown subscription creation error:', error);
+    }
 
     return NextResponse.json(
       { error: ErrorMessages.SUBSCRIPTION_CREATION_FAILED },
@@ -107,15 +110,18 @@ export async function GET(req: NextRequest) {
       },
       paymentHistory: paymentHistory.slice(0, 5) // Return last 5 payments
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get subscription status:', error);
 
     // Log detailed error for debugging
-    console.error('Subscription status error details:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack
-    });
+    if (error instanceof Error) {
+      console.error('Subscription status error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+    } else {
+      console.error('Unknown subscription status error:', error);
+    }
 
     return NextResponse.json(
       { error: ErrorMessages.SUBSCRIPTION_NOT_FOUND },
