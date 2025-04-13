@@ -4,6 +4,7 @@ import { Mic } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { recordingService } from "@/lib/recording-service";
+import { useAuth } from "@/context/auth-context";
 
 interface AIVoiceInputProps {
   onStart?: () => void;
@@ -28,9 +29,14 @@ export function AIVoiceInput({
   const [isDemo, setIsDemo] = useState(demoMode);
   const [isPaused, setIsPaused] = useState(false);
 
+  const { user } = useAuth();
+
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    if (user) {
+      recordingService.setUserId(user.uid);
+    }
+  }, [user]);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
@@ -85,6 +91,9 @@ export function AIVoiceInput({
 
     try {
       if (!isRecording) {
+        if (!user) {
+          throw new Error("You must be signed in to record");
+        }
         await recordingService.startRecording();
         setIsRecording(true);
         setIsPaused(false);
