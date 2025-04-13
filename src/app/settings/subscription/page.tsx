@@ -28,7 +28,10 @@ export default function SubscriptionPage() {
     execute: fetchSubscriptionStatus
   } = useSubscriptionRequest(async () => {
     const response = await fetch(`/api/subscription/upgrade?userId=${userId}`);
-    if (!response.ok) throw await response.json();
+    if (!response.ok) {
+      const error = await response.json();
+      throw error;
+    }
     return response.json();
   });
 
@@ -43,21 +46,31 @@ export default function SubscriptionPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId })
       });
-      if (!response.ok) throw await response.json();
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw error;
+      }
       return response.json();
     },
     {
       onSuccess: (data) => {
-        window.location.href = data.checkoutUrl;
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+        } else {
+          showToast('Failed to get checkout URL', 'error');
+        }
       },
       onError: (error) => {
-        showToast(error.message, 'error');
+        showToast(error.message || 'Failed to process payment', 'error');
       }
     }
   );
 
   useEffect(() => {
-    fetchSubscriptionStatus();
+    fetchSubscriptionStatus().catch(error => {
+      console.error('Failed to fetch subscription status:', error);
+    });
   }, []);
 
   useEffect(() => {
@@ -71,11 +84,16 @@ export default function SubscriptionPage() {
     if (sessionId) {
       showToast('Subscription updated successfully!', 'success');
       setCurrentTier('pro');
+      fetchSubscriptionStatus().catch(error => {
+        console.error('Failed to refresh subscription status:', error);
+      });
     }
   }, [searchParams]);
 
   const handleSubscriptionCancelled = () => {
-    fetchSubscriptionStatus(); // Refresh subscription status
+    fetchSubscriptionStatus().catch(error => {
+      console.error('Failed to refresh subscription status:', error);
+    });
     setShowCancellationModal(false);
   };
 
@@ -102,7 +120,8 @@ export default function SubscriptionPage() {
     try {
       await executeUpgrade();
     } catch (error) {
-      // Error is handled by the hook
+      // Error is handled by the hook onError callback
+      console.error('Upgrade failed:', error);
     }
   };
 

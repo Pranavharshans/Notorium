@@ -1,131 +1,91 @@
-import { NextRequest, NextResponse } from 'next/server';
-import DodoPaymentsService from '@/lib/dodo-service';
-import SubscriptionDBService from '@/lib/subscription-db-service';
-import { SUBSCRIPTION_TIERS } from '@/lib/subscription-config';
-import { ErrorMessages, PaymentError } from '@/lib/errors/subscription-errors';
+import { NextResponse } from "next/server";
+import { dodopayments } from "@/lib/dodo-payments/init-sdk";
+import { DODO_CONFIG } from "@/lib/dodo-payments/config";
+import { ErrorMessages } from "@/lib/errors/subscription-errors";
+import type { DodoSubscriptionStatus } from '@/lib/dodo-payments/init-sdk';
 
-export async function POST(req: NextRequest) {
-  if (req.method !== 'POST') {
-    return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+export async function POST(req: Request) {
+  if (req.method !== "POST") {
+    return NextResponse.json(
+      { error: "Method not allowed" },
+      { status: 405 }
+    );
   }
 
   try {
-    const { userId, paymentMethodId } = await req.json();
+    const { userId } = await req.json();
 
-    if (!userId || !paymentMethodId) {
+    if (!userId) {
       return NextResponse.json(
         { error: ErrorMessages.INVALID_REQUEST_PARAMETERS },
         { status: 400 }
       );
     }
 
-    const dodoService = DodoPaymentsService.getInstance();
-    const dbService = SubscriptionDBService.getInstance();
-
-    // Get current subscription status
-    const currentSubscription = await dbService.getSubscription(userId);
-
-    // Don't create new subscription if user is already on pro tier
-    if (currentSubscription?.tier === 'pro' && currentSubscription?.status === 'active') {
-      return NextResponse.json(
-        { error: 'User already has an active pro subscription' },
-        { status: 400 }
-      );
-    }
-
-    // Create subscription checkout session
-    const proTier = SUBSCRIPTION_TIERS.pro;
-
-    // Create payment intent first
-    const paymentIntent = {
-      id: `pi_${Date.now()}`,
-      amount: (proTier.price || 0) * 100, // Convert to cents
-      currency: 'USD',
-      status: 'requires_confirmation' as const,
-      paymentMethod: paymentMethodId
-    };
-
-    // Store payment intent
-    await dbService.createPaymentIntent(userId, paymentIntent);
-
-    // Create subscription
-    const session = await dodoService.createSubscription(
-      userId,
-      proTier.price || 0,
-      paymentMethodId,
-      paymentIntent.id
-    );
+    // Create subscription with payment link
+    const response = await dodopayments.subscriptions.create({
+      billing: {
+        city: "City",
+        country: "US",
+        state: "State",
+        street: "Street",
+        zipcode: "12345"
+      },
+      customer: {
+        email: "user@example.com", // This should come from your user data
+        name: "Test User" // Required by Dodo API
+      },
+      payment_link: true,
+      product_id: DODO_CONFIG.PRODUCTS.PRO,
+      quantity: 1,
+      return_url: `${DODO_CONFIG.BASE_URL}/settings/subscription?session_id={CHECKOUT_SESSION_ID}`,
+      metadata: {
+        userId,
+        tier: "pro"
+      }
+    });
 
     return NextResponse.json({
-      checkoutUrl: session.url,
-      sessionId: session.id
+      checkoutUrl: response.payment_link,
+      sessionId: response.subscription_id
     });
   } catch (error: any) {
-    console.error('Failed to create subscription:', error);
-
-    // Handle specific error types
-    if (error instanceof PaymentError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
-    }
-
-    // Log detailed error for debugging
-    console.error('Subscription creation error details:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack
-    });
-
+    console.error("Failed to create subscription:", error);
     return NextResponse.json(
-      { error: ErrorMessages.SUBSCRIPTION_CREATION_FAILED },
+      { error: error.message || ErrorMessages.SUBSCRIPTION_CREATION_FAILED },
       { status: 500 }
     );
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const userId = searchParams.get('userId');
-if (!userId) {
-  return NextResponse.json(
-    { error: ErrorMessages.USER_NOT_FOUND },
-    { status: 400 }
-  );
-}
+  const userId = searchParams.get("userId");
 
-// Get payment history along with subscription status
+  if (!userId) {
+    return NextResponse.json(
+      { error: ErrorMessages.USER_NOT_FOUND },
+      { status: 400 }
+    );
   }
 
   try {
-    const dbService = SubscriptionDBService.getInstance();
-    const [subscription, paymentHistory] = await Promise.all([
-      dbService.getSubscription(userId),
-      dbService.getPaymentHistory(userId)
-    ]);
+    // Get user's subscriptions
+    const subscriptions = await dodopayments.subscriptions.list();
+    const userSubscription = subscriptions.items.find(
+      sub => sub.metadata?.userId === userId
+    );
 
     return NextResponse.json({
-      subscription: {
-        tier: subscription?.tier || 'free',
-        status: subscription?.status || 'active',
-        subscriptionId: subscription?.subscriptionId || null,
-        endDate: subscription?.endDate || null
-      },
-      paymentHistory: paymentHistory.slice(0, 5) // Return last 5 payments
+      tier: userSubscription?.status === "active" ? "pro" : "free",
+      status: userSubscription?.status || "inactive",
+      subscriptionId: userSubscription?.subscription_id || null,
+      endDate: userSubscription?.current_period_end || null
     });
   } catch (error: any) {
-    console.error('Failed to get subscription status:', error);
-
-    // Log detailed error for debugging
-    console.error('Subscription status error details:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack
-    });
-
+    console.error("Failed to get subscription status:", error);
     return NextResponse.json(
-      { error: ErrorMessages.SUBSCRIPTION_NOT_FOUND },
+      { error: error.message || ErrorMessages.SUBSCRIPTION_NOT_FOUND },
       { status: 500 }
     );
   }

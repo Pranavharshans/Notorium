@@ -7,7 +7,7 @@ import { Note } from "@/types/note";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { NotesSidebar } from "@/components/layout/NotesSidebar";
 import { MainContent } from "@/components/layout/MainContent";
-import { ClientLayout } from "@/components/layout/ClientLayout";
+import AppWrapper from "@/components/layout/AppWrapper";
 import { notesService } from "@/lib/notes-service";
 import { aiProviderService, AIProvider } from "@/lib/ai-provider-service";
 
@@ -115,8 +115,8 @@ export default function HomePage() {
   if (!user) return null;
 
   return (
-    <ClientLayout>
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 divide-x divide-gray-200 dark:divide-gray-700">
+    <AppWrapper>
+      <div className="flex divide-x divide-gray-200 dark:divide-gray-700">
         <Sidebar
           currentView={currentView}
           onViewChange={(view) => {
@@ -161,6 +161,6 @@ export default function HomePage() {
           user={user}
         />
       </div>
-    </ClientLayout>
+    </AppWrapper>
   );
 }

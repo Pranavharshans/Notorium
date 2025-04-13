@@ -10,12 +10,14 @@ export interface TierConfig {
   name: string;
   price: number | null; // null for free tier
   limits: TierLimits;
+  productId: string; // Dodo Payments product ID
 }
 
 export const SUBSCRIPTION_TIERS: Record<SubscriptionTier, TierConfig> = {
   free: {
     name: 'Free',
     price: null,
+    productId: 'free_tier', // dummy product ID for free tier
     limits: {
       recordingTimeMinutes: 10,
       aiActionsPerMonth: 3,
@@ -25,6 +27,7 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTier, TierConfig> = {
   pro: {
     name: 'Pro',
     price: 9.99,
+    productId: process.env.DODO_PRO_PRODUCT_ID || 'prod_test_dodopayments', // Default test product ID
     limits: {
       recordingTimeMinutes: 1200, // 20 hours
       aiActionsPerMonth: 50,

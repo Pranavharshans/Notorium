@@ -34,7 +34,8 @@ export function useApiRequest<T = any>(
         const errorResponse = handleApiError(error);
         setState({ data: null, error: errorResponse, loading: false });
         options.onError?.(errorResponse);
-        throw errorResponse;
+        // Instead of throwing a new error, return a rejected promise
+        return Promise.reject(errorResponse);
       }
     },
     [requestFn, options]
@@ -83,35 +84,3 @@ export function useSubscriptionRequest<T = any>(
     isUsageLimitError: error?.code === 'USAGE_LIMIT_EXCEEDED'
   };
 }
-
-// Example usage:
-/*
-const MyComponent = () => {
-  const { data, error, loading, execute } = useSubscriptionRequest(
-    async (userId: string) => {
-      const response = await fetch(`/api/subscription/upgrade?userId=${userId}`);
-      if (!response.ok) throw await response.json();
-      return response.json();
-    },
-    {
-      onSuccess: (data) => {
-        console.log('Subscription updated:', data);
-      },
-      onError: (error) => {
-        console.error('Failed to update subscription:', error);
-      }
-    }
-  );
-
-  return (
-    <div>
-      {loading && <div>Loading...</div>}
-      {error && <div>Error: {error.message}</div>}
-      {data && <div>Success!</div>}
-      <button onClick={() => execute('user-123')}>
-        Update Subscription
-      </button>
-    </div>
-  );
-};
-*/
