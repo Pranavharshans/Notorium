@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AdminService from '@/lib/admin-service';
@@ -21,19 +21,20 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [stats, setStats] = useState<AdminStats | null>(null);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const adminService = AdminService.getInstance();
       const data = await adminService.getStats();
       setStats(data);
     } catch (error) {
-      console.error('Failed to fetch stats:', error);
+      console.error('Failed to fetch stats:', error instanceof Error ? error.message : 'Unknown error');
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void fetchStats();
+  }, [fetchStats]);
+
 
   const navItems = [
     { href: '/admin/users', label: 'Users' },

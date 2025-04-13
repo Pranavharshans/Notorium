@@ -12,19 +12,13 @@ interface BillingInfo {
   zipcode: string;
 }
 
-interface CustomerInfo {
-  name?: string;
-  email?: string;
-  phone_number?: string;
-}
 
 interface PricingCardProps {
   currentTier: SubscriptionTier;
-  customerInfo?: CustomerInfo;
   onUpgrade?: (billingInfo: BillingInfo) => Promise<{ checkoutUrl: string }>;
 }
 
-export default function PricingCard({ currentTier, customerInfo, onUpgrade }: PricingCardProps) {
+export default function PricingCard({ currentTier, onUpgrade }: PricingCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showBillingForm, setShowBillingForm] = useState(false);

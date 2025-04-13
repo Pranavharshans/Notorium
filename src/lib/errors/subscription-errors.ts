@@ -102,8 +102,8 @@ export function handleApiError(error: unknown): ErrorResponse {
 
   // Handle network errors
   if (error && typeof error === 'object' && 'message' in error) {
-    const networkError = error as NetworkError;
-    if (networkError.message.includes('network')) {
+    const networkError = error as { message: string };
+    if (networkError?.message?.includes('network')) {
       return createErrorResponse('NETWORK_ERROR', { message: networkError.message });
     }
   }

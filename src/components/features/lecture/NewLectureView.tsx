@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { User } from 'firebase/auth';
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
@@ -13,7 +14,7 @@ import { LectureCategory } from "@/lib/gemini-service";
 interface NewLectureViewProps {
   setCurrentView: (view: string) => void;
   setGeneratedNotes: (notes: string | null) => void;
-  user: any; // TODO: Type this properly with Firebase user type
+  user: User;
   onNoteSelect?: (noteId: string, note: Note) => void;
 }
 
@@ -24,7 +25,6 @@ export function NewLectureView({
   onNoteSelect
 }: NewLectureViewProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,8 +56,7 @@ export function NewLectureView({
     setCopySuccess(false);
   };
 
-  const handleRecordingStop = async (duration: number, audioBlob: Blob) => {
-    setRecordingDuration(duration);
+  const handleRecordingStop = async (_duration: number, audioBlob: Blob) => {
     setIsRecording(false);
     setIsProcessing(true);
     setError(null);

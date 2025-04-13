@@ -1,11 +1,10 @@
 import { db } from './firebase';
-import { 
-  collection, 
-  getDocs, 
-  query, 
-  doc, 
-  getDoc, 
-  DocumentData,
+import {
+  collection,
+  getDocs,
+  query,
+  doc,
+  getDoc,
   Timestamp
 } from 'firebase/firestore';
 import { SubscriptionTier } from './subscription-config';
@@ -67,7 +66,7 @@ export class AdminService {
       const usersRef = collection(db, 'users');
       const snapshot = await getDocs(query(usersRef));
       
-      let users: UserData[] = [];
+      const users: UserData[] = [];
 
       for (const userDoc of snapshot.docs) {
         const userData = userDoc.data();

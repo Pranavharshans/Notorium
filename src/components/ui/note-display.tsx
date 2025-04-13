@@ -4,15 +4,14 @@ import { useState } from 'react';
 import { Wand2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { cn } from '@/lib/utils';
 import { EnhanceMode } from '@/lib/gemini-service';
 import MarkdownCodeBlock from './markdown-code-block';
 
 interface CodeProps {
   children?: React.ReactNode;
   className?: string;
-  node?: any;
   inline?: boolean;
+  // node prop is not used, so we can remove it
 }
 
 interface NoteDisplayProps {

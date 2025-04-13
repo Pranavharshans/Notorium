@@ -21,10 +21,10 @@ export class ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  static getDerivedStateFromError(error: any): State {
+  static getDerivedStateFromError(error: Error | ErrorResponse): State {
     let errorResponse: ErrorResponse;
 
-    if (error.code && error.message) {
+    if ('code' in error && 'message' in error) {
       errorResponse = error as ErrorResponse;
     } else {
       errorResponse = {

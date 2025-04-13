@@ -7,14 +7,14 @@ interface ApiRequestState<T> {
   loading: boolean;
 }
 
-interface UseApiRequestOptions {
-  onSuccess?: (data: any) => void;
+interface UseApiRequestOptions<T> {
+  onSuccess?: (data: T) => void;
   onError?: (error: ErrorResponse) => void;
 }
 
-export function useApiRequest<T = any>(
-  requestFn: (...args: any[]) => Promise<T>,
-  options: UseApiRequestOptions = {}
+export function useApiRequest<T, Args extends unknown[] = unknown[]>(
+  requestFn: (...args: Args) => Promise<T>,
+  options: UseApiRequestOptions<T> = {}
 ) {
   const [state, setState] = useState<ApiRequestState<T>>({
     data: null,
@@ -23,14 +23,14 @@ export function useApiRequest<T = any>(
   });
 
   const execute = useCallback(
-    async (...args: any[]) => {
+    async (...args: Args) => {
       try {
         setState(prev => ({ ...prev, loading: true, error: null }));
         const response = await requestFn(...args);
         setState({ data: response, error: null, loading: false });
         options.onSuccess?.(response);
         return response;
-      } catch (error: any) {
+      } catch (error) {
         const errorResponse = handleApiError(error);
         setState({ data: null, error: errorResponse, loading: false });
         options.onError?.(errorResponse);
@@ -52,9 +52,9 @@ export function useApiRequest<T = any>(
 }
 
 // Helper hook for subscription-related requests
-export function useSubscriptionRequest<T = any>(
-  requestFn: (...args: any[]) => Promise<T>,
-  options: UseApiRequestOptions = {}
+export function useSubscriptionRequest<T, Args extends unknown[] = unknown[]>(
+  requestFn: (...args: Args) => Promise<T>,
+  options: UseApiRequestOptions<T> = {}
 ) {
   const {
     data,
@@ -62,7 +62,7 @@ export function useSubscriptionRequest<T = any>(
     loading,
     execute,
     reset
-  } = useApiRequest<T>(requestFn, {
+  } = useApiRequest<T, Args>(requestFn, {
     ...options,
     onError: (error) => {
       // Add subscription-specific error handling
@@ -87,7 +87,7 @@ export function useSubscriptionRequest<T = any>(
 // Example usage:
 /*
 const MyComponent = () => {
-  const { data, error, loading, execute } = useSubscriptionRequest(
+  const { data, error, loading, execute } = useSubscriptionRequest<{ success: boolean }, [string]>(
     async (userId: string) => {
       const response = await fetch(`/api/subscription/upgrade?userId=${userId}`);
       if (!response.ok) throw await response.json();

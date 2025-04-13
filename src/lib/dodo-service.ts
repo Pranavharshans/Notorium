@@ -81,20 +81,20 @@ export interface DodoPaymentData {
   customer: DodoCustomer;
 }
 
-interface AxiosError extends Error {
-  config: any;
+interface AxiosError<T = unknown> extends Error {
+  config: Record<string, unknown>;
   code?: string;
-  request?: any;
+  request?: unknown;
   response?: {
-    data: any;
+    data: T;
     status: number;
     headers: Record<string, string>;
   };
   isAxiosError: boolean;
 }
 
-function isAxiosError(error: any): error is AxiosError {
-  return (error as AxiosError).isAxiosError === true;
+function isAxiosError(error: unknown): error is AxiosError {
+  return error !== null && typeof error === 'object' && 'isAxiosError' in error;
 }
 
 export class DodoPaymentsService {
@@ -164,7 +164,7 @@ export class DodoPaymentsService {
         { headers: this.getHeaders() }
       );
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create product:', error);
       if (isAxiosError(error) && error.response?.data) {
         const errorData = error.response.data as DodoErrorResponse;
@@ -213,7 +213,7 @@ export class DodoPaymentsService {
         paymentLink: data.payment_link,
         clientSecret: data.client_secret
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create subscription:', error);
       if (isAxiosError(error) && error.response?.data) {
         const errorData = error.response.data as DodoErrorResponse;
@@ -295,7 +295,7 @@ export class DodoPaymentsService {
       if (data.status === 'failed') {
         throw new PaymentError(data.message || ErrorMessages.SUBSCRIPTION_NOT_FOUND);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to cancel subscription:', error);
       if (isAxiosError(error) && error.response?.data) {
         const errorData = error.response.data as DodoErrorResponse;

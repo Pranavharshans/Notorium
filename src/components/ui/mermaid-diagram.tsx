@@ -35,10 +35,16 @@ export default function MermaidDiagram({ content }: MermaidDiagramProps) {
             elementRef.current.innerHTML = `<pre>Error rendering Mermaid diagram: ${error.message}</pre>`;
           }
         });
-      } catch (error: any) {
+      } catch (error) {
+        if (error instanceof Error) {
         console.error("Mermaid rendering failed synchronously:", error);
-        if (elementRef.current) {
-          elementRef.current.innerHTML = `<pre>Error rendering Mermaid diagram: ${error.message}</pre>`;
+          if (elementRef.current) {
+            elementRef.current.innerHTML = `<pre>Error rendering Mermaid diagram: ${error.message}</pre>`;
+          }
+        } else {
+          if (elementRef.current) {
+            elementRef.current.innerHTML = '<pre>Error rendering Mermaid diagram</pre>';
+          }
         }
       }
     }

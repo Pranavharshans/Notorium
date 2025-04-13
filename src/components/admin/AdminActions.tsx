@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { SubscriptionTier } from '@/lib/subscription-config';
 import { useToast } from '@/components/ui/toast';
-import AdminService from '@/lib/admin-service';
 import SubscriptionDBService from '@/lib/subscription-db-service';
 
 interface AdminActionsProps {

@@ -18,8 +18,11 @@ export default function AdminSubscriptionsPage() {
       const data = await adminService.getUsers();
       setUsers(data);
     } catch (error) {
-      console.error('Failed to fetch users:', error);
-      showToast('Failed to load users', 'error');
+      console.error('Failed to fetch users:', error instanceof Error ? error.message : 'Unknown error');
+      showToast(
+        error instanceof Error ? error.message : 'Failed to load users',
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -56,8 +59,11 @@ export default function AdminSubscriptionsPage() {
       showToast('Simulated renewal for all Pro subscriptions', 'success');
       fetchUsers();
     } catch (error) {
-      console.error('Failed to simulate renewal:', error);
-      showToast('Failed to simulate renewal', 'error');
+      console.error('Failed to simulate renewal:', error instanceof Error ? error.message : 'Unknown error');
+      showToast(
+        error instanceof Error ? `Failed to simulate renewal: ${error.message}` : 'Failed to simulate renewal',
+        'error'
+      );
     } finally {
       setLoading(false);
     }

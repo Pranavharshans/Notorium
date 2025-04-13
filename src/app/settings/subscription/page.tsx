@@ -67,7 +67,7 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     fetchSubscriptionStatus();
-  }, []);
+  }, [fetchSubscriptionStatus]);
 
   useEffect(() => {
     if (subscriptionData) {
@@ -81,7 +81,7 @@ export default function SubscriptionPage() {
       showToast('Subscription updated successfully!', 'success');
       setCurrentTier('pro');
     }
-  }, [searchParams]);
+  }, [searchParams, showToast]);
 
   const handleSubscriptionCancelled = () => {
     fetchSubscriptionStatus(); // Refresh subscription status

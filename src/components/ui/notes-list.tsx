@@ -13,8 +13,8 @@ interface Note {
   title: string;
   transcript: string;
   notes: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: Timestamp | { seconds: number; nanoseconds: number };
+  updatedAt: Timestamp | { seconds: number; nanoseconds: number };
   tags?: string[];
   bookmarked?: boolean;
 }
@@ -100,7 +100,12 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
             );
           })}
         </div>
-        <span>{formatDistanceToNow(note.createdAt instanceof Timestamp ? note.createdAt.toDate() : new Date(note.createdAt.seconds * 1000), { addSuffix: true })}</span>
+        <span>{formatDistanceToNow(
+          note.createdAt instanceof Timestamp
+            ? note.createdAt.toDate()
+            : new Date('seconds' in note.createdAt ? note.createdAt.seconds * 1000 : 0),
+          { addSuffix: true }
+        )}</span>
       </div>
     </div>
   );
@@ -144,7 +149,8 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
             }
           }
         }
-      } catch (err) {
+      } catch (error) {
+        console.error('Failed to load notes:', error);
         if (mounted) {
           setError('Failed to load notes');
           setLoading(false);
@@ -158,7 +164,7 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
     return () => {
       mounted = false;
     };
-  }, [user, refreshKey]);
+  }, [user, refreshKey, activeNoteId, onNoteSelect]);
 
   useEffect(() => {
     let filtered = notes;

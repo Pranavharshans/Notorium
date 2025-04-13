@@ -7,7 +7,6 @@ import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { AuthModal } from "@/components/auth-modal";
 import { useAuth } from "@/context/auth-context";
 import { WordRotate } from "@/components/ui/word-rotate";
-import { GradientText } from "@/components/ui/gradient-text";
 import { TypingAnimation } from "@/components/ui/typing-animation";
 
 export default function Home() {

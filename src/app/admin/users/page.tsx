@@ -5,6 +5,8 @@ import { UserData, UserListFilters, AdminService } from '@/lib/admin-service';
 import { useToast } from '@/components/ui/toast';
 import { SubscriptionTier } from '@/lib/subscription-config';
 
+type SubscriptionStatus = 'active' | 'cancelled' | 'expired';
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,8 +20,11 @@ export default function AdminUsersPage() {
       const data = await adminService.getUsers(filters);
       setUsers(data);
     } catch (error) {
-      console.error('Failed to fetch users:', error);
-      showToast('Failed to load users', 'error');
+      console.error('Failed to fetch users:', error instanceof Error ? error.message : 'Unknown error');
+      showToast(
+        error instanceof Error ? error.message : 'Failed to load users',
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -37,7 +42,7 @@ export default function AdminUsersPage() {
     });
   };
 
-  const getStatusBadgeColor = (status: string) => {
+  const getStatusBadgeColor = (status: SubscriptionStatus) => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800';

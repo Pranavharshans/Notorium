@@ -20,7 +20,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const payload = await req.json() as WebhookPayload;
+    const rawPayload = await req.json();
+    
+    if (!isWebhookPayload(rawPayload)) {
+      return NextResponse.json({ error: 'Invalid webhook payload format' }, { status: 400 });
+    }
+
+    const payload = rawPayload;
     const dodoService = DodoPaymentsService.getInstance();
     const dbService = SubscriptionDBService.getInstance();
     const usageService = UsageService.getInstance();
@@ -83,12 +89,27 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (error) {
-    console.error('Webhook processing failed:', error);
+    console.error('Webhook processing failed:', error instanceof Error ? error.message : 'Unknown error');
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Webhook processing failed' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
+}
+
+// Type guard for WebhookPayload
+function isWebhookPayload(payload: unknown): payload is WebhookPayload {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'type' in payload &&
+    'data' in payload &&
+    'business_id' in payload &&
+    typeof (payload as WebhookPayload).type === 'string' &&
+    typeof (payload as WebhookPayload).business_id === 'string' &&
+    typeof (payload as WebhookPayload).data === 'object'
+  );
 }
 
 async function handleSubscriptionActive(
@@ -97,7 +118,7 @@ async function handleSubscriptionActive(
 ) {
   const { customer, subscription_id, created_at, next_billing_date, metadata } = data;
   await dbService.updateSubscription(customer.customer_id, {
-    tier: metadata?.tier || 'pro' as SubscriptionTier,
+    tier: (metadata?.tier as SubscriptionTier) || 'pro',
     subscriptionId: subscription_id,
     status: 'active',
     startDate: new Date(created_at * 1000),
@@ -122,7 +143,7 @@ async function handleSubscriptionCancelled(
 ) {
   const { customer, subscription_id } = data;
   await dbService.updateSubscription(customer.customer_id, {
-    tier: 'free' as SubscriptionTier,
+    tier: 'free',
     status: 'cancelled',
     endDate: new Date(),
     subscriptionId: subscription_id
@@ -153,7 +174,7 @@ async function handleSubscriptionFailed(
   const { customer, subscription_id } = data;
   await dbService.updateSubscription(customer.customer_id, {
     status: 'failed',
-    tier: 'free' as SubscriptionTier,
+    tier: 'free',
     endDate: new Date(),
     subscriptionId: subscription_id
   });
@@ -177,7 +198,7 @@ async function handleSubscriptionExpired(
   const { customer, subscription_id } = data;
   await dbService.updateSubscription(customer.customer_id, {
     status: 'expired',
-    tier: 'free' as SubscriptionTier,
+    tier: 'free',
     endDate: new Date(),
     subscriptionId: subscription_id
   });

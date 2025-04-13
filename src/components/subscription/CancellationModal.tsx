@@ -67,7 +67,7 @@ export default function CancellationModal({
           {!gracePeriodEnd ? (
             <>
               <p className="text-gray-600">
-                Are you sure you want to cancel your Pro subscription? You'll lose access to:
+                Are you sure you want to cancel your Pro subscription? You&apos;ll lose access to:
               </p>
               
               <ul className="list-disc pl-5 text-gray-600 space-y-2">
@@ -106,7 +106,7 @@ export default function CancellationModal({
                   Your subscription has been cancelled successfully.
                 </p>
                 <p className="text-sm text-green-700 mt-2">
-                  You'll have access to Pro features until {formatDate(gracePeriodEnd)}.
+                  You&apos;ll have access to Pro features until {formatDate(gracePeriodEnd)}.
                 </p>
               </div>
 

@@ -21,7 +21,7 @@ interface PaymentHistoryItem {
   status: 'succeeded' | 'failed' | 'pending' | 'refunded';
   type: 'subscription' | 'one_time';
   createdAt: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 interface PaymentIntent {
@@ -40,7 +40,7 @@ interface UserSubscription {
   startDate: Date;
   endDate: Date | null;
   status: 'pending' | 'active' | 'on_hold' | 'paused' | 'cancelled' | 'failed' | 'expired';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 
 interface UserUsage {
@@ -89,9 +89,9 @@ export class SubscriptionDBService {
           updatedAt: now
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to update subscription:', error);
-      throw error;
+      throw new Error('Failed to update subscription');
     }
   }
 
@@ -115,9 +115,9 @@ export class SubscriptionDBService {
       }
 
       return docSnap.data() as UserSubscription;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to get subscription:', error);
-      throw error;
+      throw new Error('Failed to get subscription');
     }
   }
 
@@ -135,9 +135,9 @@ export class SubscriptionDBService {
         lastResetDate: now,
         updatedAt: now
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to initialize usage:', error);
-      throw error;
+      throw new Error('Failed to initialize usage');
     }
   }
 
@@ -159,9 +159,9 @@ export class SubscriptionDBService {
       }
 
       return docSnap.data() as UserUsage;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to get usage:', error);
-      throw error;
+      throw new Error('Failed to get usage');
     }
   }
 
@@ -175,9 +175,9 @@ export class SubscriptionDBService {
         recordingTimeUsed: increment(minutes),
         updatedAt: new Date()
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to update recording time:', error);
-      throw error;
+      throw new Error('Failed to update recording time');
     }
   }
 
@@ -191,9 +191,9 @@ export class SubscriptionDBService {
         aiActionsUsed: increment(1),
         updatedAt: new Date()
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to increment AI actions:', error);
-      throw error;
+      throw new Error('Failed to increment AI actions');
     }
   }
 
@@ -209,9 +209,9 @@ export class SubscriptionDBService {
         lastResetDate: new Date(),
         updatedAt: new Date()
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to reset usage:', error);
-      throw error;
+      throw new Error('Failed to reset usage');
     }
   }
 
@@ -228,9 +228,9 @@ export class SubscriptionDBService {
         ...payment,
         createdAt: new Date(),
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to record payment history:', error);
-      throw error;
+      throw new Error('Failed to record payment history');
     }
   }
 
@@ -248,9 +248,9 @@ export class SubscriptionDBService {
       );
 
       return querySnapshot.docs.map(doc => doc.data() as PaymentHistoryItem);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to get payment history:', error);
-      throw error;
+      throw new Error('Failed to get payment history');
     }
   }
 
@@ -267,9 +267,9 @@ export class SubscriptionDBService {
         ...intent,
         createdAt: new Date(),
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to create payment intent:', error);
-      throw error;
+      throw new Error('Failed to create payment intent');
     }
   }
 
@@ -289,9 +289,9 @@ export class SubscriptionDBService {
         ...(errorMessage && { errorMessage }),
         updatedAt: new Date()
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to update payment intent:', error);
-      throw error;
+      throw new Error('Failed to update payment intent');
     }
   }
 }

@@ -8,6 +8,18 @@ import {
   updateDoc,
   runTransaction,
 } from 'firebase/firestore';
+function isUserQuota(data: unknown): data is UserQuota {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'recordingMinutesUsed' in data &&
+    'enhanceNotesUsed' in data &&
+    'subscriptionStatus' in data &&
+    'subscriptionStartDate' in data &&
+    (data as any).subscriptionStatus in QUOTA_LIMITS
+  );
+}
+
 
 export type SubscriptionTier = 'trial' | 'paid';
 
@@ -137,7 +149,11 @@ export class QuotaService {
         return;
       }
 
-      const quota = quotaDoc.data() as UserQuota;
+      const data = quotaDoc.data();
+      if (!isUserQuota(data)) {
+        throw new Error('Invalid quota data structure');
+      }
+      const quota = data;
       const newMinutes = quota.recordingMinutesUsed + minutes;
       
       transaction.update(quotaRef, {
@@ -162,7 +178,11 @@ export class QuotaService {
         return;
       }
 
-      const quota = quotaDoc.data() as UserQuota;
+      const data = quotaDoc.data();
+      if (!isUserQuota(data)) {
+        throw new Error('Invalid quota data structure');
+      }
+      const quota = data;
       const newEnhances = quota.enhanceNotesUsed + 1;
       
       transaction.update(quotaRef, {

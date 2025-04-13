@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { quotaService } from '@/lib/quota-service';
 import { debounce } from 'lodash';
@@ -37,11 +37,24 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
   const [loading, setLoading] = useState(true);
   const [hasShownWarning, setHasShownWarning] = useState(false);
 
-  const debouncedWarning = useCallback(
+  const debouncedWarningRef = useRef(
     debounce((type: QuotaWarningType, feature: QuotaFeature, current: number, limit: number) => {
       onQuotaWarning(type, feature, current, limit);
-    }, 1000),
-    [onQuotaWarning]
+    }, 1000)
+  );
+
+  // Update debounced function when onQuotaWarning changes
+  useEffect(() => {
+    debouncedWarningRef.current = debounce((type: QuotaWarningType, feature: QuotaFeature, current: number, limit: number) => {
+      onQuotaWarning(type, feature, current, limit);
+    }, 1000);
+  }, [onQuotaWarning]);
+
+  const debouncedWarning = useCallback(
+    (type: QuotaWarningType, feature: QuotaFeature, current: number, limit: number) => {
+      debouncedWarningRef.current(type, feature, current, limit);
+    },
+    []
   );
 
   useEffect(() => {
@@ -103,7 +116,7 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
     window.addEventListener('resetQuotaWarning', resetWarningState);
     return () => {
       window.removeEventListener('resetQuotaWarning', resetWarningState);
-      debouncedWarning.cancel(); // Cancel any pending warnings
+      debouncedWarningRef.current.cancel(); // Cancel any pending warnings
     };
   }, [user, debouncedWarning, hasShownWarning, resetWarningState]);
 

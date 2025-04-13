@@ -5,6 +5,7 @@ import { auth } from '@/lib/firebase';
 import {
   GoogleAuthProvider,
   signInWithPopup,
+  FirebaseError
 } from 'firebase/auth';
 import { toast } from 'sonner';
 
@@ -21,8 +22,12 @@ export function AuthModal({
       await signInWithPopup(auth, provider);
       toast.success('Signed in with Google successfully!');
       onClose();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        toast.error(error.message);
+      } else {
+        toast.error('An unexpected error occurred');
+      }
     }
   };
 

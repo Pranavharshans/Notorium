@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { UsageStats } from '@/lib/usage-service';
 import { SUBSCRIPTION_TIERS, SubscriptionTier } from '@/lib/subscription-config';
 
@@ -14,11 +14,7 @@ export default function UsageDisplay({ userId, currentTier, onLimitReached }: Us
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUsage();
-  }, [userId]);
-
-  const fetchUsage = async () => {
+  const fetchUsage = useCallback(async () => {
     try {
       const response = await fetch(`/api/usage?userId=${userId}`);
       const data = await response.json();
@@ -33,11 +29,15 @@ export default function UsageDisplay({ userId, currentTier, onLimitReached }: Us
         onLimitReached?.();
       }
     } catch (error) {
-      console.error('Failed to fetch usage:', error);
+      console.error('Failed to fetch usage:', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, currentTier, onLimitReached]);
+
+  useEffect(() => {
+    void fetchUsage();
+  }, [fetchUsage]);
 
   const calculatePercentage = (used: number, total: number) => {
     return Math.min(Math.round((used / total) * 100), 100);

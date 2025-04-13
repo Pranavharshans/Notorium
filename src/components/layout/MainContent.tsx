@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { User } from 'firebase/auth';
 import { NewLectureView } from '@/components/features/lecture/NewLectureView';
 import { NoteView } from '@/components/features/notes/NoteView';
 import { Note } from '@/types/note';
@@ -25,7 +26,7 @@ interface MainContentProps {
   setShowEnhanceOptions: (show: boolean) => void;
   setEnhancing: (enhancing: boolean) => void;
   refreshNotes: () => void;
-  user: any; // TODO: Type this properly
+  user: User;
 }
 
 export function MainContent({

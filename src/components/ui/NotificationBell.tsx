@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { UsageNotification, NotificationService } from '@/lib/notification-service';
 
 interface NotificationBellProps {
@@ -11,6 +11,16 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<UsageNotification[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const notificationService = NotificationService.getInstance();
+      const unread = await notificationService.getUnreadNotifications(userId);
+      setNotifications(unread);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  }, [userId]);
 
   useEffect(() => {
     fetchNotifications();
@@ -23,17 +33,7 @@ export default function NotificationBell({ userId }: NotificationBellProps) {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const fetchNotifications = async () => {
-    try {
-      const notificationService = NotificationService.getInstance();
-      const unread = await notificationService.getUnreadNotifications(userId);
-      setNotifications(unread);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-    }
-  };
+  }, [fetchNotifications]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {

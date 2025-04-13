@@ -3,8 +3,24 @@ import { GoogleGenAI } from "@google/genai";
 export type EnhanceMode = 'detailed' | 'shorter' | 'simpler' | 'complex';
 export type LectureCategory = 'programming' | 'mathematics' | 'science' | 'humanities' | 'business' | 'law' | 'medicine' | 'engineering' | 'general';
 
+interface GeminiTaskData {
+  prompt: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+}
+
+interface GeminiTaskResponse {
+  text: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
 export class GeminiService {
-  async processTask(data: any): Promise<any> {
+  async processTask(data: GeminiTaskData): Promise<GeminiTaskResponse> {
     try {
       const response = await fetch('/api/gemini', {
         method: 'POST',

@@ -7,7 +7,7 @@ interface GroqError {
   response?: {
     data: unknown;
     status: number;
-    headers: unknown;
+    headers: Record<string, any>;
   };
   request?: unknown;
   message?: string;
@@ -69,22 +69,26 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(transcription);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Transcription error in API route:', error);
-    const groqError = error as GroqError;
+    let groqError: GroqError | null = null;
+
+    if (typeof error === 'object' && error !== null) {
+      groqError = error as GroqError;
+    }
     
-    if (groqError.response) {
+    if (groqError?.response) {
       console.error('Error response data:', groqError.response.data);
       console.error('Error response status:', groqError.response.status);
       console.error('Error response headers:', groqError.response.headers);
-    } else if (groqError.request) {
+    } else if (groqError?.request) {
       console.error('Error request:', groqError.request);
-    } else {
-      console.error('Error message:', groqError.message);
+    } else if (error instanceof Error) {
+      console.error('Error message:', error.message);
     }
 
     return NextResponse.json(
-      { error: 'Failed to transcribe audio', details: groqError.message || 'Unknown error' },
+      { error: 'Failed to transcribe audio', details: (groqError?.message) || (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     );
   }
