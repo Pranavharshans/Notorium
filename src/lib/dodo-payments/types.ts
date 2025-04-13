@@ -1,46 +1,46 @@
-export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'cancelled';
+import type { ClientOptions } from 'dodopayments';
 
-export interface CustomerInfo {
-  id: string;
+export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+
+export interface CustomerData {
+  name: string;
   email: string;
-  name?: string;
-  phone?: string;
+  metadata?: Record<string, unknown>;
 }
 
-export interface BillingInfo {
-  address: {
-    line1: string;
-    line2?: string;
-    city: string;
-    state: string;
-    postal_code: string;
-    country: string;
-  };
+export interface BillingAddress {
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
 }
 
 export interface PaymentRequest {
   amount: number;
   currency: string;
-  customer: CustomerInfo;
-  billing?: BillingInfo;
-  metadata?: Record<string, any>;
+  customer: CustomerData;
+  billing_address?: BillingAddress;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PaymentResponse {
-  id: string;
+  payment_id: string;
   status: PaymentStatus;
   amount: number;
   currency: string;
-  customer: CustomerInfo;
-  created_at: string;
-  updated_at: string;
-  payment_link?: string;
+  customer: CustomerData;
+  billing_address?: BillingAddress;
+  created: string;
+  metadata?: Record<string, unknown>;
+  payment_url?: string;
 }
 
 export interface WebhookEvent {
-  id: string;
-  type: 'payment.succeeded' | 'payment.failed' | 'subscription.created' | 'subscription.cancelled';
-  created_at: string;
+  event_id: string;
+  event_type: 'payment.succeeded' | 'payment.failed' | 'subscription.created' | 'subscription.cancelled';
+  created: string;
   data: {
     payment?: PaymentResponse;
     subscription?: SubscriptionResponse;
@@ -48,25 +48,31 @@ export interface WebhookEvent {
 }
 
 export interface SubscriptionPlan {
-  id: string;
+  plan_id: string;
   name: string;
-  price: number;
+  amount: number;
   currency: string;
   interval: 'month' | 'year';
   features: string[];
 }
 
 export interface SubscriptionResponse {
-  id: string;
+  subscription_id: string;
   status: 'active' | 'cancelled' | 'past_due';
   plan_id: string;
   customer_id: string;
   current_period_end: string;
   cancel_at_period_end: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PaymentError {
-  code: string;
-  message: string;
-  details?: Record<string, any>;
+  error_code: string;
+  error_message: string;
+  details?: Record<string, unknown>;
+}
+
+export interface DojoConfig extends ClientOptions {
+  apiKey: string;
+  apiUrl: string;
 }
