@@ -10,7 +10,7 @@ interface GroqError {
     headers: Record<string, any>;
   };
   request?: unknown;
-  message?: string;
+  message?: string | undefined;
 }
 
 export async function POST(request: Request) {

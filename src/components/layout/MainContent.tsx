@@ -8,7 +8,6 @@ import { Note } from '@/types/note';
 import { notesService } from '@/lib/notes-service';
 import { aiProviderService } from '@/lib/ai-provider-service';
 import { EnhanceMode } from '@/lib/gemini-service';
-
 interface MainContentProps {
   currentView: string;
   selectedNote: Note | null;
@@ -90,7 +89,7 @@ export function MainContent({
   return (
     <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-gray-50 dark:bg-gray-950">
       <div className="h-full max-w-none">
-        {notesError && !isDeleting && (
+        {notesError && (
           <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg">
             {notesError}
           </div>

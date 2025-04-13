@@ -2,10 +2,10 @@
 
 import { Dialog } from '@headlessui/react';
 import { auth } from '@/lib/firebase';
+import { FirebaseError } from 'firebase/app';
 import {
   GoogleAuthProvider,
   signInWithPopup,
-  FirebaseError
 } from 'firebase/auth';
 import { toast } from 'sonner';
 
