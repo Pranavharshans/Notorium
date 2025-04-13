@@ -21,6 +21,7 @@ interface MainContentProps {
   setGeneratedNotes: (notes: string | null) => void;
   setSelectedNote: (note: Note | null) => void;
   setIsEditing: (isEditing: boolean) => void;
+  setIsDeleting: (isDeleting: boolean) => void;
   setNotesError: (error: string | null) => void;
   setShowEnhanceOptions: (show: boolean) => void;
   setEnhancing: (enhancing: boolean) => void;
@@ -41,6 +42,7 @@ export function MainContent({
   setGeneratedNotes,
   setSelectedNote,
   setIsEditing,
+  setIsDeleting,
   setNotesError,
   setShowEnhanceOptions,
   setEnhancing,
@@ -117,7 +119,7 @@ export function MainContent({
             showEnhanceOptions={showEnhanceOptions}
             enhancing={enhancing}
             onEdit={() => setIsEditing(true)}
-            onDelete={() => {}} // TODO: Implement delete handler
+            onDelete={() => setIsDeleting(true)}
             onSave={handleSaveNote}
             onCancelEdit={() => setIsEditing(false)}
             onEnhance={handleEnhance}

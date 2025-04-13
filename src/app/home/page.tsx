@@ -17,11 +17,12 @@ export default function HomePage() {
 
   // State
   const [currentView, setCurrentView] = useState('notes');
-  const [generatedNotes, setGeneratedNotes] = useState<string | null>(null); // Used in MainContent
+  const [generatedNotes, setGeneratedNotes] = useState<string | null>(null);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [notesListRefreshKey, setNotesListRefreshKey] = useState(0);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showEnhanceOptions, setShowEnhanceOptions] = useState(false);
@@ -129,6 +130,7 @@ export default function HomePage() {
           setGeneratedNotes={setGeneratedNotes}
           setSelectedNote={setSelectedNote}
           setIsEditing={setIsEditing}
+          setIsDeleting={setIsDeleting}
           setNotesError={setNotesError}
           setShowEnhanceOptions={setShowEnhanceOptions}
           setEnhancing={setEnhancing}
