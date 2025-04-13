@@ -2,6 +2,12 @@ import type { ClientOptions } from 'dodopayments';
 
 export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
 
+export type WebhookEventType = 
+  | 'payment.succeeded'
+  | 'payment.failed'
+  | 'subscription.created'
+  | 'subscription.cancelled';
+
 export interface CustomerData {
   name: string;
   email: string;
@@ -39,7 +45,7 @@ export interface PaymentResponse {
 
 export interface WebhookEvent {
   event_id: string;
-  event_type: 'payment.succeeded' | 'payment.failed' | 'subscription.created' | 'subscription.cancelled';
+  type: WebhookEventType;
   created: string;
   data: {
     payment?: PaymentResponse;

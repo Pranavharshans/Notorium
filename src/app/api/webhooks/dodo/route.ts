@@ -1,148 +1,184 @@
-import { NextRequest, NextResponse } from 'next/server';
-import DodoPaymentsService from '@/lib/dodo-service';
-import UsageService from '@/lib/usage-service';
-import SubscriptionDBService from '@/lib/subscription-db-service';
-import { WebhookError } from '@/lib/errors/subscription-errors';
+import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
+import crypto from 'crypto';
+import { Firestore, collection, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { paymentConfig } from '@/lib/dodo-payments/config';
+import { WebhookEvent } from '@/lib/dodo-payments/types';
+import { paymentService } from '@/lib/dodo-payments/payment-service';
+import { db } from '@/lib/firebase';
 
-export async function POST(req: NextRequest) {
-  if (req.method !== 'POST') {
-    return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+/**
+ * Verify webhook signature
+ */
+function verifyWebhookSignature(
+  payload: string,
+  signature: string | null,
+  timestamp: string | null
+): boolean {
+  if (!signature || !timestamp || !paymentConfig.webhookSecret) {
+    return false;
   }
 
-  const signature = req.headers.get('dodo-signature');
-  const timestamp = req.headers.get('dodo-timestamp');
-  
-  if (!signature || !timestamp) {
-    return NextResponse.json({
-      error: 'Missing required headers: dodo-signature and dodo-timestamp'
-    }, { status: 400 });
-  }
+  const expectedSignature = crypto
+    .createHmac('sha256', paymentConfig.webhookSecret)
+    .update(`${timestamp}.${payload}`)
+    .digest('hex');
 
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
+/**
+ * Handle successful payment
+ */
+async function handlePaymentSucceeded(event: WebhookEvent) {
+  const payment = event.data.payment;
+  if (!payment) return;
+
+  // Update payment status in database
+  const paymentRef = doc(db as Firestore, 'payments', payment.payment_id);
+  await setDoc(paymentRef, {
+    status: 'completed',
+    updatedAt: new Date().toISOString(),
+    metadata: payment.metadata
+  }, { merge: true });
+
+  // If this is a subscription payment, update subscription status
+  if (payment.metadata?.subscription_id) {
+    const subscriptionRef = doc(db as Firestore, 'subscriptions', payment.metadata.subscription_id as string);
+    await updateDoc(subscriptionRef, {
+      status: 'active',
+      lastPaymentDate: new Date().toISOString()
+    });
+  }
+}
+
+/**
+ * Handle failed payment
+ */
+async function handlePaymentFailed(event: WebhookEvent) {
+  const payment = event.data.payment;
+  if (!payment) return;
+
+  // Update payment status in database
+  const paymentRef = doc(db as Firestore, 'payments', payment.payment_id);
+  await setDoc(paymentRef, {
+    status: 'failed',
+    updatedAt: new Date().toISOString(),
+    error: payment.metadata?.error
+  }, { merge: true });
+
+  // If this is a subscription payment, update subscription status
+  if (payment.metadata?.subscription_id) {
+    const subscriptionRef = doc(db as Firestore, 'subscriptions', payment.metadata.subscription_id as string);
+    await updateDoc(subscriptionRef, {
+      status: 'past_due',
+      lastFailedDate: new Date().toISOString()
+    });
+  }
+}
+
+/**
+ * Handle subscription created
+ */
+async function handleSubscriptionCreated(event: WebhookEvent) {
+  const subscription = event.data.subscription;
+  if (!subscription) return;
+
+  // Update subscription in database
+  const subscriptionRef = doc(db as Firestore, 'subscriptions', subscription.subscription_id);
+  await setDoc(subscriptionRef, {
+    status: subscription.status,
+    planId: subscription.plan_id,
+    customerId: subscription.customer_id,
+    currentPeriodEnd: subscription.current_period_end,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    createdAt: new Date().toISOString(),
+    metadata: subscription.metadata
+  });
+
+  // Update user's subscription status
+  const userRef = doc(db as Firestore, 'users', subscription.customer_id);
+  await updateDoc(userRef, {
+    subscriptionStatus: 'active',
+    subscriptionPlan: subscription.plan_id,
+    subscriptionUpdatedAt: new Date().toISOString()
+  });
+}
+
+/**
+ * Handle subscription cancelled
+ */
+async function handleSubscriptionCancelled(event: WebhookEvent) {
+  const subscription = event.data.subscription;
+  if (!subscription) return;
+
+  // Update subscription in database
+  const subscriptionRef = doc(db as Firestore, 'subscriptions', subscription.subscription_id);
+  await updateDoc(subscriptionRef, {
+    status: 'cancelled',
+    cancelledAt: new Date().toISOString(),
+    cancelAtPeriodEnd: true
+  });
+
+  // Update user's subscription status
+  const userRef = doc(db as Firestore, 'users', subscription.customer_id);
+  await updateDoc(userRef, {
+    subscriptionStatus: 'cancelled',
+    subscriptionUpdatedAt: new Date().toISOString()
+  });
+}
+
+/**
+ * Main webhook handler
+ */
+export async function POST(request: Request) {
   try {
-    const payload = await req.json();
-    const dodoService = DodoPaymentsService.getInstance();
-    const dbService = SubscriptionDBService.getInstance();
-    const usageService = UsageService.getInstance();
-
-    try {
-      // Verify webhook signature with timestamp
-      dodoService.verifyWebhook(payload, signature, timestamp);
-    } catch (error: unknown) {
-      if (error instanceof WebhookError) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
-      }
-      throw error;
+    const body = await request.text();
+    const headersList = headers();
+    
+    // Verify webhook signature
+    const signature = headersList.get('dodo-signature') || null;
+    const timestamp = headersList.get('dodo-timestamp') || null;
+    
+    const isValid = verifyWebhookSignature(body, signature, timestamp);
+    if (!isValid) {
+      console.error('Invalid webhook signature');
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 401 }
+      );
     }
+
+    // Parse webhook event
+    const event: WebhookEvent = JSON.parse(body);
 
     // Handle different webhook events
-    switch (payload.type) {
-      case 'subscription.active':
-        await handleSubscriptionActive(payload, dbService);
-        break;
-
-      case 'subscription.cancelled':
-        await handleSubscriptionCancelled(payload, dbService);
-        break;
-
-      case 'subscription.renewed':
-        await handleSubscriptionRenewed(payload, dbService, usageService);
-        break;
-
-      case 'subscription.failed':
-        await handleSubscriptionFailed(payload, dbService);
-        break;
-
+    switch (event.type) {
       case 'payment.succeeded':
-        await handlePaymentSucceeded(payload, dbService);
+        await handlePaymentSucceeded(event);
         break;
-
       case 'payment.failed':
-        await handlePaymentFailed(payload, dbService);
+        await handlePaymentFailed(event);
         break;
-
+      case 'subscription.created':
+        await handleSubscriptionCreated(event);
+        break;
+      case 'subscription.cancelled':
+        await handleSubscriptionCancelled(event);
+        break;
       default:
-        console.log(`Unhandled webhook event: ${payload.type}`);
+        console.warn('Unhandled webhook event type:', event.type);
     }
 
-    return NextResponse.json({ received: true }, { status: 200 });
+    return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Webhook processing failed:', error);
+    console.error('Webhook error:', error);
     return NextResponse.json(
       { error: 'Webhook processing failed' },
-      { status: 500 }
+      { status: 400 }
     );
   }
-}
-
-async function handleSubscriptionActive(
-  payload: any,
-  dbService: SubscriptionDBService
-) {
-  const { customer, subscription } = payload;
-  await dbService.updateSubscription(customer.id, {
-    tier: 'pro',
-    subscriptionId: subscription.id,
-    status: 'active',
-    startDate: new Date(subscription.current_period_start * 1000),
-    endDate: new Date(subscription.current_period_end * 1000)
-  });
-}
-
-async function handleSubscriptionCancelled(
-  payload: any,
-  dbService: SubscriptionDBService
-) {
-  const { customer, subscription } = payload;
-  await dbService.updateSubscription(customer.id, {
-    tier: 'free',
-    status: 'cancelled',
-    endDate: new Date(subscription.canceled_at * 1000)
-  });
-}
-
-async function handleSubscriptionRenewed(
-  payload: any,
-  dbService: SubscriptionDBService,
-  usageService: UsageService
-) {
-  const { customer, subscription } = payload;
-  
-  // Update subscription dates
-  await dbService.updateSubscription(customer.id, {
-    status: 'active',
-    startDate: new Date(subscription.current_period_start * 1000),
-    endDate: new Date(subscription.current_period_end * 1000)
-  });
-
-  // Reset usage counters for new billing period
-  await usageService.resetMonthlyUsage(customer.id);
-}
-
-async function handleSubscriptionFailed(
-  payload: any,
-  dbService: SubscriptionDBService
-) {
-  const { customer, subscription } = payload;
-  await dbService.updateSubscription(customer.id, {
-    status: 'expired',
-    tier: 'free',
-    endDate: new Date()
-  });
-}
-
-async function handlePaymentSucceeded(
-  payload: any,
-  dbService: SubscriptionDBService
-) {
-  // Update payment status if needed
-  console.log('Payment succeeded:', payload.payment.id);
-}
-
-async function handlePaymentFailed(
-  payload: any,
-  dbService: SubscriptionDBService
-) {
-  const { customer } = payload;
-  // Optionally update subscription status or send notification
-  console.log('Payment failed for customer:', customer.id);
 }
