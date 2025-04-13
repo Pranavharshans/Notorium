@@ -17,7 +17,7 @@ export default function HomePage() {
 
   // State
   const [currentView, setCurrentView] = useState('notes');
-  const [generatedNotes, setGeneratedNotes] = useState<string | null>(null);
+  const [_, setGeneratedNotes] = useState<string | null>(null);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);

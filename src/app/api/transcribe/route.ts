@@ -7,7 +7,7 @@ interface GroqError {
   response?: {
     data: unknown;
     status: number;
-    headers: Record<string, any>;
+    headers: Record<string, string>;
   };
   request?: unknown;
   message?: string | undefined;
