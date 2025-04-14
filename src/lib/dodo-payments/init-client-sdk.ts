@@ -11,7 +11,7 @@ const initDodoSDK = () => {
 
   const script = document.createElement('script');
   script.id = 'dodo-sdk-script'; // Add an ID to check if it exists
-  script.src = 'https://js.dodopayments.com/v1'; // Verify this URL if issues persist
+  script.src = 'https://js-dev.dodo.dev/v1'; // Verify this URL if issues persist
   script.async = true;
   
   script.onload = () => {
