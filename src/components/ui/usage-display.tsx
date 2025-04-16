@@ -32,8 +32,12 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [warningIssued, setWarningIssued] = useState(false);
+  
   useEffect(() => {
     async function fetchUsage() {
+      if (!user || warningIssued) return;
+      if (warningIssued) return;
       if (!user) return;
 
       try {
@@ -51,6 +55,7 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
             Math.floor(tierLimits.recordingMinutes - recordingQuota.minutesRemaining),
             tierLimits.recordingMinutes
           );
+          setWarningIssued(true);
         }
 
         // Check enhance quota warning levels
@@ -62,6 +67,7 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
             tierLimits.enhanceNotes - enhanceQuota.enhancesRemaining,
             tierLimits.enhanceNotes
           );
+          setWarningIssued(true);
         }
 
         setUsage({
@@ -84,8 +90,11 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
     fetchUsage();
     // Set up periodic refresh
     const interval = setInterval(fetchUsage, 60000); // Check every minute
-    return () => clearInterval(interval);
-  }, [user, onQuotaWarning]);
+    return () => {
+      clearInterval(interval);
+      setWarningIssued(false); // Reset warning state when component unmounts
+    };
+  }, [user]);
 
   if (loading || !usage) {
     return (

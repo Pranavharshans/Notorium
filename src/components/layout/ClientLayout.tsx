@@ -34,7 +34,10 @@ export function ClientLayout({ children }: ClientLayoutProps) {
           mode={quotaWarning.type}
           current={quotaWarning.current}
           limit={quotaWarning.limit}
-          onClose={() => setQuotaWarning(null)}
+          onClose={() => {
+            console.log("QuotaWarningModal close button clicked");
+            setQuotaWarning(null);
+          }}
         />
       )}
       {children}
