@@ -56,10 +56,12 @@ export class QuotaService {
     };
 
     const quotaRef = doc(collection(db, 'quotas'), userId);
-    await setDoc(quotaRef, {
+    const dataToWrite = {
       ...initialQuota,
       subscriptionStartDate: initialQuota.subscriptionStartDate.toISOString(),
-    });
+    };
+    console.log("Initializing quota with data:", dataToWrite);
+    await setDoc(quotaRef, dataToWrite);
     
     this.quotaCache.set(userId, initialQuota);
     return initialQuota;
@@ -139,7 +141,12 @@ export class QuotaService {
 
       const quota = quotaDoc.data() as UserQuota;
       const newMinutes = quota.recordingMinutesUsed + minutes;
-      
+      console.log("Updating recording usage:", {
+        userId,
+        currentMinutesUsed: quota.recordingMinutesUsed,
+        incrementBy: minutes,
+        newMinutes
+      });
       transaction.update(quotaRef, {
         recordingMinutesUsed: newMinutes,
       });

@@ -4,6 +4,7 @@ import { Mic } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { recordingService } from "@/lib/recording-service";
+import { getAuth } from "firebase/auth";
 
 interface AIVoiceInputProps {
   onStart?: () => void;
@@ -85,6 +86,11 @@ export function AIVoiceInput({
 
     try {
       if (!isRecording) {
+        const user = await getAuth().currentUser;
+        if (!user) {
+          throw new Error("User not authenticated");
+        }
+        recordingService.setUserId(user.uid);
         await recordingService.startRecording();
         setIsRecording(true);
         setIsPaused(false);

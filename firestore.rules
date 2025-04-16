@@ -23,31 +23,35 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == userId;
       
       // Allow users to create their initial quota
-      allow create: if request.auth != null 
+      allow create: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.recordingMinutesUsed == 0
         && request.resource.data.enhanceNotesUsed == 0
-        && request.resource.data.subscriptionStatus == 'trial';
+        && request.resource.data.subscriptionStatus == 'trial'
+        && request.resource.data.subscriptionStartDate is string;
       
       // Allow users to update their own quota with valid increments
-      allow update: if request.auth != null 
+      allow update: if request.auth != null
         && request.auth.uid == userId
         && (
           // Allow recording minutes increment
-          (request.resource.data.recordingMinutesUsed > resource.data.recordingMinutesUsed 
+          (request.resource.data.recordingMinutesUsed > resource.data.recordingMinutesUsed
            && request.resource.data.enhanceNotesUsed == resource.data.enhanceNotesUsed
-           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus)
+           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus
+           && request.resource.data.subscriptionStartDate == resource.data.subscriptionStartDate)
           ||
           // Allow enhance notes increment
-          (request.resource.data.enhanceNotesUsed > resource.data.enhanceNotesUsed 
+          (request.resource.data.enhanceNotesUsed > resource.data.enhanceNotesUsed
            && request.resource.data.recordingMinutesUsed == resource.data.recordingMinutesUsed
-           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus)
+           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus
+           && request.resource.data.subscriptionStartDate == resource.data.subscriptionStartDate)
           ||
           // Allow subscription status update
           (request.resource.data.subscriptionStatus != resource.data.subscriptionStatus
            && request.resource.data.recordingMinutesUsed == resource.data.recordingMinutesUsed
            && request.resource.data.enhanceNotesUsed == resource.data.enhanceNotesUsed)
-        );
+        )
+        && debug(request.resource.data);
     }
 
     // Notes collection rules

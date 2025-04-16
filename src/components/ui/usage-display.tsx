@@ -36,7 +36,11 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
   
   useEffect(() => {
     async function fetchUsage() {
-      if (!user || warningIssued) return;
+      if (!user) {
+        console.error("User is not authenticated");
+        return;
+      }
+      if (warningIssued) return;
       if (warningIssued) return;
       if (!user) return;
 
@@ -82,6 +86,7 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
         });
       } catch (error) {
         console.error('Error fetching usage:', error);
+        console.log('User ID:', user?.uid);
       } finally {
         setLoading(false);
       }
