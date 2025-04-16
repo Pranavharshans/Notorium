@@ -1,8 +1,21 @@
 import { NextResponse } from 'next/server';
 import { DODO_CONFIG } from '@/lib/dodo-payments/config';
-import { DodoSubscriptionStatus } from '@/lib/dodo-payments/init-sdk';
 import crypto from 'crypto';
 import SubscriptionDBService from '@/lib/subscription-db-service';
+
+interface WebhookEvent {
+  type: string;
+  data: {
+    metadata?: {
+      userId?: string;
+    };
+    status: string;
+    subscription_id: string;
+    current_period_start: string;
+    current_period_end: string;
+    trial_end?: string;
+  };
+}
 
 export async function POST(req: Request) {
   try {
@@ -49,43 +62,87 @@ export async function POST(req: Request) {
     }
 
     // Parse and handle the webhook event
-    const event = JSON.parse(body);
+    const event = JSON.parse(body) as WebhookEvent;
     const dbService = SubscriptionDBService.getInstance();
 
     switch (event.type) {
       case DODO_CONFIG.EVENTS.SUBSCRIPTION_CREATED:
       case DODO_CONFIG.EVENTS.SUBSCRIPTION_UPDATED:
-        // Update user's subscription status
         const userId = event.data.metadata?.userId;
         if (userId) {
+          const mappedStatus = DODO_CONFIG.mapSubscriptionStatus(event.data.status);
+          const isActive = mappedStatus === 'ACTIVE';
+          
           await dbService.updateSubscription(userId, {
-            tier: 'pro',
-            status: event.data.status as DodoSubscriptionStatus,
+            tier: isActive ? 'pro' : 'free',
+            status: DODO_CONFIG.STATUS[mappedStatus],
             subscriptionId: event.data.subscription_id,
+            startDate: new Date(event.data.current_period_start),
             endDate: new Date(event.data.current_period_end)
           });
+
+          // Reset usage quotas when subscription becomes active
+          if (isActive) {
+            await dbService.resetUsage(userId);
+          }
         }
         break;
 
       case DODO_CONFIG.EVENTS.SUBSCRIPTION_CANCELLED:
         const cancelledUserId = event.data.metadata?.userId;
         if (cancelledUserId) {
+          const mappedStatus = DODO_CONFIG.mapSubscriptionStatus('cancelled');
           await dbService.updateSubscription(cancelledUserId, {
             tier: 'free',
-            status: 'cancelled',
+            status: DODO_CONFIG.STATUS[mappedStatus],
             subscriptionId: null,
-            endDate: null
+            endDate: new Date()
           });
         }
         break;
 
       case DODO_CONFIG.EVENTS.PAYMENT_FAILED:
-        // Handle failed payment - maybe send notification to user
         const failedUserId = event.data.metadata?.userId;
         if (failedUserId) {
-          await dbService.updateSubscription(failedUserId, {
-            status: 'expired',
-            endDate: new Date() // Current date as Date object
+          const subscription = await dbService.getSubscription(failedUserId);
+          
+          if (subscription.status === DODO_CONFIG.STATUS.ACTIVE) {
+            await dbService.updateSubscription(failedUserId, {
+              status: DODO_CONFIG.STATUS[DODO_CONFIG.mapSubscriptionStatus('on_hold')],
+              endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 day grace period
+            });
+          } else if (subscription.status === DODO_CONFIG.STATUS.ON_HOLD) {
+            const mappedStatus = DODO_CONFIG.mapSubscriptionStatus('expired');
+            await dbService.updateSubscription(failedUserId, {
+              tier: 'free',
+              status: DODO_CONFIG.STATUS[mappedStatus],
+              subscriptionId: null,
+              endDate: new Date()
+            });
+          }
+        }
+        break;
+
+      case DODO_CONFIG.EVENTS.SUBSCRIPTION_TRIAL_ENDING:
+        const trialUserId = event.data.metadata?.userId;
+        if (trialUserId && event.data.trial_end) {
+          const mappedStatus = DODO_CONFIG.mapSubscriptionStatus('trial');
+          await dbService.updateSubscription(trialUserId, {
+            status: DODO_CONFIG.STATUS[mappedStatus],
+            endDate: new Date(event.data.trial_end)
+          });
+        }
+        break;
+
+      case DODO_CONFIG.EVENTS.SUBSCRIPTION_TRIAL_ENDED:
+        const trialEndedUserId = event.data.metadata?.userId;
+        if (trialEndedUserId) {
+          const mappedStatus = DODO_CONFIG.mapSubscriptionStatus(event.data.status);
+          const isActive = mappedStatus === 'ACTIVE';
+          await dbService.updateSubscription(trialEndedUserId, {
+            tier: isActive ? 'pro' : 'free',
+            status: DODO_CONFIG.STATUS[mappedStatus],
+            endDate: isActive ? null : new Date()
           });
         }
         break;

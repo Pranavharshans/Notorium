@@ -2,11 +2,13 @@
   "name": "notorium",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init-firebase": "node scripts/init-firebase.js"
   },
   "dependencies": {
     "@google/genai": "^0.7.0",
@@ -15,11 +17,14 @@
     "@types/axios": "^0.9.36",
     "@types/lodash": "^4.17.16",
     "axios": "^1.8.4",
+    "chart.js": "^4.4.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dodopayments": "^1.13.0",
+    "dotenv": "^16.5.0",
     "firebase": "^11.5.0",
+    "firebase-admin": "^13.2.0",
     "framer-motion": "^12.6.3",
     "groq-sdk": "^0.17.0",
     "lamejs": "^1.2.1",
@@ -30,6 +35,7 @@
     "motion": "^12.6.3",
     "next": "15.2.4",
     "react": "^19.0.0",
+    "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
@@ -48,6 +54,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

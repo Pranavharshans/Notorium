@@ -1,13 +1,3 @@
-// Firestore Security Rules for Notorium
-//
-// To deploy these rules:
-// 1. Go to Firebase Console (https://console.firebase.google.com)
-// 2. Select your project
-// 3. Navigate to Firestore Database
-// 4. Click on the "Rules" tab
-// 5. Replace the existing rules with these rules
-// 6. Click "Publish" to deploy
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -31,43 +21,76 @@ service cloud.firestore {
     function isValidPaymentIntentStatus(status) {
       return status in ['requires_payment_method', 'requires_confirmation', 'succeeded', 'failed'];
     }
+
+    function isValidSubscriptionStatus(status) {
+      return status in ['active', 'cancelled', 'expired'];
+    }
+
+    function isValidSubscriptionTier(tier) {
+      return tier in ['free', 'pro'];
+    }
+
     // Basic user document rules
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isUserAuthorized(userId);
+      allow write: if isUserAuthorized(userId);
+    }
+
+    // Subscription rules
+    match /subscriptions/{userId} {
+      allow read: if isUserAuthorized(userId);
+      
+      // Allow initial subscription creation
+      allow create: if isUserAuthorized(userId)
+        && isValidSubscriptionStatus(request.resource.data.status)
+        && isValidSubscriptionTier(request.resource.data.tier)
+        && request.resource.data.startDate is timestamp
+        && (request.resource.data.endDate == null || request.resource.data.endDate is timestamp)
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      
+      // Allow subscription updates with valid status changes
+      allow update: if isUserAuthorized(userId)
+        && isValidSubscriptionStatus(request.resource.data.status)
+        && isValidSubscriptionTier(request.resource.data.tier)
+        && request.resource.data.startDate is timestamp
+        && (request.resource.data.endDate == null || request.resource.data.endDate is timestamp)
+        && request.resource.data.updatedAt is timestamp;
     }
     
     // Quota tracking rules
     match /quotas/{userId} {
-      // Allow users to read their own quota
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if isUserAuthorized(userId);
       
       // Allow users to create their initial quota
-      allow create: if request.auth != null 
-        && request.auth.uid == userId
+      allow create: if isUserAuthorized(userId)
         && request.resource.data.recordingMinutesUsed == 0
         && request.resource.data.enhanceNotesUsed == 0
-        && request.resource.data.subscriptionStatus == 'trial';
+        && (request.resource.data.subscriptionStartDate is string || request.resource.data.subscriptionStartDate is timestamp)
+        && request.resource.data.updatedAt is timestamp;
       
       // Allow users to update their own quota with valid increments
-      allow update: if request.auth != null 
-        && request.auth.uid == userId
+      allow update: if isUserAuthorized(userId)
         && (
           // Allow recording minutes increment
           (request.resource.data.recordingMinutesUsed > resource.data.recordingMinutesUsed 
            && request.resource.data.enhanceNotesUsed == resource.data.enhanceNotesUsed
-           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus)
+           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus
+           && (request.resource.data.subscriptionStartDate == resource.data.subscriptionStartDate || request.resource.data.subscriptionStartDate is timestamp))
           ||
           // Allow enhance notes increment
           (request.resource.data.enhanceNotesUsed > resource.data.enhanceNotesUsed 
            && request.resource.data.recordingMinutesUsed == resource.data.recordingMinutesUsed
-           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus)
+           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus
+           && (request.resource.data.subscriptionStartDate == resource.data.subscriptionStartDate || request.resource.data.subscriptionStartDate is timestamp))
           ||
-          // Allow subscription status update
+          // Allow subscription status and date update
           (request.resource.data.subscriptionStatus != resource.data.subscriptionStatus
            && request.resource.data.recordingMinutesUsed == resource.data.recordingMinutesUsed
-           && request.resource.data.enhanceNotesUsed == resource.data.enhanceNotesUsed)
-        );
+           && request.resource.data.enhanceNotesUsed == resource.data.enhanceNotesUsed
+           && (request.resource.data.subscriptionStartDate is string || request.resource.data.subscriptionStartDate is timestamp))
+        )
+        && request.resource.data.updatedAt is timestamp;
     }
 
     // Payment history rules
@@ -108,24 +131,3 @@ service cloud.firestore {
     }
   }
 }
-
-// Rule Explanations:
-//
-// 1. User Rules (/users/{userId}):
-//    - Users can only read and write their own user document
-//
-// 2. Quota Rules (/quotas/{userId}):
-//    - Users can only read their own quota
-//    - New quotas must start with zero usage and trial status
-//    - Updates are restricted to one type of change at a time:
-//      a) Increment recording minutes
-//      b) Increment enhance notes usage
-//      c) Change subscription status
-//
-// 3. Notes Rules (/notes/{noteId}):
-//    - Users can only access notes they own
-//    - New notes must include the creator's userId
-//    - Only note owners can update or delete them
-//
-// 4. Default Rule:
-//    - All other access is denied by default

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "@/context/auth-context"; // Import AuthProvider
 import ClientLayout from "@/components/layout/ClientLayout";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -17,9 +18,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <ClientLayout fontClass={inter.className}>
-        {children}
-      </ClientLayout>
+      {/* Wrap ClientLayout with AuthProvider */}
+      <AuthProvider>
+        <ClientLayout fontClass={inter.className}>
+          {children}
+        </ClientLayout>
+      </AuthProvider>
     </html>
   );
 }

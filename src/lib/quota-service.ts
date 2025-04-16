@@ -8,8 +8,11 @@ import {
   updateDoc,
   runTransaction,
 } from 'firebase/firestore';
+import SubscriptionDBService from './subscription-db-service';
+import { SUBSCRIPTION_TIERS, SubscriptionTier as DBSubscriptionTier } from './subscription-config';
 
-export type SubscriptionTier = 'trial' | 'paid';
+// For backward compatibility
+type QuotaTier = 'trial' | 'paid';
 
 interface QuotaLimits {
   recordingMinutes: number;
@@ -19,20 +22,23 @@ interface QuotaLimits {
 interface UserQuota {
   recordingMinutesUsed: number;
   enhanceNotesUsed: number;
-  subscriptionStatus: SubscriptionTier;
+  subscriptionStatus: QuotaTier;
   subscriptionStartDate: Date;
 }
 
-const QUOTA_LIMITS: Record<SubscriptionTier, QuotaLimits> = {
-  trial: {
-    recordingMinutes: 10,
-    enhanceNotes: 3,
-  },
-  paid: {
-    recordingMinutes: 1200, // 20 hours
-    enhanceNotes: 50,
-  },
-};
+// Convert DB subscription tier to quota tier
+function mapSubscriptionToQuotaTier(dbTier: DBSubscriptionTier): QuotaTier {
+  return dbTier === 'pro' ? 'paid' : 'trial';
+}
+
+// Get quota limits from subscription config
+function getQuotaLimits(tier: DBSubscriptionTier): QuotaLimits {
+  const config = SUBSCRIPTION_TIERS[tier];
+  return {
+    recordingMinutes: config.limits.recordingTimeMinutes,
+    enhanceNotes: config.limits.aiActionsPerMonth,
+  };
+}
 
 export class QuotaService {
   private static instance: QuotaService;
@@ -47,11 +53,11 @@ export class QuotaService {
     return QuotaService.instance;
   }
 
-  private async initializeQuota(userId: string): Promise<UserQuota> {
+  private async initializeQuota(userId: string, subscriptionTier: DBSubscriptionTier): Promise<UserQuota> {
     const initialQuota: UserQuota = {
       recordingMinutesUsed: 0,
       enhanceNotesUsed: 0,
-      subscriptionStatus: 'trial',
+      subscriptionStatus: mapSubscriptionToQuotaTier(subscriptionTier),
       subscriptionStartDate: new Date(),
     };
 
@@ -71,18 +77,24 @@ export class QuotaService {
       return this.quotaCache.get(userId)!;
     }
 
+    // Get user's subscription status
+    const subscriptionService = SubscriptionDBService.getInstance();
+    const subscription = await subscriptionService.getSubscription(userId);
+    
+    // Get quota usage
     const quotaRef = doc(collection(db, 'quotas'), userId);
     const quotaDoc = await getDoc(quotaRef);
     
     if (!quotaDoc.exists()) {
-      // If quota doesn't exist, initialize it
-      return this.initializeQuota(userId);
+      // If quota doesn't exist, initialize it with current subscription
+      return this.initializeQuota(userId, subscription.tier);
     }
 
     const data = quotaDoc.data();
     const quota: UserQuota = {
       ...data,
-      subscriptionStartDate: new Date(data.subscriptionStartDate),
+      subscriptionStatus: mapSubscriptionToQuotaTier(subscription.tier),
+      subscriptionStartDate: typeof data.subscriptionStartDate === 'string' ? new Date(data.subscriptionStartDate) : new Date(0),
     } as UserQuota;
     
     this.quotaCache.set(userId, quota);
@@ -93,10 +105,10 @@ export class QuotaService {
     hasQuota: boolean;
     minutesRemaining: number;
     percentageUsed: number;
-    subscriptionStatus: SubscriptionTier;
+    subscriptionStatus: DBSubscriptionTier;
   }> {
     const quota = await this.getUserQuota(userId);
-    const limit = QUOTA_LIMITS[quota.subscriptionStatus].recordingMinutes;
+    const limit = getQuotaLimits(quota.subscriptionStatus === 'paid' ? 'pro' : 'free').recordingMinutes;
     const remaining = limit - quota.recordingMinutesUsed;
     const percentageUsed = (quota.recordingMinutesUsed / limit) * 100;
 
@@ -104,7 +116,7 @@ export class QuotaService {
       hasQuota: remaining > 0,
       minutesRemaining: remaining,
       percentageUsed,
-      subscriptionStatus: quota.subscriptionStatus,
+      subscriptionStatus: quota.subscriptionStatus === 'paid' ? 'pro' : 'free',
     };
   }
 
@@ -112,10 +124,10 @@ export class QuotaService {
     hasQuota: boolean;
     enhancesRemaining: number;
     percentageUsed: number;
-    subscriptionStatus: SubscriptionTier;
+    subscriptionStatus: DBSubscriptionTier;
   }> {
     const quota = await this.getUserQuota(userId);
-    const limit = QUOTA_LIMITS[quota.subscriptionStatus].enhanceNotes;
+    const limit = getQuotaLimits(quota.subscriptionStatus === 'paid' ? 'pro' : 'free').enhanceNotes;
     const remaining = limit - quota.enhanceNotesUsed;
     const percentageUsed = (quota.enhanceNotesUsed / limit) * 100;
 
@@ -123,7 +135,7 @@ export class QuotaService {
       hasQuota: remaining > 0,
       enhancesRemaining: remaining,
       percentageUsed,
-      subscriptionStatus: quota.subscriptionStatus,
+      subscriptionStatus: quota.subscriptionStatus === 'paid' ? 'pro' : 'free',
     };
   }
 
@@ -131,9 +143,11 @@ export class QuotaService {
     const quotaRef = doc(collection(db, 'quotas'), userId);
     
     await runTransaction(db, async (transaction) => {
+      const subscriptionService = SubscriptionDBService.getInstance();
+      const subscription = await subscriptionService.getSubscription(userId);
       const quotaDoc = await transaction.get(quotaRef);
       if (!quotaDoc.exists()) {
-        await this.initializeQuota(userId);
+        await this.initializeQuota(userId, subscription.tier);
         return;
       }
 
@@ -156,9 +170,11 @@ export class QuotaService {
     const quotaRef = doc(collection(db, 'quotas'), userId);
     
     await runTransaction(db, async (transaction) => {
+      const subscriptionService = SubscriptionDBService.getInstance();
+      const subscription = await subscriptionService.getSubscription(userId);
       const quotaDoc = await transaction.get(quotaRef);
       if (!quotaDoc.exists()) {
-        await this.initializeQuota(userId);
+        await this.initializeQuota(userId, subscription.tier);
         return;
       }
 
@@ -178,26 +194,18 @@ export class QuotaService {
   }
 
   async upgradeSubscription(userId: string): Promise<void> {
-    const quotaRef = doc(collection(db, 'quotas'), userId);
-    
-    await updateDoc(quotaRef, {
-      subscriptionStatus: 'paid' as SubscriptionTier,
-      subscriptionStartDate: new Date().toISOString(),
-    });
+    // Clear cache to force fresh data on next request
+    this.quotaCache.delete(userId);
 
-    // Update cache
-    const quota = this.quotaCache.get(userId);
-    if (quota) {
-      this.quotaCache.set(userId, {
-        ...quota,
-        subscriptionStatus: 'paid',
-        subscriptionStartDate: new Date(),
-      });
-    }
+    // The actual subscription status is now managed by SubscriptionDBService
+    // and this method should not be used directly.
+    // Subscription updates should go through the webhook handler
+    console.warn('QuotaService.upgradeSubscription is deprecated. Use webhook handler for subscription updates.');
   }
 
-  getQuotaLimits(tier: SubscriptionTier): QuotaLimits {
-    return QUOTA_LIMITS[tier];
+  getQuotaLimits(tier: QuotaTier): QuotaLimits {
+    const dbTier: DBSubscriptionTier = tier === 'paid' ? 'pro' : 'free';
+    return getQuotaLimits(dbTier);
   }
 }
 

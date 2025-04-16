@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/auth-context'; // Import useAuth
 import { useRouter, useSearchParams } from 'next/navigation';
 import PricingCard from '@/components/subscription/PricingCard';
 import UsageDisplay from '@/components/subscription/UsageDisplay';
@@ -11,14 +12,14 @@ import { useToast } from '@/components/ui/toast';
 import { useSubscriptionRequest } from '@/hooks/useApiRequest';
 
 export default function SubscriptionPage() {
+  const { user, loading: authLoading } = useAuth(); // Use the auth hook
   const [currentTier, setCurrentTier] = useState<SubscriptionTier>('free');
   const [showCancellationModal, setShowCancellationModal] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
-  
-  // Mock user ID - should come from auth context
-  const userId = 'mock-user-id';
+
+  const userId = user?.uid; // Get user ID from auth context
 
   // Use our custom hook for subscription status
   const {
@@ -27,7 +28,8 @@ export default function SubscriptionPage() {
     loading: subscriptionLoading,
     execute: fetchSubscriptionStatus
   } = useSubscriptionRequest(async () => {
-    const response = await fetch(`/api/subscription/upgrade?userId=${userId}`);
+    if (!userId) throw new Error("User not authenticated"); // Guard clause
+    const response = await fetch(`/api/subscription/upgrade?userId=${userId}`); // Use dynamic userId
     if (!response.ok) {
       const error = await response.json();
       throw error;
@@ -41,10 +43,11 @@ export default function SubscriptionPage() {
     execute: executeUpgrade
   } = useSubscriptionRequest(
     async () => {
+      if (!userId) throw new Error("User not authenticated"); // Guard clause
       const response = await fetch('/api/subscription/upgrade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({ userId }) // Use dynamic userId
       });
 
       if (!response.ok) {
@@ -68,10 +71,13 @@ export default function SubscriptionPage() {
   );
 
   useEffect(() => {
-    fetchSubscriptionStatus().catch(error => {
-      console.error('Failed to fetch subscription status:', error);
-    });
-  }, []);
+    // Fetch only when user ID is available
+    if (userId) {
+      fetchSubscriptionStatus().catch(error => {
+        console.error('Failed to fetch subscription status:', error);
+      });
+    }
+  }, [userId]); // Add userId as dependency
 
   useEffect(() => {
     if (subscriptionData) {
@@ -84,9 +90,12 @@ export default function SubscriptionPage() {
     if (sessionId) {
       showToast('Subscription updated successfully!', 'success');
       setCurrentTier('pro');
-      fetchSubscriptionStatus().catch(error => {
-        console.error('Failed to refresh subscription status:', error);
-      });
+      // Fetch only when user ID is available
+      if (userId) {
+        fetchSubscriptionStatus().catch(error => {
+          console.error('Failed to refresh subscription status:', error);
+        });
+      }
     }
   }, [searchParams]);
 
@@ -96,6 +105,11 @@ export default function SubscriptionPage() {
     });
     setShowCancellationModal(false);
   };
+
+  // Handle auth loading state
+  if (authLoading) {
+    return <div className="min-h-screen p-4 flex items-center justify-center">Loading authentication...</div>;
+  }
 
   if (subscriptionError) {
     return (
@@ -142,7 +156,7 @@ export default function SubscriptionPage() {
             <h2 className="text-xl font-semibold mb-4">Current Usage</h2>
             <ErrorBoundary>
               <UsageDisplay
-                userId={userId}
+                userId={userId || ''} // Pass userId, handle potential null
                 currentTier={currentTier}
                 onLimitReached={handleLimitReached}
               />
@@ -198,7 +212,7 @@ export default function SubscriptionPage() {
           <CancellationModal
             isOpen={showCancellationModal}
             onClose={() => setShowCancellationModal(false)}
-            userId={userId}
+            userId={userId || ''} // Pass userId, handle potential null
             onCancelled={handleSubscriptionCancelled}
           />
         </div>

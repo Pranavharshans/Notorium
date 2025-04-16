@@ -1,6 +1,13 @@
-import type { ClientOptions } from 'dodopayments';
+import { DodoPayments } from 'dodopayments';
 
+interface ClientOptions {
+  apiKey: string;
+  apiUrl: string;
+}
 export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+
+export type SubscriptionStatus = 'pending' | 'active' | 'on_hold' | 'paused' | 'cancelled' | 'failed' | 'expired';
+
 
 export type WebhookEventType = 
   | 'payment.succeeded'
@@ -64,8 +71,15 @@ export interface SubscriptionPlan {
 
 export interface SubscriptionResponse {
   subscription_id: string;
-  status: 'active' | 'cancelled' | 'past_due';
+  status: SubscriptionStatus;
   plan_id: string;
+  billing: {
+    city: string;
+    country: string;
+    state: string;
+    street: string;
+    zipcode: string;
+  };
   customer_id: string;
   current_period_end: string;
   cancel_at_period_end: boolean;

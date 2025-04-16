@@ -5,6 +5,50 @@ type EnvVars = {
   NEXT_PUBLIC_BASE_URL: string | undefined;
 };
 
+type DodoEvents = {
+  SUBSCRIPTION_CREATED: 'subscription.created';
+  SUBSCRIPTION_UPDATED: 'subscription.updated';
+  SUBSCRIPTION_CANCELLED: 'subscription.cancelled';
+  SUBSCRIPTION_TRIAL_ENDING: 'subscription.trial_ending';
+  SUBSCRIPTION_TRIAL_ENDED: 'subscription.trial_ended';
+  PAYMENT_SUCCEEDED: 'payment.succeeded';
+  PAYMENT_FAILED: 'payment.failed';
+};
+
+type DodoStatus = {
+  ACTIVE: 'active';
+  CANCELLED: 'cancelled';
+  EXPIRED: 'expired';
+  ON_HOLD: 'on_hold';
+  TRIAL: 'trial';
+};
+
+type DodoConfig = {
+  API_KEY: string;
+  WEBHOOK_SECRET: string;
+  BASE_URL: string;
+  PRODUCTS: {
+    PRO: string;
+  };
+  IS_DEVELOPMENT: boolean;
+  MODE: 'test_mode' | 'live_mode';
+  EVENTS: DodoEvents;
+  STATUS: DodoStatus;
+  TEST: {
+    API_KEY: string;
+    WEBHOOK_SECRET: string;
+    PRODUCT_ID: string;
+  };
+  isConfigured(): boolean;
+  getApiKey(): string;
+  getWebhookSecret(): string;
+  mapSubscriptionStatus(dodoStatus: string): keyof DodoStatus;
+  URLS: {
+    SUCCESS: string;
+    CANCEL: string;
+  };
+};
+
 // Read environment variables
 const requiredEnvVars: EnvVars = {
   DODO_PAYMENTS_API_KEY: process.env.DODO_PAYMENTS_API_KEY,
@@ -24,7 +68,7 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-export const DODO_CONFIG = {
+export const DODO_CONFIG: DodoConfig = {
   // API Configuration
   API_KEY: requiredEnvVars.DODO_PAYMENTS_API_KEY || '',
   WEBHOOK_SECRET: requiredEnvVars.DODO_PAYMENTS_WEBHOOK_KEY || '',
@@ -44,6 +88,8 @@ export const DODO_CONFIG = {
     SUBSCRIPTION_CREATED: 'subscription.created',
     SUBSCRIPTION_UPDATED: 'subscription.updated',
     SUBSCRIPTION_CANCELLED: 'subscription.cancelled',
+    SUBSCRIPTION_TRIAL_ENDING: 'subscription.trial_ending',
+    SUBSCRIPTION_TRIAL_ENDED: 'subscription.trial_ended',
     PAYMENT_SUCCEEDED: 'payment.succeeded',
     PAYMENT_FAILED: 'payment.failed',
   },
@@ -53,7 +99,26 @@ export const DODO_CONFIG = {
     ACTIVE: 'active',
     CANCELLED: 'cancelled',
     EXPIRED: 'expired',
+    ON_HOLD: 'on_hold',
+    TRIAL: 'trial',
   } as const,
+
+  // Maps Dodo payment status to our status
+  mapSubscriptionStatus(dodoStatus: string): keyof typeof DODO_CONFIG.STATUS {
+    switch (dodoStatus) {
+      case 'active':
+        return 'ACTIVE';
+      case 'on_hold':
+      case 'paused':
+        return 'ON_HOLD';
+      case 'trial':
+        return 'TRIAL';
+      case 'cancelled':
+        return 'CANCELLED';
+      default:
+        return 'EXPIRED';
+    }
+  },
 
   // URLs
   URLS: {
@@ -77,11 +142,17 @@ export const DODO_CONFIG = {
 
   // Get API key with fallback to test values in development
   getApiKey(): string {
-    const key = this.API_KEY || (this.IS_DEVELOPMENT ? this.TEST.API_KEY : '');
-    if (!key) {
-      throw new Error('API key not configured');
+    // In development, prefer TEST API key if available
+    if (this.IS_DEVELOPMENT && this.TEST.API_KEY) {
+      return this.TEST.API_KEY;
     }
-    return key;
+    
+    // Otherwise use the main API key
+    if (this.API_KEY) {
+      return this.API_KEY;
+    }
+    
+    throw new Error('Dodo Payments API key not configured. Please check your environment variables.');
   },
 
   // Get webhook secret with fallback to test values in development

@@ -1,18 +1,19 @@
 import { db } from './firebase';
-import { 
-  doc, 
-  collection, 
+import {
+  doc,
+  collection,
   getDoc,
-  getDocs, 
-  setDoc, 
-  updateDoc, 
+  getDocs,
+  setDoc,
+  updateDoc,
   Timestamp,
   increment,
   query,
   orderBy,
-  limit 
+  limit
 } from 'firebase/firestore';
 import { SubscriptionTier, SUBSCRIPTION_TIERS } from './subscription-config';
+import { paymentService } from './dodo-payments/payment-service';
 
 interface PaymentHistoryItem {
   id: string;
@@ -39,7 +40,7 @@ interface UserSubscription {
   subscriptionId: string | null;
   startDate: Date;
   endDate: Date | null;
-  status: 'active' | 'cancelled' | 'expired';
+  status: 'active' | 'cancelled' | 'expired' | 'on_hold' | 'trial';
 }
 
 interface UserUsage {
@@ -95,25 +96,52 @@ export class SubscriptionDBService {
   }
 
   /**
-   * Get user's subscription details
+   * Get user's subscription details with payment verification
    */
-  public async getSubscription(userId: string): Promise<UserSubscription | null> {
+  public async getSubscription(userId: string): Promise<UserSubscription> {
     try {
       const docRef = doc(db, 'subscriptions', userId);
       const docSnap = await getDoc(docRef);
       
-      if (!docSnap.exists()) {
-        // Return default free tier if no subscription exists
-        return {
-          tier: 'free',
-          subscriptionId: null,
-          startDate: new Date(),
-          endDate: null,
-          status: 'active'
-        };
+      // Get subscription data from Firebase
+      const subscriptionData = docSnap.exists()
+        ? (docSnap.data() as UserSubscription)
+        : {
+            tier: 'free' as SubscriptionTier,
+            subscriptionId: null,
+            startDate: new Date(),
+            endDate: null,
+            status: 'active' as const
+          };
+
+      // If there's a subscription ID, verify it with Dodo Payments
+      if (subscriptionData.subscriptionId) {
+        try {
+          const paymentStatus = await paymentService.getSubscriptionStatus(subscriptionData.subscriptionId);
+          
+          // Update subscription status based on payment provider verification
+          if (!paymentStatus.isActive) {
+            await this.updateSubscription(userId, {
+              tier: 'free',
+              status: 'expired',
+              endDate: new Date()
+            });
+            
+            return {
+              tier: 'free',
+              subscriptionId: null,
+              startDate: new Date(),
+              endDate: null,
+              status: 'active'
+            };
+          }
+        } catch (error) {
+          console.error('Failed to verify subscription with payment provider:', error);
+          // On verification failure, default to stored data but log the error
+        }
       }
 
-      return docSnap.data() as UserSubscription;
+      return subscriptionData;
     } catch (error: any) {
       console.error('Failed to get subscription:', error);
       throw error;
