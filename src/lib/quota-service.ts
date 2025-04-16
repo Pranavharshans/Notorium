@@ -7,6 +7,7 @@ import {
   setDoc,
   updateDoc,
   runTransaction,
+  increment,
 } from 'firebase/firestore';
 
 export type SubscriptionTier = 'trial' | 'paid';
@@ -132,30 +133,26 @@ export class QuotaService {
   async incrementRecordingUsage(userId: string, minutes: number): Promise<void> {
     const quotaRef = doc(collection(db, 'quotas'), userId);
     
-    await runTransaction(db, async (transaction) => {
-      const quotaDoc = await transaction.get(quotaRef);
-      if (!quotaDoc.exists()) {
-        await this.initializeQuota(userId);
-        return;
-      }
+    const quotaDoc = await getDoc(quotaRef);
+    if (!quotaDoc.exists()) {
+      await this.initializeQuota(userId);
+      return;
+    }
 
-      const quota = quotaDoc.data() as UserQuota;
-      const newMinutes = quota.recordingMinutesUsed + minutes;
-      console.log("Updating recording usage:", {
-        userId,
-        currentMinutesUsed: quota.recordingMinutesUsed,
-        incrementBy: minutes,
-        newMinutes
-      });
-      transaction.update(quotaRef, {
-        recordingMinutesUsed: newMinutes,
-      });
+    const quotaData = quotaDoc.data();
+    console.log("Current quota data:", quotaData);
 
-      // Update cache
-      this.quotaCache.set(userId, {
-        ...quota,
-        recordingMinutesUsed: newMinutes,
-      });
+    await updateDoc(quotaRef, {
+      recordingMinutesUsed: increment(minutes)
+    });
+
+    // Update cache with incremented value
+    const updatedMinutes = quotaData.recordingMinutesUsed + minutes;
+    this.quotaCache.set(userId, {
+      recordingMinutesUsed: updatedMinutes,
+      enhanceNotesUsed: quotaData.enhanceNotesUsed,
+      subscriptionStatus: quotaData.subscriptionStatus,
+      subscriptionStartDate: new Date(quotaData.subscriptionStartDate)
     });
   }
 

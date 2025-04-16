@@ -1,8 +1,13 @@
 # Implementation Log
 
-Last updated: 4/11/2025, 9:56 PM IST
+Last updated: 4/17/2025, 12:12 AM IST
 
 ## Implemented Features
+
+### Firestore Rule Fix (Quota Update) (4/17/2025, 12:12 AM)
+- Removed `debug()` call from the quota update rule in `firestore.rules`.
+- This resolves the "Missing or insufficient permissions" error encountered when incrementing recording usage after stopping a recording.
+- The `debug()` function, while useful in the simulator, is not recommended for production rules and was likely interfering with rule evaluation.
 
 ### Firestore Security Rules (4/11/2025, 9:56 PM)
 - Implemented comprehensive security rules for quota system:

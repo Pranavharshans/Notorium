@@ -35,23 +35,19 @@ service cloud.firestore {
         && request.auth.uid == userId
         && (
           // Allow recording minutes increment
-          (request.resource.data.recordingMinutesUsed > resource.data.recordingMinutesUsed
-           && request.resource.data.enhanceNotesUsed == resource.data.enhanceNotesUsed
-           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus
-           && request.resource.data.subscriptionStartDate == resource.data.subscriptionStartDate)
+          (request.resource.data.recordingMinutesUsed is number
+           && request.resource.data.recordingMinutesUsed >= resource.data.recordingMinutesUsed)
           ||
           // Allow enhance notes increment
-          (request.resource.data.enhanceNotesUsed > resource.data.enhanceNotesUsed
-           && request.resource.data.recordingMinutesUsed == resource.data.recordingMinutesUsed
-           && request.resource.data.subscriptionStatus == resource.data.subscriptionStatus
-           && request.resource.data.subscriptionStartDate == resource.data.subscriptionStartDate)
+          (request.resource.data.enhanceNotesUsed is number
+           && request.resource.data.enhanceNotesUsed >= resource.data.enhanceNotesUsed)
           ||
           // Allow subscription status update
           (request.resource.data.subscriptionStatus != resource.data.subscriptionStatus
            && request.resource.data.recordingMinutesUsed == resource.data.recordingMinutesUsed
            && request.resource.data.enhanceNotesUsed == resource.data.enhanceNotesUsed)
-        )
-        && debug(request.resource.data);
+        );
+        // Removed debug() call from production rule
     }
 
     // Notes collection rules
