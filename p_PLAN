@@ -1,0 +1,7 @@
+PLAN FOR PAYMENT
+
+
+CREATE USER AT LOGIN. 
+STORE 'customer_id' in firebase.
+
+USE 'customer_id' for checking and validation
