@@ -1,8 +1,17 @@
 # Implementation Log
 
-Last updated: 4/17/2025, 12:12 AM IST
+Last updated: 2025-04-23 13:21:00 (Asia/Calcutta, UTC+5:30)
 
 ## Implemented Features
+
+### Subscription API Fixes (4/22/2025, 10:30 PM)
+- Fixed Dodo Payments subscription creation endpoint:
+  * Corrected environment variable configuration (NEXT_PUBLIC_DODO_PRO_PRODUCT_ID)
+  * Added proper type assertions for CountryCode in billing info
+  * Improved default billing information
+  * Enhanced error logging for better debugging
+  * Added status parameters to return URLs for better UX
+- Fixed product ID handling in checkout process
 
 ### Firestore Rule Fix (Quota Update) (4/17/2025, 12:12 AM)
 - Removed `debug()` call from the quota update rule in `firestore.rules`.
@@ -84,22 +93,27 @@ Last updated: 4/17/2025, 12:12 AM IST
 - Features:
   * Automatic cache invalidation on:
     - Write operations
-    - Version mismatch
-    - Cache expiry (7 days)
-    - Storage full
-  * Type-safe implementation
-  * Proper timestamp handling
-  * Detailed logging for cache operations
-  * Clear cache on logout
-  * ~70-80% reduction in Firebase reads
-  * ~98% faster subsequent note retrievals
+  * Version mismatch
+  * Cache expiry (7 days)
+- Implement team/organization quotas
+- Add usage export functionality
+- Implement quota rollover system
+- Add custom quota limits for enterprise users
 
-### Previous Features
-[Previous implementation details would go here]
+## Known Issues
 
 ## Planned Features
+
+- Collect billing information from the user before creating the subscription to avoid validation issues with Dodo Payments.
 - Add subscription analytics dashboard
 - Implement team/organization quotas
 - Add usage export functionality
 - Implement quota rollover system
 - Add custom quota limits for enterprise users
+
+## Implemented Features
+
+### Billing Details Collection (2025-04-23 13:21:00 Asia/Calcutta)
+- Removed custom billing details page and integrated DodoPayments' hosted checkout flow.
+- Updated the pricing page to directly create the subscription and redirect to DodoPayment's checkout page.
+- Updated the subscription creation API route to NOT require billing details in the request body.

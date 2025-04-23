@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
+import { useSubscription } from "@/hooks/useSubscription";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { Check, X } from "lucide-react";
 
@@ -27,6 +28,8 @@ const PricingTier = ({
   highlighted = false,
   onSelect,
   saveAmount = "",
+  isLoading = false,
+  isCurrentPlan = false,
 }: {
   name: string;
   price: string;
@@ -35,6 +38,8 @@ const PricingTier = ({
   highlighted?: boolean;
   onSelect: () => void;
   saveAmount?: string;
+  isLoading?: boolean;
+  isCurrentPlan?: boolean;
 }) => (
   <div
     className={`relative rounded-2xl ${
@@ -72,20 +77,76 @@ const PricingTier = ({
     </ul>
     <ShimmerButton
       onClick={onSelect}
+      disabled={isLoading || isCurrentPlan}
       className={`w-full ${
         highlighted
           ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 dark:from-blue-500 dark:to-indigo-500"
           : "bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700"
-      }`}
+      } ${isCurrentPlan ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
-      {price === "Free" ? "Start Trial" : "Upgrade Now"}
+      {isLoading ? "Processing..." :
+       isCurrentPlan ? "Current Plan" :
+       price === "Free" ? "Start Trial" : "Upgrade Now"}
     </ShimmerButton>
   </div>
 );
 
+const SubscriptionStatus = () => {
+  const { subscriptionData } = useSubscription();
+  const [isLoading, setIsLoading] = useState(false);
+
+  if (!subscriptionData) return null;
+
+  const handleCancel = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/subscription/cancel', {
+        method: 'POST'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to cancel subscription');
+      }
+      
+    } catch (error) {
+      console.error('Cancel error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-2xl mb-8 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/50">
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+            Subscription Status: {subscriptionData.status}
+          </p>
+          {subscriptionData.next_billing_date && (
+            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+              Next billing: {new Date(subscriptionData.next_billing_date).toLocaleDateString()}
+            </p>
+          )}
+        </div>
+        {subscriptionData.status === 'active' && (
+          <ShimmerButton
+            onClick={handleCancel}
+            disabled={isLoading}
+            className="bg-red-600 hover:bg-red-700 text-sm"
+          >
+            {isLoading ? 'Cancelling...' : 'Cancel Subscription'}
+          </ShimmerButton>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function PricingPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { subscriptionData } = useSubscription();
+  const [isLoading, setIsLoading] = useState(false);
 
   const pricingTiers = [
     {
@@ -122,16 +183,46 @@ export default function PricingPage() {
     }
   ];
 
-  const handlePlanSelect = (plan: string) => {
+  const handlePlanSelect = async (plan: string) => {
+    console.log('User object:', user); // Debug log
     if (!user) {
+      console.log('User is null, redirecting to home'); // Debug log
       router.push("/");
       return;
     }
-    console.log("Selected plan:", plan);
+
+    // Only handle Pro plan subscription
+    if (plan === "Pro") {
+      try {
+        setIsLoading(true);
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        const response = await fetch(
+          `${baseUrl}/api/checkout/subscription?productId=${process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID}`,
+          {
+            method: "POST",
+            cache: "no-store",
+            credentials: 'include',
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Checkout failed: ${errorData.error || response.statusText}`);
+        }
+
+        const data = await response.json();
+        router.push(data.payment_link);
+      } catch (error) {
+        console.error('Checkout error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+      <SubscriptionStatus />
       {/* Header */}
       <header className="py-16 text-center">
         <h1 className="mb-4 text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
@@ -153,6 +244,10 @@ export default function PricingPage() {
             features={tier.features}
             highlighted={tier.highlighted}
             saveAmount={tier.saveAmount}
+            isLoading={isLoading}
+            isCurrentPlan={
+              subscriptionData?.status === 'active' && tier.name === "Pro"
+            }
             onSelect={() => handlePlanSelect(tier.name)}
           />
         ))}

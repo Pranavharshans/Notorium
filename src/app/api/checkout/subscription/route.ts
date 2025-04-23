@@ -1,4 +1,3 @@
-
 import { dodopayments } from "@/lib/dodopayments";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/firebase-admin";
@@ -28,7 +27,7 @@ async function validateSession(): Promise<{ firebaseUid: string; user: any } | n
   }
 }
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("productId") as string;
@@ -67,11 +66,11 @@ export async function GET(request: Request) {
     // Create subscription
     const response = await dodopayments.subscriptions.create({
       billing: {
-        city: user.email ? "Elankur" : "Sydney",
-        country: "IN",
-        state: "Kerala",
-        street: "Poolakkal",
-        zipcode: "676123",
+        city: "",
+        country: "US",
+        state: "",
+        street: "",
+        zipcode: "",
       },
       customer: {
         email: user.email || "no-email@example.com",

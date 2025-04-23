@@ -1,11 +1,7 @@
 "use client";
 
 import { Dialog } from '@headlessui/react';
-import { auth } from '@/lib/firebase';
-import {
-  GoogleAuthProvider,
-  signInWithPopup,
-} from 'firebase/auth';
+import { useAuth } from '@/context/auth-context';
 import { toast } from 'sonner';
 
 export function AuthModal({
@@ -15,10 +11,11 @@ export function AuthModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const { signInWithGoogle } = useAuth();
+
   const handleGoogleSignIn = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithGoogle();
       toast.success('Signed in with Google successfully!');
       onClose();
     } catch (error: any) {
