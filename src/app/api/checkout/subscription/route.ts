@@ -31,10 +31,19 @@ export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("productId") as string;
+    const body = await request.json();
 
     if (!productId) {
       return NextResponse.json(
         { error: "Missing productId parameter" },
+        { status: 400 }
+      );
+    }
+
+    // Validate billing and customer information
+    if (!body.billing || !body.customer) {
+      return NextResponse.json(
+        { error: "Missing billing or customer information" },
         { status: 400 }
       );
     }
@@ -60,27 +69,29 @@ export async function POST(request: Request) {
     console.log('Creating subscription for user:', {
       uid: firebaseUid,
       email: user.email,
-      metadata
+      metadata,
+      billing: body.billing, // Log received billing information
+      customer: body.customer // Log received customer information
     });
 
     // Create subscription
     const response = await dodopayments.subscriptions.create({
       billing: {
-        city: "",
-        country: "US",
-        state: "",
-        street: "",
-        zipcode: "",
+        city: body.billing.city,
+        country: body.billing.country,
+        state: body.billing.state,
+        street: body.billing.street,
+        zipcode: body.billing.zipcode
       },
       customer: {
-        email: user.email || "no-email@example.com",
-        name: user.displayName || "Unknown User",
+        email: body.customer.email || user.email,
+        name: body.customer.name,
       },
       metadata,
-      payment_link: true,
       product_id: productId,
       quantity: 1,
       return_url: process.env.NEXT_PUBLIC_BASE_URL,
+      payment_link: true
     });
 
     console.log('Subscription created:', {

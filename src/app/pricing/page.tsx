@@ -7,6 +7,41 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { Check, X } from "lucide-react";
 
+const pricingTiers = [
+  {
+    name: "Trial",
+    price: "Free",
+    description: "Try out our core features",
+    features: [
+      { text: "10 minutes of recording time", included: true },
+      { text: "3 enhance note operations", included: true },
+      { text: "Basic editing features", included: true },
+      { text: "Community support", included: true },
+      { text: "Priority processing", included: false },
+      { text: "Advanced AI features", included: false },
+      { text: "Offline access", included: false },
+      { text: "Custom export formats", included: false },
+    ],
+  },
+  {
+    name: "Pro",
+    price: "$9.99",
+    description: "Unlock your full learning potential",
+    saveAmount: "Save 33% with annual billing",
+    features: [
+      { text: "20 hours of recording time", included: true },
+      { text: "50 enhance note operations", included: true },
+      { text: "Advanced editing features", included: true },
+      { text: "Priority email support", included: true },
+      { text: "Priority AI processing", included: true },
+      { text: "Advanced AI summarization", included: true },
+      { text: "Offline mode access", included: true },
+      { text: "Export to any format", included: true },
+    ],
+    highlighted: true,
+  }
+];
+
 const Feature = ({ included, text }: { included: boolean; text: string }) => (
   <li className="flex items-center gap-3">
     {included ? (
@@ -148,72 +183,18 @@ export default function PricingPage() {
   const { subscriptionData } = useSubscription();
   const [isLoading, setIsLoading] = useState(false);
 
-  const pricingTiers = [
-    {
-      name: "Trial",
-      price: "Free",
-      description: "Try out our core features",
-      features: [
-        { text: "10 minutes of recording time", included: true },
-        { text: "3 enhance note operations", included: true },
-        { text: "Basic editing features", included: true },
-        { text: "Community support", included: true },
-        { text: "Priority processing", included: false },
-        { text: "Advanced AI features", included: false },
-        { text: "Offline access", included: false },
-        { text: "Custom export formats", included: false },
-      ],
-    },
-    {
-      name: "Pro",
-      price: "$9.99",
-      description: "Unlock your full learning potential",
-      saveAmount: "Save 33% with annual billing",
-      features: [
-        { text: "20 hours of recording time", included: true },
-        { text: "50 enhance note operations", included: true },
-        { text: "Advanced editing features", included: true },
-        { text: "Priority email support", included: true },
-        { text: "Priority AI processing", included: true },
-        { text: "Advanced AI summarization", included: true },
-        { text: "Offline mode access", included: true },
-        { text: "Export to any format", included: true },
-      ],
-      highlighted: true,
-    }
-  ];
-
   const handlePlanSelect = async (plan: string) => {
-    console.log('User object:', user); // Debug log
     if (!user) {
-      console.log('User is null, redirecting to home'); // Debug log
       router.push("/");
       return;
     }
 
-    // Only handle Pro plan subscription
     if (plan === "Pro") {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-        const response = await fetch(
-          `${baseUrl}/api/checkout/subscription?productId=${process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID}`,
-          {
-            method: "POST",
-            cache: "no-store",
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Checkout failed: ${errorData.error || response.statusText}`);
-        }
-
-        const data = await response.json();
-        router.push(data.payment_link);
+        router.push(`/billing-details?productId=${process.env.NEXT_PUBLIC_DODO_PRO_PRODUCT_ID}`);
       } catch (error) {
-        console.error('Checkout error:', error);
+        console.error('Navigation error:', error);
       } finally {
         setIsLoading(false);
       }
@@ -223,7 +204,6 @@ export default function PricingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
       <SubscriptionStatus />
-      {/* Header */}
       <header className="py-16 text-center">
         <h1 className="mb-4 text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
           Choose Your Learning Path
@@ -233,7 +213,6 @@ export default function PricingPage() {
         </p>
       </header>
 
-      {/* Pricing Grid */}
       <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-20 sm:grid-cols-2 lg:px-8">
         {pricingTiers.map((tier) => (
           <PricingTier
@@ -253,7 +232,6 @@ export default function PricingPage() {
         ))}
       </div>
 
-      {/* FAQ Section */}
       <div className="mx-auto max-w-4xl px-4 pb-20">
         <h2 className="mb-8 text-2xl font-bold text-center text-gray-900 dark:text-white">
           Frequently Asked Questions
