@@ -1,8 +1,15 @@
 # Implementation Log
 
-Last updated: 2025-04-25 10:11:00 (Asia/Calcutta, UTC+5:30)
+Last updated: 2025-04-25 11:47:00 (Asia/Calcutta, UTC+5:30)
 
 ## Implemented Features
+
+### Reduced Sidebar Spacing (2025-04-25 11:47:00 Asia/Calcutta)
+- Reduced padding between the "My Notes" heading and the search bar in the notes sidebar (`NotesSidebar.tsx` and `NotesList.tsx`) for a more compact UI.
+
+### Removed duplicate "My Notes" title (2025-04-25 11:42:00 Asia/Calcutta)
+- Removed the duplicate "My Notes" title from the NotesList component to eliminate extra space.
+- Kept only the "Plus" button in a right-aligned container.
 
 ### NoteDisplay Bug Fix (2025-04-25 10:11:00 Asia/Calcutta)
 - Fixed TypeError in NoteDisplay component where `onTitlesExtracted` was being called without being provided
@@ -109,7 +116,7 @@ Last updated: 2025-04-25 10:11:00 (Asia/Calcutta, UTC+5:30)
   * Cache versioning support
 - Features:
   * Automatic cache invalidation on:
-    - Write operations
+  * Write operations
   * Version mismatch
   * Cache expiry (7 days)
 

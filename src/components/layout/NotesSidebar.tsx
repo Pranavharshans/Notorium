@@ -24,14 +24,13 @@ export function NotesSidebar({
 }: NotesSidebarProps) {
   return (
     <div className="w-72 border-r border-gray-200 dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800 flex-shrink-0">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-      </div>
       
-      <div className="p-4 flex justify-between items-center">
-        <h3 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 tracking-wider">My Notes</h3>
+      {/* Reduced bottom padding */}
+      <div className="px-4 pt-4 pb-2 flex justify-between items-center">
+        <h3 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 tracking-wider mb-0">My Notes</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-2">
+      <div className="flex-1 overflow-y-auto px-2">
         <NotesList
           activeNoteId={selectedNoteId}
           onNoteSelect={onNoteSelect}

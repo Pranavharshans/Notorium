@@ -208,7 +208,8 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
 
   return (
     <div className="w-full flex flex-col h-full">
-      <div className="p-4 border-b border-gray-200">
+      {/* Reduced top padding */}
+      <div className="px-4 pt-2 pb-4 border-b border-gray-200 dark:border-gray-700">
         <div className="relative">
           <input
             type="text"
@@ -233,8 +234,7 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
           </svg>
         </div>
       </div>
-      <div className="flex justify-between items-center px-3 py-2">
-        <h2 className="text-sm font-medium">My Notes</h2>
+      <div className="flex justify-end px-3">
         <button className="text-gray-500 hover:text-gray-800">
           <Plus size={18} />
         </button>
