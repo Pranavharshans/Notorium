@@ -1,8 +1,25 @@
 # Implementation Log
 
-Last updated: 2025-04-23 13:21:00 (Asia/Calcutta, UTC+5:30)
+Last updated: 2025-04-25 10:11:00 (Asia/Calcutta, UTC+5:30)
 
 ## Implemented Features
+
+### NoteDisplay Bug Fix (2025-04-25 10:11:00 Asia/Calcutta)
+- Fixed TypeError in NoteDisplay component where `onTitlesExtracted` was being called without being provided
+- Made `onTitlesExtracted` prop optional and added conditional check before calling
+- This prevents errors when the parent component doesn't need title extraction functionality
+
+### Billing Details Collection (2025-04-23 13:21:00 Asia/Calcutta)
+- Removed custom billing details page and integrated DodoPayments' hosted checkout flow.
+- Updated the pricing page to directly create the subscription and redirect to DodoPayment's checkout page.
+- Updated the subscription creation API route to NOT require billing details in the request body.
+
+### NoteView UI Update (2025-04-25 09:23:00 Asia/Calcutta)
+- Updated the NoteView component to resemble the Notion UI in light theme.
+  * Removed dark theme elements.
+  * Adjusted the overall container styling.
+  * Modified the title to be larger and more prominent.
+  * Adjusted the action buttons to have a lighter background color on hover.
 
 ### Subscription API Fixes (4/22/2025, 10:30 PM)
 - Fixed Dodo Payments subscription creation endpoint:
@@ -95,10 +112,6 @@ Last updated: 2025-04-23 13:21:00 (Asia/Calcutta, UTC+5:30)
     - Write operations
   * Version mismatch
   * Cache expiry (7 days)
-- Implement team/organization quotas
-- Add usage export functionality
-- Implement quota rollover system
-- Add custom quota limits for enterprise users
 
 ## Known Issues
 
@@ -110,10 +123,3 @@ Last updated: 2025-04-23 13:21:00 (Asia/Calcutta, UTC+5:30)
 - Add usage export functionality
 - Implement quota rollover system
 - Add custom quota limits for enterprise users
-
-## Implemented Features
-
-### Billing Details Collection (2025-04-23 13:21:00 Asia/Calcutta)
-- Removed custom billing details page and integrated DodoPayments' hosted checkout flow.
-- Updated the pricing page to directly create the subscription and redirect to DodoPayment's checkout page.
-- Updated the subscription creation API route to NOT require billing details in the request body.

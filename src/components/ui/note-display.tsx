@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Wand2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -19,10 +19,32 @@ interface NoteDisplayProps {
   content: string;
   onEnhance: (mode: EnhanceMode) => Promise<void>;
   isEnhancing: boolean;
+  onTitlesExtracted?: (titles: { id: string; text: string; level: number }[]) => void;
 }
 
-export function NoteDisplay({ content, onEnhance, isEnhancing }: NoteDisplayProps) {
+export function NoteDisplay({ content, onEnhance, isEnhancing, onTitlesExtracted }: NoteDisplayProps) {
   const [showEnhanceOptions, setShowEnhanceOptions] = useState(false);
+  const [titles, setTitles] = useState<{ id: string; text: string; level: number }[]>([]);
+
+  useEffect(() => {
+    const extractTitles = () => {
+      const headingRegex = /^(#+)\s+(.*)$/gm;
+      const matches: { id: string; text: string; level: number }[] = [];
+      let match;
+      while ((match = headingRegex.exec(content)) !== null) {
+        const level = match[1].length;
+        const text = match[2].trim();
+        const id = text.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+        matches.push({ id, text, level });
+      }
+      setTitles(matches);
+      if (onTitlesExtracted) {
+        onTitlesExtracted(matches);
+      }
+    };
+
+    extractTitles();
+  }, [content, onTitlesExtracted]);
 
   return (
     <div className="relative">
