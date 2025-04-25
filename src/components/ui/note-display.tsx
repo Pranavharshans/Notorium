@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Wand2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { cn } from '@/lib/utils';
 import { EnhanceMode } from '@/lib/gemini-service';
 import MarkdownCodeBlock from './markdown-code-block';
+import { AnimatedEditPopover } from './AnimatedEditPopover';
 
 interface CodeProps {
   children?: React.ReactNode;
@@ -48,68 +47,9 @@ export function NoteDisplay({ content, onEnhance, isEnhancing, onTitlesExtracted
 
   return (
     <div className="relative">
-      {/* AI Enhance Button */}
-      <button
-        type="button"
-        onClick={() => setShowEnhanceOptions(!showEnhanceOptions)}
-        className="absolute top-2 right-2 p-2 text-gray-500 hover:text-purple-600 bg-white rounded-md shadow-sm border border-gray-200 transition-colors duration-200 flex items-center gap-2 z-10"
-        disabled={isEnhancing}
-      >
-        <Wand2 size={16} />
-        {isEnhancing && (
-          <span className="h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-        )}
-      </button>
-
-      {/* Enhancement Options Dropdown */}
-      {showEnhanceOptions && (
-        <div className="absolute right-2 top-12 z-20 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-          <button
-            type="button"
-            onClick={async () => {
-              await onEnhance('detailed');
-              setShowEnhanceOptions(false);
-            }}
-            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 disabled:opacity-50 border-b border-gray-100"
-            disabled={isEnhancing}
-          >
-            Make More Detailed
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              await onEnhance('shorter');
-              setShowEnhanceOptions(false);
-            }}
-            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 disabled:opacity-50 border-b border-gray-100"
-            disabled={isEnhancing}
-          >
-            Make Shorter
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              await onEnhance('simpler');
-              setShowEnhanceOptions(false);
-            }}
-            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 disabled:opacity-50 border-b border-gray-100"
-            disabled={isEnhancing}
-          >
-            Make Simpler
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              await onEnhance('complex');
-              setShowEnhanceOptions(false);
-            }}
-            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-50 disabled:opacity-50"
-            disabled={isEnhancing}
-          >
-            Make More Complex
-          </button>
-        </div>
-      )}
+      <div className="absolute top-2 right-2 z-10">
+        <AnimatedEditPopover onEnhance={onEnhance} isEnhancing={isEnhancing} />
+      </div>
 
       {/* Loading Overlay */}
       {isEnhancing && (

@@ -68,40 +68,6 @@ export function NoteView({
                   >
                     <Trash2 size={16} />
                   </button>
-                  <div className="relative">
-                    <button
-                      onClick={onToggleEnhanceOptions}
-                      disabled={enhancing}
-                      className={cn(
-                        "p-2 text-gray-500 hover:bg-gray-100",
-                        enhancing && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      <Wand2 size={16} />
-                    </button>
-                    {showEnhanceOptions && (
-                      <div className="absolute bottom-full right-0 mb-2 w-48 bg-white border rounded-lg shadow-lg z-20">
-                        <button
-                          onClick={() => onEnhance('shorter')}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          Summarize
-                        </button>
-                        <button
-                          onClick={() => onEnhance('detailed')}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          Expand
-                        </button>
-                        <button
-                          onClick={() => onEnhance('simpler')}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          Simplify
-                        </button>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
