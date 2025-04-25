@@ -3,6 +3,13 @@
 Last updated: 2025-04-25 11:47:00 (Asia/Calcutta, UTC+5:30)
 
 ## Implemented Features
+### Standardized Note Card Size (2025-04-25 01:12:00 Asia/Calcutta)
+- Applied a fixed height of 200px to the `NoteItem` component in `src/components/ui/notes-list.tsx` for consistent card size.
+- Added a thin border (`border border-gray-200 dark:border-gray-700`) for visual separation.
+- Reorganized note card layout:
+  * Title at the top
+  * Tags and timestamp row immediately below title
+  * Note content with 5-line truncation filling the remaining space
 
 ### Reduced Sidebar Spacing (2025-04-25 11:47:00 Asia/Calcutta)
 - Reduced padding between the "My Notes" heading and the search bar in the notes sidebar (`NotesSidebar.tsx` and `NotesList.tsx`) for a more compact UI.

@@ -31,16 +31,16 @@ interface NoteItemProps {
 
 function TranscriptDisplay({ transcript }: TranscriptDisplayProps) {
   const [expanded, setExpanded] = useState(false);
-  const truncatedTranscript = transcript.slice(0, 300);
+  const truncatedTranscript = transcript.slice(0, 100); // Reduced from 300
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-100">
       <p className="text-xs font-medium text-gray-500 mb-1">Transcript</p>
       <p className="text-xs text-gray-600">
         {expanded ? transcript : truncatedTranscript}
-        {!expanded && transcript.length > 300 && "..."}
+        {!expanded && transcript.length > 100 && "..."} // Reduced from 300
       </p>
-      {transcript.length > 300 && (
+      {transcript.length > 100 && ( // Reduced from 300
         <button
           className="text-blue-500 text-xs hover:underline"
           onClick={(e) => {
@@ -61,17 +61,14 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
 
   return (
     <div
-      className={`p-3 rounded-lg mb-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ${
+      className={`p-3 rounded-lg mb-2 cursor-pointer border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ${
         isActive ? 'bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
       }`}
       onClick={() => onClick(note.id, note)}
+      style={{ height: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}
     >
-      <h3 className="font-medium text-sm mb-1 truncate">{note.title || 'Untitled Note'}</h3>
-      <div className="mb-2">
-        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{excerpt}</p>
-      </div>
-      {note.transcript && <TranscriptDisplay transcript={note.transcript} />}
-      <div className="flex justify-between items-center text-xs text-gray-400 dark:text-gray-500 mt-2">
+      <h3 className="font-medium text-sm mb-2 truncate">{note.title || 'Untitled Note'}</h3>
+      <div className="flex justify-between items-center text-xs mb-3">
         <div className="flex items-center gap-1">
           {note.tags && note.tags.map(tag => {
             let hash = 0;
@@ -100,7 +97,10 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
             );
           })}
         </div>
-        <span>{formatDistanceToNow(note.createdAt instanceof Timestamp ? note.createdAt.toDate() : new Date(note.createdAt.seconds * 1000), { addSuffix: true })}</span>
+        <span className="text-gray-400 dark:text-gray-500">{formatDistanceToNow(note.createdAt instanceof Timestamp ? note.createdAt.toDate() : new Date(note.createdAt.seconds * 1000), { addSuffix: true })}</span>
+      </div>
+      <div className="flex-1 overflow-hidden">
+        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-6">{note.notes}</p>
       </div>
     </div>
   );
