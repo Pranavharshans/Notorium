@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/auth-context";
+import { QuotaPopupProvider } from "@/context/QuotaPopupContext"; // Import the provider
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,11 +18,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <AuthProvider>
-        <body className={inter.className}>
-          {children}
-        </body>
-      </AuthProvider>
+      <body className={inter.className}>
+        <AuthProvider>
+          <QuotaPopupProvider>
+            {children}
+          </QuotaPopupProvider>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

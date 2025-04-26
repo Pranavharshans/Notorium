@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useQuotaPopup } from '@/context/QuotaPopupContext'; // Import the hook
+import { quotaService, RecordingQuotaExhaustedError } from '@/lib/quota-service'; // Import service and error
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
 import { aiProviderService, AIProvider } from "@/lib/ai-provider-service";
@@ -23,6 +25,7 @@ export function NewLectureView({
   user,
   onNoteSelect
 }: NewLectureViewProps) {
+  const { showQuotaPopup } = useQuotaPopup(); // Use the hook
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -49,11 +52,34 @@ export function NewLectureView({
     { value: 'general', label: 'General Knowledge' }
   ];
 
-  const handleRecordingStart = () => {
-    setIsRecording(true);
-    setError(null);
-    setTranscription(null);
-    setCopySuccess(false);
+  const handleRecordingStart = async () => {
+    if (!user?.uid) {
+      setError("User not logged in.");
+      return;
+    }
+
+    try {
+      // Check quota before starting
+      await quotaService.checkRecordingQuota(user.uid);
+
+      // If quota check passes, proceed with starting recording
+      setIsRecording(true);
+      setError(null);
+      setTranscription(null);
+      setCopySuccess(false);
+
+    } catch (err) {
+      if (err instanceof RecordingQuotaExhaustedError) {
+        showQuotaPopup('recording'); // Show the recording quota popup
+      } else {
+        // Handle other potential errors
+        console.error("Error checking recording quota:", err);
+        const errorMessage = err instanceof Error ? err.message : "Failed to check recording quota.";
+        setError(errorMessage);
+      }
+      // Ensure recording state is false if quota check fails
+      setIsRecording(false);
+    }
   };
 
   const handleRecordingStop = async (duration: number, audioBlob: Blob) => {
@@ -151,14 +177,16 @@ export function NewLectureView({
             {error}
           </div>
         )}
-o
+
         <div className="mb-12">
           <AIVoiceInput
             className="w-full scale-110 md:scale-125 transform"
-            onStart={handleRecordingStart}
+            onStart={handleRecordingStart} // Keep using the async handler
             onStop={handleRecordingStop}
+            // Pass isRecording state to disable the button if needed while checking quota?
+            // Or handle visual feedback within AIVoiceInput based on its internal state + props
           />
-        </div> 
+        </div>
 
         {isProcessing && (
           <div className="text-center space-y-4">

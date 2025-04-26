@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { DeleteConfirmationModal } from '@/components/ui/DeleteConfirmationModal';
 import { NewLectureView } from '@/components/features/lecture/NewLectureView';
+import { useQuotaPopup } from '@/context/QuotaPopupContext'; // Import the hook
+import { EnhanceQuotaExhaustedError } from '@/lib/quota-service'; // Import the error
 import { NoteView } from '@/components/features/notes/NoteView';
 import { Note } from '@/types/note';
 import { notesService } from '@/lib/notes-service';
@@ -48,6 +50,8 @@ export function MainContent({
   refreshNotes,
   user
 }: MainContentProps) {
+  const { showQuotaPopup } = useQuotaPopup(); // Use the hook
+
   const handleSaveNote = async (updatedNote: Note) => {
     try {
       await notesService.updateNote(selectedNoteId!, updatedNote);
@@ -80,8 +84,14 @@ export function MainContent({
       setShowEnhanceOptions(false);
       refreshNotes();
     } catch (err) {
-      setNotesError('Failed to enhance notes. Please try again.');
-      console.error('Error enhancing notes:', err);
+      if (err instanceof EnhanceQuotaExhaustedError) {
+        showQuotaPopup('enhance'); // Show the specific popup
+        setNotesError(null); // Clear any previous generic error
+      } else {
+        // Handle other errors
+        setNotesError('Failed to enhance notes. Please try again.');
+        console.error('Error enhancing notes:', err);
+      }
     } finally {
       setEnhancing(false);
     }

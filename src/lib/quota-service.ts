@@ -10,6 +10,21 @@ import {
   increment,
 } from 'firebase/firestore';
 
+// Custom Error Classes for Quota Exhaustion
+export class RecordingQuotaExhaustedError extends Error {
+ constructor(message = "Recording quota exhausted") {
+   super(message);
+   this.name = "RecordingQuotaExhaustedError";
+ }
+}
+
+export class EnhanceQuotaExhaustedError extends Error {
+ constructor(message = "Enhance notes quota exhausted") {
+   super(message);
+   this.name = "EnhanceQuotaExhaustedError";
+ }
+}
+
 export type SubscriptionTier = 'trial' | 'paid';
 
 interface QuotaLimits {
@@ -93,7 +108,6 @@ export class QuotaService {
   }
 
   async checkRecordingQuota(userId: string): Promise<{
-    hasQuota: boolean;
     minutesRemaining: number;
     percentageUsed: number;
     subscriptionStatus: SubscriptionTier;
@@ -101,10 +115,14 @@ export class QuotaService {
     const quota = await this.getUserQuota(userId);
     const limit = QUOTA_LIMITS[quota.subscriptionStatus].recordingMinutes;
     const remaining = limit - quota.recordingMinutesUsed;
+
+    if (remaining <= 0) {
+      throw new RecordingQuotaExhaustedError();
+    }
+
     const percentageUsed = (quota.recordingMinutesUsed / limit) * 100;
 
     return {
-      hasQuota: remaining > 0,
       minutesRemaining: remaining,
       percentageUsed,
       subscriptionStatus: quota.subscriptionStatus,
@@ -112,7 +130,6 @@ export class QuotaService {
   }
 
   async checkEnhanceQuota(userId: string): Promise<{
-    hasQuota: boolean;
     enhancesRemaining: number;
     percentageUsed: number;
     subscriptionStatus: SubscriptionTier;
@@ -120,10 +137,14 @@ export class QuotaService {
     const quota = await this.getUserQuota(userId);
     const limit = QUOTA_LIMITS[quota.subscriptionStatus].enhanceNotes;
     const remaining = limit - quota.enhanceNotesUsed;
+
+    if (remaining <= 0) {
+      throw new EnhanceQuotaExhaustedError();
+    }
+
     const percentageUsed = (quota.enhanceNotesUsed / limit) * 100;
 
     return {
-      hasQuota: remaining > 0,
       enhancesRemaining: remaining,
       percentageUsed,
       subscriptionStatus: quota.subscriptionStatus,

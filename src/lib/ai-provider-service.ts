@@ -1,6 +1,6 @@
 import { EnhanceMode, geminiService, LectureCategory } from "./gemini-service";
 import { groqService } from "./groq-service";
-import { quotaService } from "./quota-service";
+import { quotaService, EnhanceQuotaExhaustedError } from "./quota-service"; // Import the error
 
 export type AIProvider = 'gemini' | 'groq';
 
@@ -8,7 +8,7 @@ export class AIProviderService {
   private static instance: AIProviderService;
   private currentProvider: AIProvider = 'gemini';
   private userId: string | null = null;
-  private onQuotaWarning: ((type: 'warning' | 'limit') => void) | null = null;
+  // Removed onQuotaWarning
 
   private constructor() {}
 
@@ -23,9 +23,7 @@ export class AIProviderService {
     this.userId = userId;
   }
 
-  setQuotaWarningCallback(callback: (type: 'warning' | 'limit') => void) {
-    this.onQuotaWarning = callback;
-  }
+  // Removed setQuotaWarningCallback
 
   setProvider(provider: AIProvider) {
     this.currentProvider = provider;
@@ -35,31 +33,23 @@ export class AIProviderService {
     return this.currentProvider;
   }
 
-  private async checkEnhanceQuota(): Promise<boolean> {
-    if (!this.userId) {
-      throw new Error('User ID not set');
-    }
-
-    const quota = await quotaService.checkEnhanceQuota(this.userId);
-
-    if (quota.percentageUsed >= 80 && quota.percentageUsed < 100) {
-      this.onQuotaWarning?.('warning');
-    } else if (quota.percentageUsed >= 100) {
-      this.onQuotaWarning?.('limit');
-      return false;
-    }
-
-    return true;
-  }
+  // Removed checkEnhanceQuota method
 
   async generateNotesFromTranscript(transcript: string, category: LectureCategory = 'general'): Promise<{ title: string; content: string }> {
     if (!this.userId) {
       throw new Error('User ID not set');
     }
 
-    const hasQuota = await this.checkEnhanceQuota();
-    if (!hasQuota) {
-      throw new Error('Enhance notes quota exceeded');
+    // Check quota before proceeding
+    try {
+      await quotaService.checkEnhanceQuota(this.userId);
+    } catch (error) {
+      if (error instanceof EnhanceQuotaExhaustedError) {
+        throw error; // Re-throw the specific error to be caught upstream
+      }
+      // Handle other potential errors from checkEnhanceQuota if necessary
+      console.error("Unexpected error during enhance quota check:", error);
+      throw new Error("Failed to check enhance quota.");
     }
 
     const notes = await (this.currentProvider === 'gemini'
@@ -82,9 +72,16 @@ export class AIProviderService {
       throw new Error('User ID not set');
     }
 
-    const hasQuota = await this.checkEnhanceQuota();
-    if (!hasQuota) {
-      throw new Error('Enhance notes quota exceeded');
+    // Check quota before proceeding
+    try {
+      await quotaService.checkEnhanceQuota(this.userId);
+    } catch (error) {
+      if (error instanceof EnhanceQuotaExhaustedError) {
+        throw error; // Re-throw the specific error to be caught upstream
+      }
+      // Handle other potential errors from checkEnhanceQuota if necessary
+      console.error("Unexpected error during enhance quota check:", error);
+      throw new Error("Failed to check enhance quota.");
     }
 
     const enhancedNotes = await (this.currentProvider === 'gemini'
