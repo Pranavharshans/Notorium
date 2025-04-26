@@ -1,1 +1,1 @@
- So what we were discussing about was how we can use for loops in Python. For loops are used when you have to do a statement for repeated number of times. Let's say you want to print a statement for 10 times. In that scenario, you use for loop in Python.
+ .

@@ -151,14 +151,14 @@ export function NewLectureView({
             {error}
           </div>
         )}
-
-        {/* <div className="mb-12">
+o
+        <div className="mb-12">
           <AIVoiceInput
             className="w-full scale-110 md:scale-125 transform"
             onStart={handleRecordingStart}
             onStop={handleRecordingStop}
           />
-        </div> */}
+        </div> 
 
         {isProcessing && (
           <div className="text-center space-y-4">

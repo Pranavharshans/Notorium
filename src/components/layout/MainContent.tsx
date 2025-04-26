@@ -1,6 +1,7 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
+import { DeleteConfirmationModal } from '@/components/ui/DeleteConfirmationModal';
 import { NewLectureView } from '@/components/features/lecture/NewLectureView';
 import { NoteView } from '@/components/features/notes/NoteView';
 import { Note } from '@/types/note';
@@ -86,8 +87,34 @@ export function MainContent({
     }
   };
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
   return (
     <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-gray-50 dark:bg-gray-950">
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onConfirm={async () => {
+          try {
+            await notesService.deleteNote(selectedNoteId!);
+            // Fetch updated notes list
+            const updatedNotes = await notesService.getNotes(user.uid);
+            // If there are notes, select the most recent one
+            if (updatedNotes.length > 0) {
+              setSelectedNote(updatedNotes[0]);
+            } else {
+              setSelectedNote(null);
+            }
+            setCurrentView('notes');
+            refreshNotes();
+          } catch (err) {
+            console.error("Failed to delete note:", err);
+            setNotesError("Failed to delete note. Please try again.");
+          } finally {
+            setIsDeleteModalOpen(false);
+          }
+        }}
+        onCancel={() => setIsDeleteModalOpen(false)}
+      />
       <div className="h-full max-w-none">
         {notesError && !isDeleting && (
           <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg">
@@ -117,7 +144,10 @@ export function MainContent({
             showEnhanceOptions={showEnhanceOptions}
             enhancing={enhancing}
             onEdit={() => setIsEditing(true)}
-            onDelete={() => {}} // TODO: Implement delete handler
+            onDelete={() => {
+              if (!selectedNoteId) return;
+              setIsDeleteModalOpen(true);
+            }}
             onSave={handleSaveNote}
             onCancelEdit={() => setIsEditing(false)}
             onEnhance={handleEnhance}
