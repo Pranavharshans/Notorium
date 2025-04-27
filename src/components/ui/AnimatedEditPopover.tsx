@@ -1,66 +1,85 @@
-import { Edit3, Minimize, Maximize, MinusSquare } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { EnhanceMode } from "@/lib/gemini-service"
+import React, { useState } from 'react';
+import { Edit3, Minimize, Maximize, MinusSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface AnimatedEditPopoverProps {
-  onEnhance: (mode: EnhanceMode) => Promise<void>;
+  onEnhance: (mode: 'simpler' | 'detailed' | 'shorter') => Promise<void>;
   isEnhancing: boolean;
 }
 
 export function AnimatedEditPopover({ onEnhance, isEnhancing }: AnimatedEditPopoverProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Handle clicking outside to close the popover
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isOpen && !target.closest('.popover-container')) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full p-2.5 bg-violet-100 hover:bg-violet-200 dark:bg-violet-900/30 dark:hover:bg-violet-800/40 transition-all duration-300 hover:rotate-12"
-          disabled={isEnhancing}
-        >
-          <Edit3 className="h-4 w-4" />
-          {isEnhancing && (
-            <span className="absolute -top-1 -right-1 h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-40 shadow-lg backdrop-blur-sm bg-white/90 dark:bg-slate-950/90 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
-        align="center"
-        side="bottom"
-        sideOffset={5}
-        avoidCollisions={true}
+    <div className="relative popover-container">
+      <Button
+        variant="outline"
+        size="icon"
+        className="rounded-full p-2.5 bg-violet-100 hover:bg-violet-200 dark:bg-violet-900/30 dark:hover:bg-violet-800/40 transition-all duration-300 hover:rotate-12"
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={isEnhancing}
       >
-        <div className="grid gap-0.5">
-          <Button
-            variant="ghost"
-            className="flex items-center justify-start gap-2 px-3 py-1.5 text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
-            onClick={() => onEnhance('simpler')}
-            disabled={isEnhancing}
-          >
-            <Minimize className="h-3.5 w-3.5" />
-            <span>Simplify</span>
-          </Button>
-          <Button
-            variant="ghost"
-            className="flex items-center justify-start gap-2 px-3 py-1.5 text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
-            onClick={() => onEnhance('detailed')}
-            disabled={isEnhancing}
-          >
-            <Maximize className="h-3.5 w-3.5" />
-            <span>Expand</span>
-          </Button>
-          <Button
-            variant="ghost"
-            className="flex items-center justify-start gap-2 px-3 py-1.5 text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
-            onClick={() => onEnhance('shorter')}
-            disabled={isEnhancing}
-          >
-            <MinusSquare className="h-3.5 w-3.5" />
-            <span>Shorten</span>
-          </Button>
+        <Edit3 className="h-4 w-4" />
+        {isEnhancing && (
+          <span className="absolute -top-1 -right-1 h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        )}
+      </Button>
+
+      {isOpen && (
+        <div className="absolute z-50 right-full top-1/2 -translate-y-1/2 mr-2 w-40 shadow-lg backdrop-blur-sm bg-white/90 dark:bg-slate-950/90 rounded-md border border-gray-200 dark:border-gray-700 animate-in slide-in-from-right-2 duration-200 data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right-2 data-[state=closed]:duration-200">
+          <div className="grid gap-0.5 p-1">
+            <Button
+              variant="ghost"
+              className="flex items-center justify-start gap-2 px-3 py-1.5 text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+              onClick={() => {
+                onEnhance('simpler');
+                setIsOpen(false);
+              }}
+              disabled={isEnhancing}
+            >
+              <Minimize className="h-3.5 w-3.5" />
+              <span>Simplify</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="flex items-center justify-start gap-2 px-3 py-1.5 text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+              onClick={() => {
+                onEnhance('detailed');
+                setIsOpen(false);
+              }}
+              disabled={isEnhancing}
+            >
+              <Maximize className="h-3.5 w-3.5" />
+              <span>Expand</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="flex items-center justify-start gap-2 px-3 py-1.5 text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+              onClick={() => {
+                onEnhance('shorter');
+                setIsOpen(false);
+              }}
+              disabled={isEnhancing}
+            >
+              <MinusSquare className="h-3.5 w-3.5" />
+              <span>Shorten</span>
+            </Button>
+          </div>
         </div>
-      </PopoverContent>
-    </Popover>
-  )
+      )}
+    </div>
+  );
 }
