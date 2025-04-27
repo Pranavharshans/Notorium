@@ -13,8 +13,8 @@ interface Note {
   title: string;
   transcript: string;
   notes: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: Timestamp | { seconds: number; nanoseconds: number };
+  updatedAt: Timestamp | { seconds: number; nanoseconds: number };
   tags?: string[];
   bookmarked?: boolean;
 }
@@ -69,35 +69,44 @@ function NoteItem({ note, isActive, onClick }: NoteItemProps) {
     >
       <h3 className="font-medium text-sm mb-2 truncate">{note.title || 'Untitled Note'}</h3>
       <div className="flex justify-between items-center text-xs mb-3">
-        <div className="flex items-center gap-1">
-          {note.tags && note.tags.map(tag => {
-            let hash = 0;
-            for (let i = 0; i < tag.length; i++) {
-              hash = tag.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            const colorIndex = Math.abs(hash) % 10;
-            const tagColors = [
-              "bg-red-100 text-red-800",
-              "bg-green-100 text-green-800",
-              "bg-yellow-100 text-yellow-800",
-              "bg-blue-100 text-blue-800",
-              "bg-indigo-100 text-indigo-800",
-              "bg-purple-100 text-purple-800",
-              "bg-pink-100 text-pink-800",
-              "bg-gray-100 text-gray-800",
-              "bg-teal-100 text-teal-800",
-              "bg-orange-100 text-orange-800",
-            ];
-            const tagColor = tagColors[colorIndex];
+        <div className="flex flex-wrap items-center justify-between w-full">
+          <div className="flex items-center gap-1 flex-wrap max-w-[70%]">
+            {note.tags && note.tags.slice(0, 3).map(tag => {
+              let hash = 0;
+              for (let i = 0; i < tag.length; i++) {
+                hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+              }
+              const colorIndex = Math.abs(hash) % 10;
+              const tagColors = [
+                "bg-red-100 text-red-800",
+                "bg-green-100 text-green-800",
+                "bg-yellow-100 text-yellow-800",
+                "bg-blue-100 text-blue-800",
+                "bg-indigo-100 text-indigo-800",
+                "bg-purple-100 text-purple-800",
+                "bg-pink-100 text-pink-800",
+                "bg-gray-100 text-gray-800",
+                "bg-teal-100 text-teal-800",
+                "bg-orange-100 text-orange-800",
+              ];
+              const tagColor = tagColors[colorIndex];
 
-            return (
-              <span key={tag} className={`px-2 py-0.5 rounded-full text-xs font-medium ${tagColor}`}>
-                {tag}
-              </span>
-            );
-          })}
+              return (
+                <span key={tag} className={`px-2 py-0.5 rounded-full text-xs font-medium ${tagColor} truncate max-w-[100px]`}>
+                  {tag}
+                </span>
+              );
+            })}
+          </div>
+          <span className="text-gray-400 dark:text-gray-500 flex-shrink-0">
+            {formatDistanceToNow(
+              note.createdAt instanceof Timestamp
+                ? note.createdAt.toDate()
+                : new Date((note.createdAt as { seconds: number }).seconds * 1000),
+              { addSuffix: true }
+            )}
+          </span>
         </div>
-        <span className="text-gray-400 dark:text-gray-500">{formatDistanceToNow(note.createdAt instanceof Timestamp ? note.createdAt.toDate() : new Date(note.createdAt.seconds * 1000), { addSuffix: true })}</span>
       </div>
       <div className="flex-1 overflow-hidden">
         <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-6">{note.notes}</p>

@@ -3,7 +3,6 @@
 import { useAuth } from '@/context/auth-context';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -94,15 +93,15 @@ export default function ProfilePage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="flex flex-col items-center space-y-3 border-b pb-7 pt-6">
-          <Avatar className="h-24 w-24">
+          <div className="h-24 w-24 rounded-full overflow-hidden">
             {user.photoURL ? (
-              <AvatarImage src={user.photoURL} alt={user.displayName || "User avatar"} />
+              <img src={user.photoURL} alt={user.displayName || "User"} className="h-full w-full object-cover" />
             ) : (
-              <AvatarFallback className="text-2xl">
+              <div className="h-full w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-2xl text-gray-500 dark:text-gray-400">
                 {(user.displayName || user.email || "?")[0].toUpperCase()}
-              </AvatarFallback>
+              </div>
             )}
-          </Avatar>
+          </div>
           <div className="space-y-1 text-center">
             <CardTitle className="text-2xl font-bold">{user.displayName || "User"}</CardTitle>
             <CardDescription className="text-base">{user.email}</CardDescription>

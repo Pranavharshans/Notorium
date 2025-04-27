@@ -124,7 +124,7 @@ export function NewLectureView({
       if (user?.uid) {
         const finalTitle = title.trim() || generatedTitle;
         // Always include 'lecture' tag but only add 'generated' if no custom tags
-        const noteTags = tags.length ? ['lecture', ...tags] : ['lecture'];
+        const noteTags = tags.length ? [...tags, 'lecture'] : ['lecture'];
         
         // Create the note
         const noteId = await notesService.createNote({
@@ -151,7 +151,7 @@ export function NewLectureView({
             setCurrentView('notes'); // Change view after state updates
           }, 0);
         }
-
+ 
       } else {
         console.error("Cannot save note: User not logged in.");
       }
@@ -288,13 +288,24 @@ export function NewLectureView({
                         if (e.key === 'Enter' && tagInput.trim()) {
                           e.preventDefault();
                           const trimmedTag = tagInput.trim().toLowerCase(); // Normalize tags to lowercase
+                          // Check if tag length is within limit (max 15 chars)
+                          if (trimmedTag.length > 15) {
+                            setNotesError("Tag cannot be longer than 15 characters");
+                            return;
+                          }
+                          // Check if we haven't reached max tags (3)
+                          if (tags.length >= 3) {
+                            setNotesError("Maximum 3 tags allowed");
+                            return;
+                          }
                           if (trimmedTag && !tags.includes(trimmedTag)) {
                             setTags([...tags, trimmedTag]);
+                            setNotesError(null);
                           }
                           setTagInput('');
                         }
                       }}
-                      placeholder="Add tags (press Enter to add)"
+                      placeholder="Add up to 3 tags (max 15 chars each)"
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
                     />
                   </div>
