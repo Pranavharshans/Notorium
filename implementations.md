@@ -1,8 +1,18 @@
 # Implementation Log
 
-Last updated: 2025-04-25 14:16:00 (Asia/Calcutta, UTC+5:30)
+Last updated: 2025-04-28 11:27:00 (Asia/Calcutta, UTC+5:30)
 
 ## Implemented Features
+
+### Switched to OpenRouter AI Provider (2025-04-28 11:27:00 Asia/Calcutta)
+- Replaced Gemini AI with OpenRouter for note generation and enhancement
+- Implemented OpenRouter service with the following features:
+  * Uses GPT-4.1-nano model
+  * Includes proper HTTP headers (Referer and Title)
+  * Maintains same note generation and enhancement functionality
+- Updated components to use the new OpenRouter service
+- Improved API endpoint organization
+
 ### Standardized Note Card Size (2025-04-25 01:12:00 Asia/Calcutta)
 - Applied a fixed height of 200px to the `NoteItem` component in `src/components/ui/notes-list.tsx` for consistent card size.
 - Added a thin border (`border border-gray-200 dark:border-gray-700`) for visual separation.

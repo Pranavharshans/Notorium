@@ -1,12 +1,10 @@
-import { GoogleGenAI } from "@google/genai";
-
 export type EnhanceMode = 'detailed' | 'shorter' | 'simpler' | 'complex';
 export type LectureCategory = 'programming' | 'mathematics' | 'science' | 'humanities' | 'business' | 'law' | 'medicine' | 'engineering' | 'general';
 
-export class GeminiService {
+export class OpenRouterService {
   async generateNotesFromTranscript(transcript: string, category: LectureCategory = 'general'): Promise<string> {
     try {
-      const response = await fetch('/api/ai/gemini', {
+      const response = await fetch('/api/ai/openrouter', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,7 +31,7 @@ export class GeminiService {
 
   async enhanceNotes(notes: string, mode: EnhanceMode): Promise<string> {
     try {
-      const response = await fetch('/api/ai/gemini', {
+      const response = await fetch('/api/ai/openrouter', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -59,4 +57,4 @@ export class GeminiService {
   }
 }
 
-export const geminiService = new GeminiService();
+export const openRouterService = new OpenRouterService();

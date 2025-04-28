@@ -3,14 +3,14 @@
 import React, { useState } from 'react';
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuotaPopup } from '@/context/QuotaPopupContext'; // Import the hook
-import { quotaService, RecordingQuotaExhaustedError } from '@/lib/quota-service'; // Import service and error
+import { useQuotaPopup } from '@/context/QuotaPopupContext';
+import { quotaService, RecordingQuotaExhaustedError } from '@/lib/quota-service';
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
 import { aiProviderService, AIProvider } from "@/lib/ai-provider-service";
 import { notesService } from "@/lib/notes-service";
 import { Note } from "@/types/note";
-import { LectureCategory } from "@/lib/gemini-service";
+import { LectureCategory } from "@/lib/openrouter-service";
 
 interface NewLectureViewProps {
   setCurrentView: (view: string) => void;
@@ -25,7 +25,7 @@ export function NewLectureView({
   user,
   onNoteSelect
 }: NewLectureViewProps) {
-  const { showQuotaPopup } = useQuotaPopup(); // Use the hook
+  const { showQuotaPopup } = useQuotaPopup();
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -34,7 +34,7 @@ export function NewLectureView({
   const [copySuccess, setCopySuccess] = useState(false);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
-  const [provider, setProvider] = useState<AIProvider>('gemini');
+  const [provider, setProvider] = useState<AIProvider>('openrouter');
   const [category, setCategory] = useState<LectureCategory>('general');
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -59,25 +59,19 @@ export function NewLectureView({
     }
 
     try {
-      // Check quota before starting
       await quotaService.checkRecordingQuota(user.uid);
-
-      // If quota check passes, proceed with starting recording
       setIsRecording(true);
       setError(null);
       setTranscription(null);
       setCopySuccess(false);
-
     } catch (err) {
       if (err instanceof RecordingQuotaExhaustedError) {
-        showQuotaPopup('recording'); // Show the recording quota popup
+        showQuotaPopup('recording');
       } else {
-        // Handle other potential errors
         console.error("Error checking recording quota:", err);
         const errorMessage = err instanceof Error ? err.message : "Failed to check recording quota.";
         setError(errorMessage);
       }
-      // Ensure recording state is false if quota check fails
       setIsRecording(false);
     }
   };
@@ -123,35 +117,29 @@ export function NewLectureView({
       
       if (user?.uid) {
         const finalTitle = title.trim() || generatedTitle;
-        // Always include 'lecture' tag but only add 'generated' if no custom tags
         const noteTags = tags.length ? [...tags, 'lecture'] : ['lecture'];
         
-        // Create the note
         const noteId = await notesService.createNote({
           title: finalTitle,
           transcript: transcription.text,
           notes: generatedContent,
           userId: user.uid,
-          tags: noteTags.filter(tag => tag.trim() !== '')  // Filter out empty tags
+          tags: noteTags.filter(tag => tag.trim() !== '')
         });
 
-        // Set the generated title if user hasn't provided one
         if (!title.trim()) {
           setTitle(generatedTitle);
         }
 
-        // Get the newly created note directly
         const newNote = await notesService.getNote(noteId);
         if (newNote && onNoteSelect) {
-          setGeneratedNotes(null); // Clear generated notes
-          onNoteSelect(noteId, newNote); // Select the new note immediately
+          setGeneratedNotes(null);
+          onNoteSelect(noteId, newNote);
           
-          // Small delay to ensure state updates are processed
           setTimeout(() => {
-            setCurrentView('notes'); // Change view after state updates
+            setCurrentView('notes');
           }, 0);
         }
- 
       } else {
         console.error("Cannot save note: User not logged in.");
       }
@@ -181,10 +169,8 @@ export function NewLectureView({
         <div className="mb-12">
           <AIVoiceInput
             className="w-full scale-110 md:scale-125 transform"
-            onStart={handleRecordingStart} // Keep using the async handler
+            onStart={handleRecordingStart}
             onStop={handleRecordingStop}
-            // Pass isRecording state to disable the button if needed while checking quota?
-            // Or handle visual feedback within AIVoiceInput based on its internal state + props
           />
         </div>
 
@@ -287,13 +273,11 @@ export function NewLectureView({
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && tagInput.trim()) {
                           e.preventDefault();
-                          const trimmedTag = tagInput.trim().toLowerCase(); // Normalize tags to lowercase
-                          // Check if tag length is within limit (max 15 chars)
+                          const trimmedTag = tagInput.trim().toLowerCase();
                           if (trimmedTag.length > 15) {
                             setNotesError("Tag cannot be longer than 15 characters");
                             return;
                           }
-                          // Check if we haven't reached max tags (3)
                           if (tags.length >= 3) {
                             setNotesError("Maximum 3 tags allowed");
                             return;
@@ -314,7 +298,7 @@ export function NewLectureView({
                 <div className="flex justify-end items-center gap-4">
                   <button
                     onClick={() => {
-                      const newProvider = provider === 'gemini' ? 'groq' : 'gemini';
+                      const newProvider = provider === 'openrouter' ? 'groq' : 'openrouter';
                       setProvider(newProvider);
                       aiProviderService.setProvider(newProvider);
                     }}
@@ -322,7 +306,7 @@ export function NewLectureView({
                     disabled={notesLoading}
                   >
                     <RefreshCw size={16} />
-                    {provider === 'gemini' ? 'Using Gemini' : 'Using Groq'}
+                    {provider === 'openrouter' ? 'Using OpenRouter' : 'Using Groq'}
                   </button>
 
                   <button

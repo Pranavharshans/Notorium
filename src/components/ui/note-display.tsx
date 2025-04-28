@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { EnhanceMode } from '@/lib/gemini-service';
+import { EnhanceMode } from '@/lib/openrouter-service';
 import MarkdownCodeBlock from './markdown-code-block';
 import { AnimatedEditPopover } from './AnimatedEditPopover';
 

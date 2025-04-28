@@ -33,6 +33,7 @@
     "mermaid": "^11.6.0",
     "motion": "^12.6.3",
     "next": "15.2.4",
+    "openai": "^4.96.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-firebase-hooks": "^5.1.1",

@@ -1,14 +1,14 @@
-import { EnhanceMode, geminiService, LectureCategory } from "./gemini-service";
+import { EnhanceMode, LectureCategory } from "./openrouter-service";
 import { groqService } from "./groq-service";
-import { quotaService, EnhanceQuotaExhaustedError } from "./quota-service"; // Import the error
+import { quotaService, EnhanceQuotaExhaustedError } from "./quota-service";
+import { openRouterService } from "./openrouter-service";
 
-export type AIProvider = 'gemini' | 'groq';
+export type AIProvider = 'openrouter' | 'groq';
 
 export class AIProviderService {
   private static instance: AIProviderService;
-  private currentProvider: AIProvider = 'gemini';
+  private currentProvider: AIProvider = 'openrouter';
   private userId: string | null = null;
-  // Removed onQuotaWarning
 
   private constructor() {}
 
@@ -23,8 +23,6 @@ export class AIProviderService {
     this.userId = userId;
   }
 
-  // Removed setQuotaWarningCallback
-
   setProvider(provider: AIProvider) {
     this.currentProvider = provider;
   }
@@ -32,8 +30,6 @@ export class AIProviderService {
   getCurrentProvider(): AIProvider {
     return this.currentProvider;
   }
-
-  // Removed checkEnhanceQuota method
 
   async generateNotesFromTranscript(transcript: string, category: LectureCategory = 'general'): Promise<{ title: string; content: string }> {
     if (!this.userId) {
@@ -52,8 +48,8 @@ export class AIProviderService {
       throw new Error("Failed to check enhance quota.");
     }
 
-    const notes = await (this.currentProvider === 'gemini'
-      ? geminiService.generateNotesFromTranscript(transcript, category)
+    const notes = await (this.currentProvider === 'openrouter'
+      ? openRouterService.generateNotesFromTranscript(transcript, category)
       : groqService.generateNotesFromTranscript(transcript));
 
     // After successful generation, increment usage
@@ -84,8 +80,8 @@ export class AIProviderService {
       throw new Error("Failed to check enhance quota.");
     }
 
-    const enhancedNotes = await (this.currentProvider === 'gemini'
-      ? geminiService.enhanceNotes(notes, mode)
+    const enhancedNotes = await (this.currentProvider === 'openrouter'
+      ? openRouterService.enhanceNotes(notes, mode)
       : groqService.enhanceNotes(notes, mode));
 
     // After successful enhancement, increment usage
