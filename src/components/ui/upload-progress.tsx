@@ -31,21 +31,16 @@ export const UploadProgress = () => {
     }
   }, [isUploading])
 
-  if (!isUploading && progress === 0) {
+  if (!isUploading) {
     return null
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 p-4 bg-white/80 backdrop-blur-sm">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">
-            {progress < 100 ? 'Uploading...' : 'Processing...'}
-          </span>
-          <span className="text-sm font-medium">{Math.round(progress)}%</span>
-        </div>
-        <Progress value={progress} className="h-2" />
-      </div>
+    <div className="fixed top-4 right-4 z-50 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm p-2 flex items-center gap-2" style={{ maxWidth: '200px' }}>
+      <Progress value={progress} className="h-1.5 w-16" />
+      <span className="text-xs font-medium text-gray-600">
+        {Math.round(progress)}%
+      </span>
     </div>
   )
 }
