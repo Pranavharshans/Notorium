@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
-import fs from 'fs/promises'; // Import fs/promises for async file operations
-import path from 'path'; // Import path module
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
 export async function POST(request: Request) {
   if (!process.env.GROQ_API_KEY) {
@@ -13,67 +13,76 @@ export async function POST(request: Request) {
   }
 
   try {
-    const formData = await request.formData();
-    const audioBlob = formData.get('audio') as Blob; // Keep as Blob
-
-    if (!audioBlob) {
-      console.error('No audio file provided in form data');
+    console.log('Request received, parsing body...');
+    const body = await request.json();
+    console.log('Parsed request body:', JSON.stringify(body));
+    
+    const { audioUrl } = body;
+    if (!audioUrl) {
+      console.error('No audio URL provided in request body:', body);
       return NextResponse.json(
-        { error: 'No audio file provided' },
+        { error: 'No audio URL provided' },
         { status: 400 }
       );
     }
-
-    console.log(`Received audio blob - Type: ${audioBlob.type}, Size: ${audioBlob.size} bytes`); // Log blob info
 
     const groq = new Groq({
       apiKey: process.env.GROQ_API_KEY
     });
 
-    // Construct a File object from the Blob
-    const audioFile = new File([audioBlob], "audio.webm", { type: audioBlob.type || 'audio/webm' });
-    console.log(`Constructed File object - Name: ${audioFile.name}, Type: ${audioFile.type}, Size: ${audioFile.size} bytes`); // Log file info
-
-    console.log('Attempting transcription with Groq using File object...');
+    console.log('Attempting transcription with Groq for URL:', audioUrl);
     const transcription = await groq.audio.transcriptions.create({
-      file: audioFile, // Pass the File object
+      url: audioUrl,
       model: "whisper-large-v3-turbo",
       response_format: "verbose_json",
       timestamp_granularities: ["segment"],
       language: "en",
-    });
+      temperature: 0.0
+    } as any);
+
     console.log('Transcription successful');
 
-    // Create .tmp directory if it doesn't exist
-    const tmpDir = path.join(process.cwd(), '.tmp');
-    try {
-      await fs.mkdir(tmpDir, { recursive: true });
-    } catch (mkdirError: any) {
-      console.error("Error creating .tmp directory:", mkdirError);
-      // Consider whether to return an error to the client here
-    }
+    // Store transcription data in Firestore
+    const transcriptionData = {
+      text: transcription.text,
+      audioUrl: audioUrl,
+      timestamp: FieldValue.serverTimestamp()
+    };
 
-    // Write the transcription text to a file
-    const filePath = path.join(tmpDir, 'latest_transcription.txt');
     try {
-      await fs.writeFile(filePath, transcription.text, 'utf8');
-      console.log(`Transcription saved to ${filePath}`);
-    } catch (writeFileError: any) {
-      console.error("Error writing transcription to file:", writeFileError);
-      // Consider whether to return an error to the client here
-    }
+      // Initialize Firebase Admin if not already initialized
+      if (getApps().length === 0) {
+        const serviceAccount = JSON.parse(
+          process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}'
+        );
 
-    return NextResponse.json(transcription);
+        if (!serviceAccount.project_id) {
+          throw new Error('Invalid Firebase service account configuration');
+        }
+
+        initializeApp({
+          credential: cert(serviceAccount)
+        });
+      }
+
+      const db = getFirestore();
+      const docRef = await db.collection('transcriptions').add(transcriptionData);
+      console.log('Transcription data stored with ID: ', docRef.id);
+      return NextResponse.json(transcription);
+    } catch (e: unknown) {
+      console.error("Firestore error:", e);
+      return NextResponse.json(
+        { 
+          error: 'Failed to store transcription', 
+          details: e instanceof Error ? e.message : 'Unknown error' 
+        },
+        { status: 500 }
+      );
+    }
   } catch (error: any) {
     console.error('Transcription error in API route:', error);
-    if (error.response) {
-      console.error('Error response data:', error.response.data);
-      console.error('Error response status:', error.response.status);
-      console.error('Error response headers:', error.response.headers);
-    } else if (error.request) {
-      console.error('Error request:', error.request);
-    } else {
-      console.error('Error message:', error.message);
+    if (error instanceof SyntaxError) {
+      console.error('JSON parsing error. Raw request:', await request.text());
     }
     return NextResponse.json(
       { error: 'Failed to transcribe audio', details: error.message || 'Unknown error' },

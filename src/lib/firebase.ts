@@ -1,31 +1,59 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
-// Initialize with empty values
-let app;
-let auth;
-let db;
+interface FirebaseInstances {
+  app: FirebaseApp;
+  auth: Auth;
+  db: Firestore;
+}
 
-// Export a function to get Firebase instances
-export const getFirebaseInstance = async () => {
-  if (!auth) {
-    try {
-      const response = await fetch('/api/firebase-config');
-      if (!response.ok) {
-        throw new Error('Failed to fetch Firebase configuration');
-      }
-      const { firebaseConfig } = await response.json();
+let instances: FirebaseInstances | null = null;
 
-      app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-      auth = getAuth(app);
-      db = getFirestore(app);
-    } catch (error) {
-      console.error('Error initializing Firebase:', error);
-      throw error;
-    }
+// Initialize Firebase when this module loads
+const initializeFirebase = async (): Promise<FirebaseInstances> => {
+  if (instances) {
+    return instances;
   }
-  return { app, auth, db };
+
+  try {
+    const response = await fetch('/api/firebase-config');
+    if (!response.ok) {
+      throw new Error('Failed to fetch Firebase configuration');
+    }
+    const { firebaseConfig } = await response.json();
+
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    instances = { app, auth, db };
+    return instances;
+  } catch (error) {
+    console.error('Error initializing Firebase:', error);
+    throw error;
+  }
 };
 
-export { app, auth, db };
+// Get Firebase instances, initializing if necessary
+export const getFirebaseInstance = async (): Promise<FirebaseInstances> => {
+  if (!instances) {
+    return await initializeFirebase();
+  }
+  return instances;
+};
+
+// For code that needs to run only after Firebase is initialized
+export const whenFirebaseReady = async (): Promise<void> => {
+  if (!instances) {
+    await initializeFirebase();
+  }
+};
+
+// Start initialization immediately in browser
+if (typeof window !== 'undefined') {
+  initializeFirebase().catch(console.error);
+}
+
+// Re-export types for convenience
+export type { FirebaseInstances };

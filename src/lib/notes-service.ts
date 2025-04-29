@@ -1,4 +1,4 @@
-import { db, auth } from './firebase';
+import { getFirebaseInstance } from './firebase';
 import {
   collection,
   addDoc,
@@ -160,6 +160,7 @@ export const notesService = {
             .filter(tag => tag !== '')
         : [];
 
+      const { db } = await getFirebaseInstance();
       const docRef = await addDoc(collection(db, NOTES_COLLECTION), {
         title: title.trim(),
         transcript,
@@ -198,6 +199,7 @@ export const notesService = {
   async getNote(noteId: string): Promise<Note | null> {
     try {
       // Check cache first
+      const { auth } = await getFirebaseInstance();
       const userId = auth.currentUser?.uid;
       if (userId) {
         const cachedNotes = getFromCache(userId);
@@ -210,6 +212,7 @@ export const notesService = {
         }
       }
 
+      const { db } = await getFirebaseInstance();
       const noteRef = doc(db, NOTES_COLLECTION, noteId);
       const noteSnapshot = await getDoc(noteRef);
       
@@ -264,11 +267,13 @@ export const notesService = {
 
   // Update a note
   async updateNote(noteId: string, updates: Partial<Omit<Note, 'id' | 'userId' | 'createdAt'>>): Promise<void> {
+    const { auth } = await getFirebaseInstance();
     if (!auth.currentUser) {
       throw new Error('Must be logged in to update notes');
     }
 
     try {
+      const { db } = await getFirebaseInstance();
       const noteRef = doc(db, NOTES_COLLECTION, noteId);
       const noteSnapshot = await getDoc(noteRef);
       
@@ -311,11 +316,13 @@ export const notesService = {
 
   // Toggle the bookmark status of a note
   async toggleBookmarkStatus(noteId: string): Promise<void> {
+    const { auth } = await getFirebaseInstance();
     if (!auth.currentUser) {
       throw new Error('Must be logged in to bookmark notes');
     }
 
     try {
+      const { db } = await getFirebaseInstance();
       const noteRef = doc(db, NOTES_COLLECTION, noteId);
       const noteSnapshot = await getDoc(noteRef);
 
@@ -355,11 +362,13 @@ export const notesService = {
 
   // Delete a note
   async deleteNote(noteId: string): Promise<void> {
+    const { auth } = await getFirebaseInstance();
     if (!auth.currentUser) {
       throw new Error('Must be logged in to delete notes');
     }
 
     try {
+      const { db } = await getFirebaseInstance();
       const noteRef = doc(db, NOTES_COLLECTION, noteId);
       const noteSnapshot = await getDoc(noteRef);
       

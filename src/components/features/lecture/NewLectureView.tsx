@@ -6,11 +6,13 @@ import { cn } from "@/lib/utils";
 import { useQuotaPopup } from '@/context/QuotaPopupContext';
 import { quotaService, RecordingQuotaExhaustedError } from '@/lib/quota-service';
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
+import { recordingService } from "@/lib/recording-service";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
 import { aiProviderService, AIProvider } from "@/lib/ai-provider-service";
 import { notesService } from "@/lib/notes-service";
 import { Note } from "@/types/note";
 import { LectureCategory } from "@/lib/openrouter-service";
+import { RecordingData } from "@/lib/recording-service";
 
 interface NewLectureViewProps {
   setCurrentView: (view: string) => void;
@@ -39,6 +41,7 @@ export function NewLectureView({
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
+  const [currentRecordingData, setCurrentRecordingData] = useState<RecordingData | null>(null);
 
   const categories: { value: LectureCategory; label: string }[] = [
     { value: 'programming', label: 'Programming' },
@@ -60,6 +63,7 @@ export function NewLectureView({
 
     try {
       await quotaService.checkRecordingQuota(user.uid);
+      recordingService.setUserId(user.uid);
       setIsRecording(true);
       setError(null);
       setTranscription(null);
@@ -76,14 +80,21 @@ export function NewLectureView({
     }
   };
 
-  const handleRecordingStop = async (duration: number, audioBlob: Blob) => {
-    setRecordingDuration(duration);
+  const handleRecordingStop = async (recordingData: { duration: number; blob: Blob; downloadURL?: string }) => {
     setIsRecording(false);
     setIsProcessing(true);
     setError(null);
 
     try {
-      const result = await groqService.transcribeAudio(audioBlob);
+      if (!recordingData.downloadURL) {
+        throw new Error("Failed to get download URL for audio file");
+      }
+
+      console.log("Got recording data with URL:", recordingData.downloadURL);
+      setRecordingDuration(recordingData.duration);
+
+      console.log("Sending for transcription...");
+      const result = await groqService.transcribeAudio(recordingData);
       setTranscription(result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to process the recording. Please try again.";

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, Firestore } from 'firebase/firestore';
 import { Auth, User } from 'firebase/auth';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { getFirebaseInstance } from '@/lib/firebase';
+import { getFirebaseInstance, type FirebaseInstances } from '@/lib/firebase';
 
 interface SubscriptionData {
   customer_id: string;
@@ -11,22 +10,32 @@ interface SubscriptionData {
   next_billing_date?: string;
 }
 
+interface FirebaseState {
+  auth: Auth | null;
+  db: Firestore | null;
+  initialized: boolean;
+}
+
 export function useSubscription() {
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [firebase, setFirebase] = useState<FirebaseState>({
+    auth: null,
+    db: null,
+    initialized: false
+  });
 
-  // Initialize Firebase and set up auth state listener
+  // Initialize Firebase first
   useEffect(() => {
-    let authUnsubscribe: (() => void) | undefined;
-
-    const initializeFirebase = async () => {
+    const initFirebase = async () => {
       try {
-        const { auth } = await getFirebaseInstance();
-        // Use the auth instance directly instead of useAuthState
-        authUnsubscribe = auth.onAuthStateChanged((currentUser: User | null) => {
-          setUser(currentUser);
+        const instances = await getFirebaseInstance();
+        setFirebase({
+          auth: instances.auth,
+          db: instances.db,
+          initialized: true
         });
       } catch (error) {
         console.error('Error initializing Firebase:', error);
@@ -34,32 +43,36 @@ export function useSubscription() {
         setLoading(false);
       }
     };
-    
-    initializeFirebase();
 
-    return () => {
-      if (authUnsubscribe) {
-        authUnsubscribe();
-      }
-    };
+    initFirebase();
   }, []);
 
-  // Handle subscription data
+  // Set up auth state listener after Firebase is initialized
+  useEffect(() => {
+    if (!firebase.initialized || !firebase.auth) return;
+
+    const authUnsubscribe = firebase.auth.onAuthStateChanged((currentUser: User | null) => {
+      setUser(currentUser);
+    });
+
+    return () => authUnsubscribe();
+  }, [firebase.initialized, firebase.auth]);
+
+  // Handle subscription data after user is authenticated and Firebase is initialized
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
 
     const setupSubscription = async () => {
-      if (!user) {
+      if (!user || !firebase.db || !firebase.initialized) {
         setSubscriptionData(null);
         setLoading(false);
         return;
       }
 
       try {
-        const { db } = await getFirebaseInstance();
         console.log('Setting up subscription listener for user:', user.uid);
 
-        const userDocRef = doc(db, 'users', user.uid);
+        const userDocRef = doc(firebase.db, 'users', user.uid);
         unsubscribe = onSnapshot(
           userDocRef,
           (doc) => {
@@ -92,7 +105,7 @@ export function useSubscription() {
         unsubscribe();
       }
     };
-  }, [user]); // Depend on user to re-run when auth state changes
+  }, [user, firebase.db, firebase.initialized]);
 
   const isSubscriptionActive = subscriptionData?.status === 'active';
 

@@ -1,4 +1,5 @@
-import { EnhanceMode, LectureCategory } from './gemini-service';
+import { EnhanceMode, LectureCategory } from './openrouter-service';
+import { RecordingData } from './recording-service';
 
 interface TranscriptionSegment {
   text: string;
@@ -21,19 +22,37 @@ export interface TranscriptionResult {
 }
 
 export class GroqService {
-  async transcribeAudio(audioBlob: Blob): Promise<TranscriptionResult> {
+  async transcribeAudio(recordingData: RecordingData): Promise<TranscriptionResult> {
     try {
-      const formData = new FormData();
-      formData.append('audio', audioBlob);
+      if (!recordingData.downloadURL) {
+        throw new Error('No audio URL available');
+      }
 
+      console.log('Sending transcription request with URL:', recordingData.downloadURL);
+      
+      const requestBody = {
+        audioUrl: recordingData.downloadURL
+      };
+      
       const response = await fetch('/api/transcribe', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to transcribe audio');
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        try {
+          const error = JSON.parse(errorText);
+          throw new Error(error.error || 'Failed to transcribe audio');
+        } catch (parseError) {
+          throw new Error(`Failed to transcribe audio: ${errorText}`);
+        }
       }
 
       const transcription: TranscriptionResponse = await response.json();

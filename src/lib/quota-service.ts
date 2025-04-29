@@ -1,4 +1,4 @@
-import { db } from './firebase';
+import { getFirebaseInstance } from './firebase';
 import { User } from 'firebase/auth';
 import {
   collection,
@@ -8,21 +8,22 @@ import {
   updateDoc,
   runTransaction,
   increment,
+  Firestore,
 } from 'firebase/firestore';
 
 // Custom Error Classes for Quota Exhaustion
 export class RecordingQuotaExhaustedError extends Error {
- constructor(message = "Recording quota exhausted") {
-   super(message);
-   this.name = "RecordingQuotaExhaustedError";
- }
+  constructor(message = "Recording quota exhausted") {
+    super(message);
+    this.name = "RecordingQuotaExhaustedError";
+  }
 }
 
 export class EnhanceQuotaExhaustedError extends Error {
- constructor(message = "Enhance notes quota exhausted") {
-   super(message);
-   this.name = "EnhanceQuotaExhaustedError";
- }
+  constructor(message = "Enhance notes quota exhausted") {
+    super(message);
+    this.name = "EnhanceQuotaExhaustedError";
+  }
 }
 
 export type SubscriptionTier = 'trial' | 'paid';
@@ -39,7 +40,7 @@ interface UserQuota {
   subscriptionStartDate: Date;
 }
 
-export const QUOTA_LIMITS: Record<SubscriptionTier, QuotaLimits> = { // Export the constant
+export const QUOTA_LIMITS: Record<SubscriptionTier, QuotaLimits> = {
   trial: {
     recordingMinutes: 20,
     enhanceNotes: 5,
@@ -53,14 +54,30 @@ export const QUOTA_LIMITS: Record<SubscriptionTier, QuotaLimits> = { // Export t
 export class QuotaService {
   private static instance: QuotaService;
   private quotaCache: Map<string, UserQuota> = new Map();
+  private db: Firestore | null = null;
 
-  private constructor() {}
+  private constructor() {
+    // Initialize Firestore
+    if (typeof window !== 'undefined') {
+      getFirebaseInstance().then(({ db }) => {
+        this.db = db;
+      }).catch(console.error);
+    }
+  }
 
   static getInstance(): QuotaService {
     if (!QuotaService.instance) {
       QuotaService.instance = new QuotaService();
     }
     return QuotaService.instance;
+  }
+
+  private async getDB(): Promise<Firestore> {
+    if (!this.db) {
+      const { db } = await getFirebaseInstance();
+      this.db = db;
+    }
+    return this.db;
   }
 
   private async initializeQuota(userId: string): Promise<UserQuota> {
@@ -71,6 +88,7 @@ export class QuotaService {
       subscriptionStartDate: new Date(),
     };
 
+    const db = await this.getDB();
     const quotaRef = doc(collection(db, 'quotas'), userId);
     const dataToWrite = {
       ...initialQuota,
@@ -84,16 +102,15 @@ export class QuotaService {
   }
 
   async getUserQuota(userId: string): Promise<UserQuota> {
-    // Check cache first
     if (this.quotaCache.has(userId)) {
       return this.quotaCache.get(userId)!;
     }
 
+    const db = await this.getDB();
     const quotaRef = doc(collection(db, 'quotas'), userId);
     const quotaDoc = await getDoc(quotaRef);
     
     if (!quotaDoc.exists()) {
-      // If quota doesn't exist, initialize it
       return this.initializeQuota(userId);
     }
 
@@ -152,6 +169,7 @@ export class QuotaService {
   }
 
   async incrementRecordingUsage(userId: string, minutes: number): Promise<void> {
+    const db = await this.getDB();
     const quotaRef = doc(collection(db, 'quotas'), userId);
     
     const quotaDoc = await getDoc(quotaRef);
@@ -178,6 +196,7 @@ export class QuotaService {
   }
 
   async incrementEnhanceUsage(userId: string): Promise<void> {
+    const db = await this.getDB();
     const quotaRef = doc(collection(db, 'quotas'), userId);
     
     await runTransaction(db, async (transaction) => {
@@ -203,6 +222,7 @@ export class QuotaService {
   }
 
   async upgradeSubscription(userId: string): Promise<void> {
+    const db = await this.getDB();
     const quotaRef = doc(collection(db, 'quotas'), userId);
     
     await updateDoc(quotaRef, {

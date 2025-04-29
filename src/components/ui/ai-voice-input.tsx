@@ -8,7 +8,7 @@ import { getAuth } from "firebase/auth";
 
 interface AIVoiceInputProps {
   onStart?: () => void;
-  onStop?: (duration: number, audioBlob: Blob) => void;
+  onStop?: (recordingData: { duration: number; blob: Blob; downloadURL?: string }) => void;
   visualizerBars?: number;
   demoMode?: boolean;
   demoInterval?: number;
@@ -99,7 +99,7 @@ export function AIVoiceInput({
         const recordingData = await recordingService.stopRecording();
         setIsRecording(false);
         setIsPaused(false);
-        onStop?.(recordingData.duration, recordingData.blob);
+        onStop?.(recordingData);
       }
     } catch (error) {
       console.error("Recording error:", error);
