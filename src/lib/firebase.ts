@@ -2,32 +2,30 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-let app: ReturnType<typeof initializeApp>;
-let auth: ReturnType<typeof getAuth>;
-let db: ReturnType<typeof getFirestore>;
+// Initialize with empty values
+let app;
+let auth;
+let db;
 
-async function initializeFirebase() {
-  try {
-    // Fetch Firebase configuration from the API route
-    const response = await fetch('/api/firebase-config');
-    if (!response.ok) {
-      throw new Error('Failed to fetch Firebase configuration');
+// Export a function to get Firebase instances
+export const getFirebaseInstance = async () => {
+  if (!auth) {
+    try {
+      const response = await fetch('/api/firebase-config');
+      if (!response.ok) {
+        throw new Error('Failed to fetch Firebase configuration');
+      }
+      const { firebaseConfig } = await response.json();
+
+      app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+      auth = getAuth(app);
+      db = getFirestore(app);
+    } catch (error) {
+      console.error('Error initializing Firebase:', error);
+      throw error;
     }
-    const { firebaseConfig } = await response.json();
-
-    // Initialize Firebase
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    auth = getAuth(app);
-    db = getFirestore(app);
-  } catch (error) {
-    console.error('Error initializing Firebase:', error);
-    throw error;
   }
-}
-
-// Initialize Firebase on the client side
-if (typeof window !== 'undefined') {
-  initializeFirebase().catch(console.error);
-}
+  return { app, auth, db };
+};
 
 export { app, auth, db };

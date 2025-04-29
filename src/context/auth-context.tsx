@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut, User, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getFirebaseInstance } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
 const provider = new GoogleAuthProvider();
@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      const { auth } = await getFirebaseInstance();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       await createSession(user);
@@ -71,26 +72,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          await createSession(user);
-          setUser(user);
-        } catch (error) {
-          console.error('Auth state change error:', error);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
+    const initAuth = async () => {
+      try {
+        const { auth } = await getFirebaseInstance();
+        
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            try {
+              await createSession(user);
+              setUser(user);
+            } catch (error) {
+              console.error('Auth state change error:', error);
+              setUser(null);
+            }
+          } else {
+            setUser(null);
+          }
+          setLoading(false);
+        });
 
-    return () => unsubscribe();
+        return unsubscribe;
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+        setLoading(false);
+        return () => {};
+      }
+    };
+
+    initAuth().then(unsubscribe => {
+      // Cleanup function
+      return () => {
+        if (unsubscribe) {
+          unsubscribe();
+        }
+      };
+    });
   }, []);
 
   const signOutUser = async () => {
     try {
+      const { auth } = await getFirebaseInstance();
       await deleteSession();
       await signOut(auth);
       router.push('/');
