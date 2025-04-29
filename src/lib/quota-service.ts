@@ -39,14 +39,14 @@ interface UserQuota {
   subscriptionStartDate: Date;
 }
 
-const QUOTA_LIMITS: Record<SubscriptionTier, QuotaLimits> = {
+export const QUOTA_LIMITS: Record<SubscriptionTier, QuotaLimits> = { // Export the constant
   trial: {
-    recordingMinutes: 10,
-    enhanceNotes: 3,
+    recordingMinutes: 20,
+    enhanceNotes: 5,
   },
   paid: {
     recordingMinutes: 1200, // 20 hours
-    enhanceNotes: 50,
+    enhanceNotes: 100,
   },
 };
 

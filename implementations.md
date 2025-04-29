@@ -1,8 +1,12 @@
 # Implementation Log
 
-Last updated: 2025-04-28 11:27:00 (Asia/Calcutta, UTC+5:30)
+Last updated: 2025-04-29 06:14:00 (Asia/Calcutta, UTC+5:30)
 
 ## Implemented Features
+### Profile Page Usage Display Update (2025-04-29 06:14:00 Asia/Calcutta)
+- Fixed display issue where AI Enhancements quota was not showing correct values due to a property name mismatch (`enhancesRemaining` vs `remaining`).
+- Updated Recording Minutes and AI Enhancements sections in the user profile (`src/app/profile/page.tsx`) to display usage as "X used / Y total" instead of just the remaining amount.
+- Exported `QUOTA_LIMITS` constant from `quota-service.ts` to be used directly in the profile page for calculating total limits.
 
 ### Switched to OpenRouter AI Provider (2025-04-28 11:27:00 Asia/Calcutta)
 - Replaced Gemini AI with OpenRouter for note generation and enhancement

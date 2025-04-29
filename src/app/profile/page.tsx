@@ -9,15 +9,18 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, CreditCard } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
-import { quotaService } from "@/lib/quota-service";
+import { quotaService, QUOTA_LIMITS, SubscriptionTier } from "@/lib/quota-service"; // Import QUOTA_LIMITS and SubscriptionTier
 
 export default function ProfilePage() {
   const { user, signOutUser } = useAuth();
   const router = useRouter();
   const { subscriptionData, loading: subscriptionLoading, isSubscriptionActive } = useSubscription();
-  const [quotaData, setQuotaData] = useState({
+  const [quotaData, setQuotaData] = useState<{
+    recording: { minutesRemaining: number; percentageUsed: number; subscriptionStatus?: SubscriptionTier }; // Add subscriptionStatus
+    enhance: { enhancesRemaining: number; percentageUsed: number; subscriptionStatus?: SubscriptionTier }; // Add subscriptionStatus
+  }>({
     recording: { minutesRemaining: 0, percentageUsed: 0 },
-    enhance: { remaining: 0, percentageUsed: 0 }
+    enhance: { enhancesRemaining: 0, percentageUsed: 0 }
   });
   const [loading, setLoading] = useState(true);
 
@@ -29,6 +32,12 @@ export default function ProfilePage() {
 
     async function fetchQuota() {
       try {
+        // Add null check for user before accessing uid
+        if (!user) {
+          console.error("User is null, cannot fetch quota.");
+          setLoading(false);
+          return;
+        }
         const [recordingQuota, enhanceQuota] = await Promise.all([
           quotaService.checkRecordingQuota(user.uid),
           quotaService.checkEnhanceQuota(user.uid)
@@ -129,12 +138,17 @@ export default function ProfilePage() {
             <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger value="usage">Usage</TabsTrigger>
             </TabsList>
-            <TabsContent value="usage" className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Recording</span>
+            {/* Remove className prop as it's not accepted by TabsContent */}
+            <TabsContent value="usage">
+              <div className="space-y-4 pt-4"> {/* Apply styling to a wrapper div */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Recording Minutes</span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {quotaData.recording.minutesRemaining} minutes remaining
+                    {quotaData.recording.subscriptionStatus ?
+                      `${QUOTA_LIMITS[quotaData.recording.subscriptionStatus].recordingMinutes - quotaData.recording.minutesRemaining} used / ${QUOTA_LIMITS[quotaData.recording.subscriptionStatus].recordingMinutes} total` :
+                      `${quotaData.recording.minutesRemaining} remaining`
+                    }
                   </span>
                 </div>
                 <Progress value={quotaData.recording.percentageUsed} className="h-2" />
@@ -144,33 +158,37 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">AI Enhancements</span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {quotaData.enhance.remaining} operations remaining
+                    {quotaData.enhance.subscriptionStatus ?
+                      `${QUOTA_LIMITS[quotaData.enhance.subscriptionStatus].enhanceNotes - quotaData.enhance.enhancesRemaining} used / ${QUOTA_LIMITS[quotaData.enhance.subscriptionStatus].enhanceNotes} total` :
+                      `${quotaData.enhance.enhancesRemaining} remaining`
+                    }
                   </span>
                 </div>
                 <Progress value={quotaData.enhance.percentageUsed} className="h-2" />
               </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-3 border-t p-6">
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={handleManageSubscription}
-          >
-            <CreditCard className="mr-2 h-4 w-4" />
-            Manage Subscription
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600"
-            onClick={handleLogout}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+      <CardFooter className="flex flex-col space-y-3 border-t p-6">
+        <Button
+          variant="outline"
+          className="w-full justify-start"
+          onClick={handleManageSubscription}
+        >
+          <CreditCard className="mr-2 h-4 w-4" />
+          Manage Subscription
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full justify-start text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600"
+          onClick={handleLogout}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </Button>
+      </CardFooter>
+    </Card>
+  </div>
   );
 }
