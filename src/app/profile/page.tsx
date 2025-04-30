@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/auth-context';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getAuth } from 'firebase/auth'; // Added import
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -23,6 +24,11 @@ export default function ProfilePage() {
     enhance: { enhancesRemaining: 0, percentageUsed: 0 }
   });
   const [loading, setLoading] = useState(true);
+  const [cancelIsLoading, setCancelIsLoading] = useState(false); // Added state
+  const [cancelError, setCancelError] = useState<string | null>(null); // Added state
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false); // Added state
+  const [cancelEndDate, setCancelEndDate] = useState<string | null>(null); // Added state
+  const auth = getAuth(); // Added auth instance
 
   useEffect(() => {
     if (!user) {
@@ -78,7 +84,41 @@ export default function ProfilePage() {
   };
 
   const handleManageSubscription = () => {
-    router.push("/billing-details");
+    // Instead of navigating, show the confirmation dialog
+    setShowCancelConfirm(true);
+    setCancelError(null); // Reset error when showing confirm
+  };
+
+  const handleCancelSubscription = async () => {
+    try {
+      setCancelIsLoading(true);
+      setCancelError(null);
+
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch('/api/subscription/cancel', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel subscription');
+      }
+
+      setCancelEndDate(data.end_date);
+      setShowCancelConfirm(false);
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : 'Failed to cancel subscription');
+    } finally {
+      setCancelIsLoading(false);
+    }
   };
 
   const getPlanName = () => {
@@ -171,14 +211,61 @@ export default function ProfilePage() {
         </Tabs>
       </CardContent>
       <CardFooter className="flex flex-col space-y-3 border-t p-6">
-        <Button
-          variant="outline"
-          className="w-full justify-start"
-          onClick={handleManageSubscription}
-        >
-          <CreditCard className="mr-2 h-4 w-4" />
-          Manage Subscription
-        </Button>
+        {/* Only show Manage/Cancel Subscription if active */}
+        {isSubscriptionActive && !cancelEndDate && (
+          <>
+            {!showCancelConfirm ? (
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={handleManageSubscription}
+                disabled={cancelIsLoading}
+              >
+                <CreditCard className="mr-2 h-4 w-4" />
+                Cancel Subscription
+              </Button>
+            ) : (
+              <div className="w-full p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800 mb-4">
+                  Are you sure you want to cancel your subscription? You'll continue to have access until your current billing period ends.
+                </p>
+                <div className="flex space-x-3">
+                  <Button
+                    onClick={handleCancelSubscription}
+                    disabled={cancelIsLoading}
+                    className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {cancelIsLoading ? 'Cancelling...' : 'Yes, Cancel'}
+                  </Button>
+                  <Button
+                    onClick={() => setShowCancelConfirm(false)}
+                    disabled={cancelIsLoading}
+                    variant="outline"
+                    className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-lg hover:bg-gray-300"
+                  >
+                    No, Keep Subscription
+                  </Button>
+                </div>
+                {cancelError && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {cancelError}
+                  </p>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Show cancellation confirmation message */}
+        {cancelEndDate && (
+          <div className="w-full p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              Your subscription has been cancelled. You will have access until {new Date(cancelEndDate).toLocaleDateString()}.
+            </p>
+          </div>
+        )}
+
+        {/* Always show Logout button */}
         <Button
           variant="outline"
           className="w-full justify-start text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600"

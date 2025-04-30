@@ -1,8 +1,14 @@
 # Implementation Log
 
-Last updated: 2025-04-30 14:45:00 (Asia/Calcutta, UTC+5:30)
+Last updated: 2025-04-30 15:13:00 (Asia/Calcutta, UTC+5:30)
 
 ## Implemented Features
+### Profile Page Subscription Cancellation (2025-04-30 15:13:00 Asia/Calcutta)
+- Integrated subscription cancellation logic directly into the profile page (`src/app/profile/page.tsx`).
+- Replaced the "Manage Subscription" button's navigation to `/billing-details` with a confirmation dialog for cancellation.
+- Added state management and UI elements (confirmation prompt, status messages) from the original `CancelSubscription` component.
+- Fixed a TypeScript error by adding the `disabled` prop to the custom `Button` component (`src/components/ui/button.tsx`).
+
 ### Collapsible Categories List (2025-04-30 14:45:00 Asia/Calcutta)
 - Added expand/collapse functionality to the categories list component
 - Implemented a fixed height (200px) showing approximately 4 categories when collapsed
