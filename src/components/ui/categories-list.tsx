@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Category {
   name: string;
@@ -15,12 +16,30 @@ interface CategoriesListProps {
 const CategoriesList: React.FC<CategoriesListProps> = ({
   categories,
   selectedCategories,
-  onCategorySelect
+  onCategorySelect,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
     <div className="space-y-4">
-      <h3 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 tracking-wider">Categories</h3>
-      <ul className="space-y-2">
+      <div className="flex justify-between items-center">
+        <h3 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 tracking-wider">Categories</h3>
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          aria-label={isExpanded ? "Collapse categories" : "Expand categories"}
+        >
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          )}
+        </button>
+      </div>
+      <ul className={cn(
+        "space-y-2 overflow-y-auto transition-all duration-200 p-1", // Added p-1 for padding
+        !isExpanded && "max-h-[200px]"
+      )}>
         {categories.map((category) => {
           const isSelected = selectedCategories.includes(category.name);
           return (
