@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
-import { EnhanceMode, LectureCategory } from '@/lib/gemini-service';
+import { EnhanceMode, LectureCategory } from '@/lib/openrouter-service';
+import { auth } from '@/lib/firebase-admin';
+import { cookies } from 'next/headers';
 
 // Initialize Groq with server-side API key
 const initGroq = () => {
@@ -13,6 +15,25 @@ const initGroq = () => {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get and verify session
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session');
+    if (!sessionCookie?.value) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify the session cookie and get user claims
+    const decodedClaims = await auth.verifySessionCookie(sessionCookie.value);
+    if (!decodedClaims.uid) {
+      return NextResponse.json(
+        { error: 'Invalid session' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { action, transcript, category, notes, mode } = body;
 
@@ -26,7 +47,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        const response = await generateNotesFromTranscript(groq, transcript, category as LectureCategory);
+        const response = await generateNotesFromTranscript(groq, transcript, category as LectureCategory, decodedClaims.uid);
         return NextResponse.json({ result: response });
 
       case 'enhanceNotes':
@@ -36,7 +57,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        const enhancedNotes = await enhanceNotes(groq, notes, mode as EnhanceMode);
+        const enhancedNotes = await enhanceNotes(groq, notes, mode as EnhanceMode, decodedClaims.uid);
         return NextResponse.json({ result: enhancedNotes });
 
       default:
@@ -57,8 +78,10 @@ export async function POST(request: NextRequest) {
 async function generateNotesFromTranscript(
   groq: Groq,
   transcript: string,
-  category: LectureCategory
+  category: LectureCategory,
+  userId: string
 ): Promise<string> {
+  console.log(`Generating notes for user ${userId}`);
   const chatCompletion = await groq.chat.completions.create({
     messages: [
       {
@@ -84,9 +107,11 @@ async function generateNotesFromTranscript(
 async function enhanceNotes(
   groq: Groq,
   notes: string,
-  mode: EnhanceMode
+  mode: EnhanceMode,
+  userId: string
 ): Promise<string> {
-  const instructions = {
+  console.log(`Enhancing notes for user ${userId}`);
+  const instructions: Record<EnhanceMode, string> = {
     detailed: "Make these notes more detailed by expanding explanations and adding examples:",
     shorter: "Summarize these notes into a more concise version while keeping the key points:",
     simpler: "Simplify these notes to make them easier to understand:",

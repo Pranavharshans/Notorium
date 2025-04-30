@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { EnhanceMode, LectureCategory } from '@/lib/openrouter-service';
+import { auth } from '@/lib/firebase-admin';
+import { cookies } from 'next/headers';
 
 const initOpenRouter = () => {
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -19,6 +21,25 @@ const initOpenRouter = () => {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get and verify session
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session');
+    if (!sessionCookie?.value) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify the session cookie and get user claims
+    const decodedClaims = await auth.verifySessionCookie(sessionCookie.value);
+    if (!decodedClaims.uid) {
+      return NextResponse.json(
+        { error: 'Invalid session' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { action, transcript, category, notes, mode } = body;
 
@@ -32,7 +53,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        const response = await generateNotesFromTranscript(openai, transcript, category as LectureCategory);
+        const response = await generateNotesFromTranscript(openai, transcript, category as LectureCategory, decodedClaims.uid);
         return NextResponse.json({ result: response });
 
       case 'enhanceNotes':
@@ -42,7 +63,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        const enhancedNotes = await enhanceNotes(openai, notes, mode as EnhanceMode);
+        const enhancedNotes = await enhanceNotes(openai, notes, mode as EnhanceMode, decodedClaims.uid);
         return NextResponse.json({ result: enhancedNotes });
 
       default:
@@ -63,8 +84,10 @@ export async function POST(request: NextRequest) {
 async function generateNotesFromTranscript(
   openai: OpenAI,
   transcript: string,
-  category: LectureCategory
+  category: LectureCategory,
+  userId: string
 ): Promise<string> {
+  console.log(`Generating notes for user ${userId}`);
   const systemInstruction = getSystemInstruction();
   const categoryInstructions = getCategorySpecificInstructions(category);
   const combinedInstructions = `${systemInstruction}\n\n${categoryInstructions}`;
@@ -89,8 +112,10 @@ async function generateNotesFromTranscript(
 async function enhanceNotes(
   openai: OpenAI,
   notes: string,
-  mode: EnhanceMode
+  mode: EnhanceMode,
+  userId: string
 ): Promise<string> {
+  console.log(`Enhancing notes for user ${userId}`);
   const instructions = {
     detailed: "Make these notes more detailed by expanding explanations and adding examples:",
     shorter: "Summarize these notes into a more concise version while keeping the key points:",
