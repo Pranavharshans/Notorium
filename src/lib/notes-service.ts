@@ -171,22 +171,22 @@ export const notesService = {
         updatedAt: serverTimestamp(),
       });
 
-      // Update cache with new note
+      // Create new note object
+      const newNote = {
+        id: docRef.id,
+        title: title.trim(),
+        transcript,
+        notes,
+        userId,
+        tags: sanitizedTags,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      };
+
+      // Update or initialize cache with new note
       const cachedNotes = getFromCache(userId);
-      if (cachedNotes) {
-        const newNote = {
-          id: docRef.id,
-          title: title.trim(),
-          transcript,
-          notes,
-          userId,
-          tags: sanitizedTags,
-          createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now(),
-        };
-        saveToCache(userId, [newNote, ...cachedNotes]);
-        console.log('New note added to cache:', docRef.id);
-      }
+      saveToCache(userId, cachedNotes ? [newNote, ...cachedNotes] : [newNote]);
+      console.log('New note added to cache:', docRef.id);
 
       return docRef.id;
     } catch (error) {
@@ -242,6 +242,7 @@ export const notesService = {
 
       // If not in cache or expired, fetch from Firebase
       console.log('Cache miss, fetching from Firebase');
+      const { db } = await getFirebaseInstance();
       const q = query(
         collection(db, NOTES_COLLECTION),
         where('userId', '==', userId),

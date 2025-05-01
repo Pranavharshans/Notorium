@@ -64,6 +64,14 @@ export function NewLectureView({
     try {
       await quotaService.checkRecordingQuota(user.uid);
       recordingService.setUserId(user.uid);
+      recordingService.setOnNoteCreated((noteId) => {
+        notesService.getNote(noteId).then((note) => {
+          if (note && onNoteSelect) {
+            onNoteSelect(noteId, note);
+            setCurrentView('notes');
+          }
+        });
+      });
       setIsRecording(true);
       setError(null);
       setTranscription(null);
@@ -146,10 +154,7 @@ export function NewLectureView({
         if (newNote && onNoteSelect) {
           setGeneratedNotes(null);
           onNoteSelect(noteId, newNote);
-          
-          setTimeout(() => {
-            setCurrentView('notes');
-          }, 0);
+          setCurrentView('notes');
         }
       } else {
         console.error("Cannot save note: User not logged in.");

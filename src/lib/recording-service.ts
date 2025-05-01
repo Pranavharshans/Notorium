@@ -1,6 +1,9 @@
 import { quotaService } from './quota-service';
+import { notesService } from './notes-service';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { getFirebaseInstance, type FirebaseInstances } from './firebase';
+import { groqService } from './groq-service';
+import { aiProviderService } from './ai-provider-service';
 
 export interface RecordingData {
   blob: Blob;
@@ -17,6 +20,11 @@ export class RecordingService {
   private userId: string | null = null;
   private onUploadProgress: ((progress: number) => void) | null = null;
   private isUploading: boolean = false;
+  private onNoteCreated: ((noteId: string) => void) | null = null;
+
+  setOnNoteCreated(callback: (noteId: string) => void): void {
+    this.onNoteCreated = callback;
+  }
 
   public setUploadProgressCallback(callback: (progress: number) => void): void {
     this.onUploadProgress = callback;
@@ -39,13 +47,17 @@ export class RecordingService {
       throw new Error('User ID not set');
     }
 
+    const currentDuration = this.getCurrentDuration();
+    const minutesUsed = Math.ceil(currentDuration / 60);
+    
     const quota = await quotaService.checkRecordingQuota(this.userId);
+    const remainingMinutes = quota.minutesRemaining - minutesUsed;
 
-    if (quota.percentageUsed >= 80 && quota.percentageUsed < 100) {
-      this.onQuotaWarning?.('warning');
-    } else if (quota.percentageUsed >= 100) {
+    if (remainingMinutes <= 0) {
       this.onQuotaWarning?.('limit');
       return false;
+    } else if (remainingMinutes <= 1) {
+      this.onQuotaWarning?.('warning');
     }
 
     return true;
@@ -78,9 +90,10 @@ export class RecordingService {
       this.quotaCheckInterval = setInterval(async () => {
         const hasQuota = await this.checkQuota();
         if (!hasQuota) {
+          console.log('Quota exhausted, stopping recording...');
           await this.stopRecording();
         }
-      }, 60000);
+      }, 5000); // Check every 5 seconds
     } catch (error) {
       console.error('Error starting recording:', error);
       throw new Error('Failed to start recording');
@@ -156,11 +169,39 @@ export class RecordingService {
             const downloadURL = await this.uploadAudioToFirebase(audioBlob, this.userId);
             await quotaService.incrementRecordingUsage(this.userId, Math.ceil(duration / 60));
             
-            resolve({
-              blob: audioBlob,
-              duration,
-              downloadURL,
-            });
+            // Trigger transcription and auto-generate notes
+            try {
+              // Transcribe audio
+              const transcription = await groqService.transcribeAudio({ blob: audioBlob, duration, downloadURL });
+              console.log('Transcription completed successfully');
+
+              if (this.userId) {
+                // Auto-generate notes
+                aiProviderService.setProvider('openrouter');
+                const { title, content } = await aiProviderService.generateNotesFromTranscript(transcription.text, 'general');
+                
+                // Create note
+                const noteId = await notesService.createNote({
+                  title,
+                  transcript: transcription.text,
+                  notes: content,
+                  userId: this.userId,
+                  tags: ['lecture']
+                });
+                
+                console.log('Note automatically created from transcription');
+                this.onNoteCreated?.(noteId);
+              }
+
+              resolve({
+                blob: audioBlob,
+                duration,
+                downloadURL,
+              });
+            } catch (error) {
+              console.error('Error in transcription/note creation:', error);
+              reject(error);
+            }
           } catch (uploadError) {
             reject(uploadError);
           }
@@ -225,9 +266,10 @@ export class RecordingService {
       this.quotaCheckInterval = setInterval(async () => {
         const hasQuota = await this.checkQuota();
         if (!hasQuota) {
+          console.log('Quota exhausted, stopping recording...');
           await this.stopRecording();
         }
-      }, 60000);
+      }, 5000); // Check every 5 seconds
     }
   }
 }
