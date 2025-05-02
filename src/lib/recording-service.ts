@@ -1,7 +1,7 @@
 import { quotaService } from './quota-service';
 import { notesService } from './notes-service';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { getFirebaseInstance, type FirebaseInstances } from './firebase';
+import { getFirebaseInstance } from './firebase';
 import { groqService } from './groq-service';
 import { aiProviderService } from './ai-provider-service';
 
@@ -21,6 +21,7 @@ export class RecordingService {
   private onUploadProgress: ((progress: number) => void) | null = null;
   private isUploading: boolean = false;
   private onNoteCreated: ((noteId: string) => void) | null = null;
+  private isPaused: boolean = false;
 
   setOnNoteCreated(callback: (noteId: string) => void): void {
     this.onNoteCreated = callback;
@@ -91,7 +92,7 @@ export class RecordingService {
         const hasQuota = await this.checkQuota();
         if (!hasQuota) {
           console.log('Quota exhausted, stopping recording...');
-          await this.stopRecording();
+          await this.stopRecording(true); // Pass true to indicate quota exhaustion
         }
       }, 5000); // Check every 5 seconds
     } catch (error) {
@@ -141,7 +142,7 @@ export class RecordingService {
     }
   }
 
-  async stopRecording(): Promise<RecordingData> {
+  async stopRecording(isQuotaExhausted: boolean = false): Promise<RecordingData> {
     return new Promise((resolve, reject) => {
       if (!this.mediaRecorder) {
         reject(new Error('Recording not started'));
@@ -168,40 +169,37 @@ export class RecordingService {
           try {
             const downloadURL = await this.uploadAudioToFirebase(audioBlob, this.userId);
             await quotaService.incrementRecordingUsage(this.userId, Math.ceil(duration / 60));
-            
-            // Trigger transcription and auto-generate notes
-            try {
-              // Transcribe audio
-              const transcription = await groqService.transcribeAudio({ blob: audioBlob, duration, downloadURL });
-              console.log('Transcription completed successfully');
 
-              if (this.userId) {
-                // Auto-generate notes
+            if (isQuotaExhausted && this.userId) {
+              // Auto-generate notes only when quota is exhausted
+              try {
+                const transcription = await groqService.transcribeAudio({ blob: audioBlob, duration, downloadURL });
+                console.log('Transcription completed successfully');
+
                 aiProviderService.setProvider('openrouter');
                 const { title, content } = await aiProviderService.generateNotesFromTranscript(transcription.text, 'general');
                 
-                // Create note
                 const noteId = await notesService.createNote({
                   title,
                   transcript: transcription.text,
                   notes: content,
                   userId: this.userId,
-                  tags: ['lecture']
+                  tags: ['lecture', 'quota-exhausted']
                 });
                 
-                console.log('Note automatically created from transcription');
+                console.log('Note automatically created due to quota exhaustion');
                 this.onNoteCreated?.(noteId);
+              } catch (error) {
+                console.error('Error in auto-generation:', error);
+                // Continue with resolution even if auto-generation fails
               }
-
-              resolve({
-                blob: audioBlob,
-                duration,
-                downloadURL,
-              });
-            } catch (error) {
-              console.error('Error in transcription/note creation:', error);
-              reject(error);
             }
+
+            resolve({
+              blob: audioBlob,
+              duration,
+              downloadURL,
+            });
           } catch (uploadError) {
             reject(uploadError);
           }
@@ -213,8 +211,6 @@ export class RecordingService {
       this.mediaRecorder.stop();
     });
   }
-
-  private isPaused: boolean = false;
 
   isRecording(): boolean {
     return this.mediaRecorder?.state === 'recording' && !this.isPaused;
@@ -267,7 +263,7 @@ export class RecordingService {
         const hasQuota = await this.checkQuota();
         if (!hasQuota) {
           console.log('Quota exhausted, stopping recording...');
-          await this.stopRecording();
+          await this.stopRecording(true); // Pass true to indicate quota exhaustion
         }
       }, 5000); // Check every 5 seconds
     }

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from 'react';
-import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuotaPopup } from '@/context/QuotaPopupContext';
 import { quotaService, RecordingQuotaExhaustedError } from '@/lib/quota-service';
@@ -36,7 +35,7 @@ export function NewLectureView({
   const [copySuccess, setCopySuccess] = useState(false);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
-  const [provider, setProvider] = useState<AIProvider>('openrouter');
+  const provider: AIProvider = 'openrouter';
   const [category, setCategory] = useState<LectureCategory>('general');
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -312,19 +311,6 @@ export function NewLectureView({
                 </div>
 
                 <div className="flex justify-end items-center gap-4">
-                  <button
-                    onClick={() => {
-                      const newProvider = provider === 'openrouter' ? 'groq' : 'openrouter';
-                      setProvider(newProvider);
-                      aiProviderService.setProvider(newProvider);
-                    }}
-                    className="px-4 py-2 rounded text-sm flex items-center gap-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    disabled={notesLoading}
-                  >
-                    <RefreshCw size={16} />
-                    {provider === 'openrouter' ? 'Using OpenRouter' : 'Using Groq'}
-                  </button>
-
                   <button
                     onClick={handleGenerateNotes}
                     disabled={notesLoading}
