@@ -92,14 +92,15 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
           >
             {label}
           </label>
-          <Popover open={open} onOpenChange={setOpen}>
+          <Popover open={open} onOpenChange={setOpen} modal={true}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                role="combobox"
+                type="button"
+                aria-haspopup="listbox"
                 aria-expanded={open}
                 className={cn(
-                  "w-full justify-between shadow-sm text-sm items-center font-body font-normal",
+                  "w-full justify-between shadow-sm text-sm items-center font-body font-normal relative",
                   !field.value && "text-text-placeholder"
                 )}
                 disabled={isLoading}
@@ -127,8 +128,8 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-90% p-0">
-              <Command>
+            <PopoverContent className="w-[280px] p-0 z-50 bg-white">
+              <Command className="rounded-lg border shadow-md">
                 <CommandInput
                   className="bg-bg-primary"
                   placeholder="Search country..."
@@ -139,7 +140,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
                     }
                   }}
                 />
-                <CommandList>
+                <CommandList className="max-h-[300px] overflow-auto">
                   <CommandEmpty>No country found.</CommandEmpty>
                   <CommandGroup className="bg-bg-primary">
                     {filteredCountries.map((country) => (
