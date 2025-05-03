@@ -30,9 +30,10 @@ export const formSchema = z.object({
 interface CustomerPaymentFormProps {
   onSubmit: (data: z.infer<typeof formSchema>) => Promise<void>;
   isLoading?: boolean;
+  userEmail: string;
 }
 
-const CustomerPaymentForm: React.FC<CustomerPaymentFormProps> = ({ onSubmit, isLoading = false }) => {
+const CustomerPaymentForm: React.FC<CustomerPaymentFormProps> = ({ onSubmit, isLoading = false, userEmail }) => {
   const [error, setError] = useState("");
 
   const {
@@ -44,26 +45,15 @@ const CustomerPaymentForm: React.FC<CustomerPaymentFormProps> = ({ onSubmit, isL
     resolver: zodResolver(formSchema),
     defaultValues: {
       country: "US",
-      firstName: "",
-      lastName: "",
-      email: "",
-      addressLine: "",
-      city: "",
-      state: "",
-      zipCode: "",
+      firstName: "John",
+      lastName: "Doe",
+      email: userEmail,
+      addressLine: "364 Kent St",
+      city: "Sydney",
+      state: "NSW",
+      zipCode: "2035",
     },
   });
-
-  const handlePrefill = () => {
-    setValue("firstName", "John");
-    setValue("lastName", "Doe");
-    setValue("email", "john.doe@example.com");
-    setValue("country", "US");
-    setValue("addressLine", "364 Kent St");
-    setValue("city", "Sydney");
-    setValue("state", "NSW");
-    setValue("zipCode", "2035");
-  };
 
   const handleFormSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
@@ -141,7 +131,9 @@ const CustomerPaymentForm: React.FC<CustomerPaymentFormProps> = ({ onSubmit, isL
                   <Input
                     {...field}
                     type="email"
-                    placeholder="eg: johndoe@example.com"
+                    value={userEmail}
+                    disabled
+                    className="bg-gray-100"
                   />
                 </FormControl>
                 {errors.email && (
@@ -238,10 +230,7 @@ const CustomerPaymentForm: React.FC<CustomerPaymentFormProps> = ({ onSubmit, isL
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-4">
-            <Button type="button" className="w-fit" variant="secondary" onClick={handlePrefill}>
-              Prefill with demo details
-            </Button>
+          <div className="flex items-center justify-center">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Processing..." : "Continue to Payment"}
             </Button>

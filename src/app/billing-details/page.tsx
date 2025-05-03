@@ -80,9 +80,10 @@ export default function BillingDetailsPage() {
 
   return (
     <div className="container mx-auto py-10">
-      <CustomerPaymentForm 
+      <CustomerPaymentForm
         onSubmit={handleSubmit}
         isLoading={isLoading}
+        userEmail={user?.email || ''}
       />
     </div>
   );
