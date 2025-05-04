@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
+
+interface TranscriptionResponse {
+  text: string;
+  segments: any[];
+  language: string;
+}
 import { FieldValue } from 'firebase-admin/firestore';
 import { auth, db } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
@@ -61,14 +67,38 @@ export async function POST(request: Request) {
     });
 
     console.log('Attempting transcription with Groq for URL:', audioUrl);
-    const transcription = await groq.audio.transcriptions.create({
-      url: audioUrl,
-      model: "whisper-large-v3-turbo",
-      response_format: "verbose_json",
-      timestamp_granularities: ["segment"],
-      language: "en",
-      temperature: 0.0
-    } as any);
+    // Function to attempt transcription with retries
+    const attemptTranscription = async (retries = 3, timeout = 60000): Promise<TranscriptionResponse> => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+          const transcription = await Promise.race<TranscriptionResponse>([
+            groq.audio.transcriptions.create({
+              url: audioUrl,
+              model: "whisper-large-v3-turbo",
+              response_format: "verbose_json",
+              timestamp_granularities: ["segment"],
+              language: "en",
+              temperature: 0.0
+            } as any),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Transcription timeout')), timeout)
+            )
+          ]);
+
+          clearTimeout(timeoutId);
+          return transcription;
+        } catch (error) {
+          console.log(`Transcription attempt ${i + 1} failed:`, error);
+          if (i === retries - 1) throw error; // Throw on last retry
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+        }
+      }
+    };
+
+    const transcription = await attemptTranscription();
 
     console.log('Transcription successful');
 

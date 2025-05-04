@@ -135,14 +135,14 @@ export function NewLectureView({
       
       if (user?.uid) {
         const finalTitle = title.trim() || generatedTitle;
-        const noteTags = tags.length ? [...tags, 'lecture'] : ['lecture'];
+        const noteTags = [...tags];
         
         const noteId = await notesService.createNote({
           title: finalTitle,
           transcript: transcription.text,
           notes: generatedContent,
           userId: user.uid,
-          tags: noteTags.filter(tag => tag.trim() !== '')
+          tags: [] // No default tags
         });
 
         if (!title.trim()) {

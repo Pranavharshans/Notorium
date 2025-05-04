@@ -11,12 +11,15 @@ export interface RecordingData {
   downloadURL?: string;
 }
 
+// Maximum duration for a single recording session (3 minutes)
+const MAX_RECORDING_DURATION_SECONDS = 180;
+
 export class RecordingService {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
   private startTime: number = 0;
   private quotaCheckInterval: ReturnType<typeof setInterval> | null = null;
-  private onQuotaWarning: ((type: 'warning' | 'limit') => void) | null = null;
+  private onQuotaWarning: ((type: 'warning' | 'limit' | 'duration') => void) | null = null;
   private userId: string | null = null;
   private onUploadProgress: ((progress: number) => void) | null = null;
   private isUploading: boolean = false;
@@ -39,7 +42,7 @@ export class RecordingService {
     this.userId = userId;
   }
 
-  setQuotaWarningCallback(callback: (type: 'warning' | 'limit') => void): void {
+  setQuotaWarningCallback(callback: (type: 'warning' | 'limit' | 'duration') => void): void {
     this.onQuotaWarning = callback;
   }
 
@@ -89,6 +92,15 @@ export class RecordingService {
       this.mediaRecorder.start();
 
       this.quotaCheckInterval = setInterval(async () => {
+        // Check recording duration
+        const currentDuration = this.getCurrentDuration();
+        if (currentDuration >= MAX_RECORDING_DURATION_SECONDS) {
+          console.log('Maximum recording duration reached, stopping...');
+          this.onQuotaWarning?.('duration');
+          return;
+        }
+
+        // Check quota
         const hasQuota = await this.checkQuota();
         if (!hasQuota) {
           console.log('Quota exhausted, stopping recording...');
@@ -170,30 +182,7 @@ export class RecordingService {
             const downloadURL = await this.uploadAudioToFirebase(audioBlob, this.userId);
             await quotaService.incrementRecordingUsage(this.userId, Math.ceil(duration / 60));
 
-            if (isQuotaExhausted && this.userId) {
-              // Auto-generate notes only when quota is exhausted
-              try {
-                const transcription = await groqService.transcribeAudio({ blob: audioBlob, duration, downloadURL });
-                console.log('Transcription completed successfully');
-
-                aiProviderService.setProvider('openrouter');
-                const { title, content } = await aiProviderService.generateNotesFromTranscript(transcription.text, 'general');
-                
-                const noteId = await notesService.createNote({
-                  title,
-                  transcript: transcription.text,
-                  notes: content,
-                  userId: this.userId,
-                  tags: ['lecture', 'quota-exhausted']
-                });
-                
-                console.log('Note automatically created due to quota exhaustion');
-                this.onNoteCreated?.(noteId);
-              } catch (error) {
-                console.error('Error in auto-generation:', error);
-                // Continue with resolution even if auto-generation fails
-              }
-            }
+            // Remove auto-generation logic, let NewLectureView handle it
 
             resolve({
               blob: audioBlob,
@@ -260,6 +249,15 @@ export class RecordingService {
       this.isPaused = false;
 
       this.quotaCheckInterval = setInterval(async () => {
+        // Check recording duration
+        const currentDuration = this.getCurrentDuration();
+        if (currentDuration >= MAX_RECORDING_DURATION_SECONDS) {
+          console.log('Maximum recording duration reached, stopping...');
+          this.onQuotaWarning?.('duration');
+          return;
+        }
+
+        // Check quota
         const hasQuota = await this.checkQuota();
         if (!hasQuota) {
           console.log('Quota exhausted, stopping recording...');

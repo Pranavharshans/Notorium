@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { recordingService } from "@/lib/recording-service";
 import { getAuth } from "firebase/auth";
+import { toast } from "sonner";
 
 interface AIVoiceInputProps {
   onStart?: () => void;
@@ -28,6 +29,7 @@ export function AIVoiceInput({
   const [isClient, setIsClient] = useState(false);
   const [isDemo, setIsDemo] = useState(demoMode);
   const [isPaused, setIsPaused] = useState(false);
+  const [isApproachingLimit, setIsApproachingLimit] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -39,7 +41,9 @@ export function AIVoiceInput({
     if (isRecording && !isDemo && !isPaused) {
       intervalId = setInterval(() => {
         const currentDuration = recordingService.getCurrentDuration();
-        setTime(Math.floor(currentDuration));
+        const durationInSeconds = Math.floor(currentDuration);
+        setTime(durationInSeconds);
+        setIsApproachingLimit(durationInSeconds >= 120); // 2 minutes
       }, 1000);
     } else if (!isRecording) {
       setTime(0);
@@ -91,6 +95,21 @@ export function AIVoiceInput({
           throw new Error("User not authenticated");
         }
         recordingService.setUserId(user.uid);
+        recordingService.setQuotaWarningCallback((type) => {
+          if (type === 'duration') {
+            toast.warning("Recording time limit reached");
+            // Don't pass isQuotaExhausted flag for time limit
+            recordingService.stopRecording(false).then(recordingData => {
+              setIsRecording(false);
+              setIsPaused(false);
+              onStop?.(recordingData);
+            }).catch(error => {
+              console.error("Error stopping recording:", error);
+              setIsRecording(false);
+              setIsPaused(false);
+            });
+          }
+        });
         await recordingService.startRecording();
         setIsRecording(true);
         setIsPaused(false);
@@ -210,8 +229,15 @@ export function AIVoiceInput({
           ))}
         </div>
 
-        <p className="h-4 text-xs text-black/70 dark:text-white/70">
-          {isRecording ? (isPaused ? "Paused" : "Listening...") : "Click to speak"}
+        <p className={cn(
+          "h-4 text-xs",
+          isApproachingLimit ? "text-yellow-600 dark:text-yellow-400" : "text-black/70 dark:text-white/70"
+        )}>
+          {isRecording ? (
+            isPaused ? "Paused" :
+            time >= 120 ? "Recording will end in 1 minute..." :
+            "Listening..."
+          ) : "Click to speak"}
         </p>
       </div>
     </div>
