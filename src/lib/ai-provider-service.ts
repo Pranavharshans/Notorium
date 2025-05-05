@@ -36,24 +36,9 @@ export class AIProviderService {
       throw new Error('User ID not set');
     }
 
-    // Check quota before proceeding
-    try {
-      await quotaService.checkEnhanceQuota(this.userId);
-    } catch (error) {
-      if (error instanceof EnhanceQuotaExhaustedError) {
-        throw error; // Re-throw the specific error to be caught upstream
-      }
-      // Handle other potential errors from checkEnhanceQuota if necessary
-      console.error("Unexpected error during enhance quota check:", error);
-      throw new Error("Failed to check enhance quota.");
-    }
-
     const notes = await (this.currentProvider === 'openrouter'
       ? openRouterService.generateNotesFromTranscript(transcript, category)
       : groqService.generateNotesFromTranscript(transcript));
-
-    // After successful generation, increment usage
-    await quotaService.incrementEnhanceUsage(this.userId);
 
     // Extract title from the first heading
     const match = notes.match(/^#\s*[📌]?\s*(.+)$/m);
