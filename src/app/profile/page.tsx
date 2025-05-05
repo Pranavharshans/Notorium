@@ -38,23 +38,51 @@ export default function ProfilePage() {
 
     async function fetchQuota() {
       try {
-        // Add null check for user before accessing uid
         if (!user) {
           console.error("User is null, cannot fetch quota.");
           setLoading(false);
           return;
         }
-        const [recordingQuota, enhanceQuota] = await Promise.all([
-          quotaService.checkRecordingQuota(user.uid),
-          quotaService.checkEnhanceQuota(user.uid)
-        ]);
+
+        // Initialize default quotas with trial status
+        let recordingQuota = {
+          minutesRemaining: 0,
+          percentageUsed: 100,
+          subscriptionStatus: 'trial' as SubscriptionTier
+        };
+
+        let enhanceQuota = {
+          enhancesRemaining: 0,
+          percentageUsed: 0,
+          subscriptionStatus: 'trial' as SubscriptionTier
+        };
+
+        // Fetch recording quota
+        try {
+          recordingQuota = await quotaService.checkRecordingQuota(user.uid);
+        } catch (error: any) {
+          console.error("Error fetching recording quota:", error);
+          if (error.name === 'RecordingQuotaExhaustedError') {
+            recordingQuota.percentageUsed = 100;
+          }
+        }
+
+        // Fetch enhance quota
+        try {
+          enhanceQuota = await quotaService.checkEnhanceQuota(user.uid);
+        } catch (error: any) {
+          console.error("Error fetching enhance quota:", error);
+          if (error.name === 'EnhanceQuotaExhaustedError') {
+            enhanceQuota.percentageUsed = 100;
+          }
+        }
 
         setQuotaData({
           recording: recordingQuota,
           enhance: enhanceQuota
         });
       } catch (error) {
-        console.error("Error fetching quota:", error);
+        console.error("Error in fetchQuota:", error);
       } finally {
         setLoading(false);
       }
