@@ -51,10 +51,10 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
         ]);
 
         // Check recording quota warning levels
-        if (recordingQuota.percentageUsed >= 80) {
+        if (recordingQuota.isExhausted || recordingQuota.percentageUsed >= 80) {
           const tierLimits = quotaService.getQuotaLimits(recordingQuota.subscriptionStatus);
           onQuotaWarning(
-            recordingQuota.percentageUsed >= 100 ? 'limit' : 'warning',
+            recordingQuota.isExhausted || recordingQuota.percentageUsed >= 100 ? 'limit' : 'warning',
             'recording',
             Math.floor(tierLimits.recordingMinutes - recordingQuota.minutesRemaining),
             tierLimits.recordingMinutes

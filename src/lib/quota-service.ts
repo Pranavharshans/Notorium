@@ -16,6 +16,9 @@ export class RecordingQuotaExhaustedError extends Error {
   constructor(message = "Recording quota exhausted") {
     super(message);
     this.name = "RecordingQuotaExhaustedError";
+    // Add a property that can be used to identify this as a handled error
+    // This is for debugging purposes but won't affect the browser UI
+    Object.defineProperty(this, 'isExpectedError', { value: true });
   }
 }
 
@@ -128,13 +131,21 @@ export class QuotaService {
     minutesRemaining: number;
     percentageUsed: number;
     subscriptionStatus: SubscriptionTier;
+    isExhausted?: boolean;
   }> {
     const quota = await this.getUserQuota(userId);
     const limit = QUOTA_LIMITS[quota.subscriptionStatus].recordingMinutes;
     const remaining = limit - quota.recordingMinutesUsed;
 
     if (remaining <= 0) {
-      throw new RecordingQuotaExhaustedError();
+      // Return with isExhausted flag instead of throwing error
+      return {
+        minutesRemaining: 0,
+        percentageUsed: 100,
+        subscriptionStatus: quota.subscriptionStatus,
+        isExhausted: true
+      };
+      // throw new RecordingQuotaExhaustedError();
     }
 
     const percentageUsed = (quota.recordingMinutesUsed / limit) * 100;
@@ -143,6 +154,7 @@ export class QuotaService {
       minutesRemaining: remaining,
       percentageUsed,
       subscriptionStatus: quota.subscriptionStatus,
+      isExhausted: false
     };
   }
 
@@ -243,6 +255,27 @@ export class QuotaService {
 
   getQuotaLimits(tier: SubscriptionTier): QuotaLimits {
     return QUOTA_LIMITS[tier];
+  }
+
+  async silentCheckRecordingQuota(userId: string): Promise<{
+    hasQuota: boolean;
+    minutesRemaining: number;
+    percentageUsed: number;
+    subscriptionStatus: SubscriptionTier;
+    isExhausted?: boolean;
+  }> {
+    const quota = await this.getUserQuota(userId);
+    const limit = QUOTA_LIMITS[quota.subscriptionStatus].recordingMinutes;
+    const remaining = limit - quota.recordingMinutesUsed;
+    const percentageUsed = (quota.recordingMinutesUsed / limit) * 100;
+
+    return {
+      hasQuota: remaining > 0,
+      minutesRemaining: Math.max(0, remaining),
+      percentageUsed,
+      subscriptionStatus: quota.subscriptionStatus,
+      isExhausted: remaining <= 0
+    };
   }
 }
 

@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Notorium - Smart Lecture Notes",
   description: "AI-powered lecture notes and transcription",
+  icons: {
+    icon: "/Users/pranavharshans/All-proj/notorium/logoo.png",
+  },
 };
 
 export default function RootLayout({
@@ -19,6 +22,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="//Users/pranavharshans/All-proj/notorium/logoo.png" type="image/png" />
+      </head>
       <body className={inter.className}>
         <AuthProvider>
           <QuotaPopupProvider>

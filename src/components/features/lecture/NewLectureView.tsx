@@ -61,7 +61,16 @@ export function NewLectureView({
     }
 
     try {
-      await quotaService.checkRecordingQuota(user.uid);
+      // Use the silent check method that doesn't throw errors
+      const quotaStatus = await quotaService.silentCheckRecordingQuota(user.uid);
+      
+      if (quotaStatus.isExhausted || !quotaStatus.hasQuota) {
+        // Handle quota exceeded without throwing an error
+        showQuotaPopup('recording');
+        setIsRecording(false);
+        return;
+      }
+      
       recordingService.setUserId(user.uid);
       recordingService.setOnNoteCreated((noteId) => {
         notesService.getNote(noteId).then((note) => {
@@ -76,13 +85,10 @@ export function NewLectureView({
       setTranscription(null);
       setCopySuccess(false);
     } catch (err) {
-      if (err instanceof RecordingQuotaExhaustedError) {
-        showQuotaPopup('recording');
-      } else {
-        console.error("Error checking recording quota:", err);
-        const errorMessage = err instanceof Error ? err.message : "Failed to check recording quota.";
-        setError(errorMessage);
-      }
+      // This will only catch unexpected errors, not quota issues
+      console.error("Error checking recording quota:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to check recording quota.";
+      setError(errorMessage);
       setIsRecording(false);
     }
   };

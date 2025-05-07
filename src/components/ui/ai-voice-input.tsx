@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { recordingService } from "@/lib/recording-service";
 import { getAuth } from "firebase/auth";
 import { toast } from "sonner";
+import { useQuotaPopup } from "@/context/QuotaPopupContext";
+import { RecordingQuotaExhaustedError, quotaService } from "@/lib/quota-service";
 
 interface AIVoiceInputProps {
   onStart?: () => void;
@@ -30,6 +32,7 @@ export function AIVoiceInput({
   const [isDemo, setIsDemo] = useState(demoMode);
   const [isPaused, setIsPaused] = useState(false);
   const [isApproachingLimit, setIsApproachingLimit] = useState(false);
+  const { showQuotaPopup } = useQuotaPopup();
 
   useEffect(() => {
     setIsClient(true);
@@ -43,7 +46,7 @@ export function AIVoiceInput({
         const currentDuration = recordingService.getCurrentDuration();
         const durationInSeconds = Math.floor(currentDuration);
         setTime(durationInSeconds);
-        setIsApproachingLimit(durationInSeconds >= 120); // 2 minutes
+        setIsApproachingLimit(durationInSeconds >= 1740); // 29 minutes
       }, 1000);
     } else if (!isRecording) {
       setTime(0);
@@ -94,20 +97,35 @@ export function AIVoiceInput({
         if (!user) {
           throw new Error("User not authenticated");
         }
+        
+        // Check quota silently before starting recording
+        const quotaStatus = await quotaService.silentCheckRecordingQuota(user.uid);
+        if (quotaStatus.isExhausted || !quotaStatus.hasQuota) {
+          showQuotaPopup('recording');
+          setIsRecording(false);
+          return;
+        }
+        
         recordingService.setUserId(user.uid);
         recordingService.setQuotaWarningCallback((type) => {
           if (type === 'duration') {
-            toast.warning("Recording time limit reached");
-            // Don't pass isQuotaExhausted flag for time limit
-            recordingService.stopRecording(false).then(recordingData => {
-              setIsRecording(false);
-              setIsPaused(false);
-              onStop?.(recordingData);
-            }).catch(error => {
-              console.error("Error stopping recording:", error);
-              setIsRecording(false);
-              setIsPaused(false);
-            });
+            const currentDuration = recordingService.getCurrentDuration();
+            if (currentDuration >= 1800) { // Only stop if we've hit 30 minutes
+              toast.warning("Recording time limit reached");
+              // Don't pass isQuotaExhausted flag for time limit
+              recordingService.stopRecording(false).then(recordingData => {
+                setIsRecording(false);
+                setIsPaused(false);
+                onStop?.(recordingData);
+              }).catch(error => {
+                console.error("Error stopping recording:", error);
+                setIsRecording(false);
+                setIsPaused(false);
+              });
+            } else {
+              // Just show warning at 29 minutes
+              toast.warning("Recording will end in 1 minute");
+            }
           }
         });
         await recordingService.startRecording();
@@ -122,6 +140,8 @@ export function AIVoiceInput({
       }
     } catch (error) {
       console.error("Recording error:", error);
+      // We no longer need to check for RecordingQuotaExhaustedError
+      // since we're handling quota with the isExhausted flag
       setIsRecording(false);
       setIsPaused(false);
     }
@@ -235,7 +255,7 @@ export function AIVoiceInput({
         )}>
           {isRecording ? (
             isPaused ? "Paused" :
-            time >= 120 ? "Recording will end in 1 minute..." :
+            time >= 1740 ? "Recording will end in 1 minute..." :
             "Listening..."
           ) : "Click to speak"}
         </p>

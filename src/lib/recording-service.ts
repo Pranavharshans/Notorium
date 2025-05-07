@@ -1,4 +1,4 @@
-import { quotaService } from './quota-service';
+import { quotaService, RecordingQuotaExhaustedError } from './quota-service';
 import { notesService } from './notes-service';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { getFirebaseInstance } from './firebase';
@@ -11,8 +11,8 @@ export interface RecordingData {
   downloadURL?: string;
 }
 
-// Maximum duration for a single recording session (3 minutes)
-const MAX_RECORDING_DURATION_SECONDS = 180;
+// Maximum duration for a single recording session (30 minutes)
+const MAX_RECORDING_DURATION_SECONDS = 1800; // 30 minutes * 60 seconds
 
 export class RecordingService {
   private mediaRecorder: MediaRecorder | null = null;
@@ -54,10 +54,10 @@ export class RecordingService {
     const currentDuration = this.getCurrentDuration();
     const minutesUsed = Math.ceil(currentDuration / 60);
     
-    const quota = await quotaService.checkRecordingQuota(this.userId);
-    const remainingMinutes = quota.minutesRemaining - minutesUsed;
+    const quotaStatus = await quotaService.silentCheckRecordingQuota(this.userId);
+    const remainingMinutes = quotaStatus.minutesRemaining - minutesUsed;
 
-    if (remainingMinutes <= 0) {
+    if (quotaStatus.isExhausted || remainingMinutes <= 0) {
       this.onQuotaWarning?.('limit');
       return false;
     } else if (remainingMinutes <= 1) {
@@ -72,12 +72,13 @@ export class RecordingService {
       throw new Error('User ID not set');
     }
 
-    const hasQuota = await this.checkQuota();
-    if (!hasQuota) {
-      throw new Error('Recording quota exceeded');
-    }
-
     try {
+      const quotaStatus = await quotaService.silentCheckRecordingQuota(this.userId);
+      if (quotaStatus.isExhausted || !quotaStatus.hasQuota) {
+        this.onQuotaWarning?.('limit');
+        return; // Return instead of throwing an error
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       this.mediaRecorder = new MediaRecorder(stream);
       this.audioChunks = [];
@@ -94,17 +95,33 @@ export class RecordingService {
       this.quotaCheckInterval = setInterval(async () => {
         // Check recording duration
         const currentDuration = this.getCurrentDuration();
+        const warningThreshold = 1740; // 29 minutes * 60 seconds
+        
         if (currentDuration >= MAX_RECORDING_DURATION_SECONDS) {
           console.log('Maximum recording duration reached, stopping...');
           this.onQuotaWarning?.('duration');
+          await this.stopRecording();
           return;
+        } else if (currentDuration >= warningThreshold) {
+          console.log('Recording duration warning - approaching 30 minute limit...');
+          this.onQuotaWarning?.('duration');
         }
 
-        // Check quota
-        const hasQuota = await this.checkQuota();
-        if (!hasQuota) {
-          console.log('Quota exhausted, stopping recording...');
-          await this.stopRecording(true); // Pass true to indicate quota exhaustion
+        // Check quota silently
+        try {
+          const quotaStatus = await quotaService.silentCheckRecordingQuota(this.userId!);
+          const minutesUsed = Math.ceil(currentDuration / 60);
+          const remainingMinutes = quotaStatus.minutesRemaining - minutesUsed;
+          
+          if (quotaStatus.isExhausted || remainingMinutes <= 0) {
+            console.log('Quota exhausted, stopping recording...');
+            this.onQuotaWarning?.('limit');
+            await this.stopRecording(true); // Pass true to indicate quota exhaustion
+          } else if (remainingMinutes <= 1) {
+            this.onQuotaWarning?.('warning');
+          }
+        } catch (error) {
+          console.error('Error checking quota:', error);
         }
       }, 5000); // Check every 5 seconds
     } catch (error) {
@@ -251,10 +268,16 @@ export class RecordingService {
       this.quotaCheckInterval = setInterval(async () => {
         // Check recording duration
         const currentDuration = this.getCurrentDuration();
+        const warningThreshold = 1740; // 29 minutes * 60 seconds
+        
         if (currentDuration >= MAX_RECORDING_DURATION_SECONDS) {
           console.log('Maximum recording duration reached, stopping...');
           this.onQuotaWarning?.('duration');
+          await this.stopRecording();
           return;
+        } else if (currentDuration >= warningThreshold) {
+          console.log('Recording duration warning - approaching 30 minute limit...');
+          this.onQuotaWarning?.('duration');
         }
 
         // Check quota
