@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: "Notorium - Smart Lecture Notes",
   description: "AI-powered lecture notes and transcription",
   icons: {
-    icon: "/Users/pranavharshans/All-proj/notorium/logoo.png",
+    icon: "/logo.png",
   },
 };
 
@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="//Users/pranavharshans/All-proj/notorium/logoo.png" type="image/png" />
+        <link rel="icon" href="/logo.png" type="image/png" />
       </head>
       <body className={inter.className}>
         <AuthProvider>

@@ -224,3 +224,8 @@ Last updated: 2025-05-04 07:18:00 (Asia/Calcutta, UTC+5:30)
 - Add usage export functionality
 - Implement quota rollover system
 - Add custom quota limits for enterprise users
+
+## Updated Features
+
+### Updated Favicon (2025-05-08 23:08:00 Asia/Calcutta)
+- Updated the favicon to use the logoo.png image.
