@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { aiAndTranscriptionLimiter } from '@/lib/rate-limit';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -20,7 +21,8 @@ export async function middleware(request: NextRequest) {
     '/api/subscription',
     '/api/ai/openrouter',
     '/api/ai/groq',
-    '/api/transcribe'
+    '/api/transcribe',
+    '/api/rate-limit-test'
   ];
 
   const isProtectedPath = protectedPaths.some(path =>
@@ -63,34 +65,33 @@ export async function middleware(request: NextRequest) {
     }
 
     // Apply rate limiting for AI and transcription endpoints
-    if (pathname.startsWith('/api/ai/') || pathname.startsWith('/api/transcribe')) {
-      const response = await fetch(`${request.nextUrl.origin}/api/check-rate-limit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ip }),
-      });
-
-      const { success, limit, reset, remaining } = await response.json();
-
-      if (!success) {
-        return NextResponse.json(
-          {
-            error: 'Rate limit exceeded',
-            limit,
-            reset,
-            remaining
-          },
-          {
-            status: 429,
-            headers: {
-              'X-RateLimit-Limit': limit.toString(),
-              'X-RateLimit-Remaining': remaining.toString(),
-              'X-RateLimit-Reset': reset.toString()
+    if (pathname.startsWith('/api/ai/') || 
+        pathname.startsWith('/api/transcribe') || 
+        pathname.startsWith('/api/rate-limit-test')) {
+      try {
+        const result = aiAndTranscriptionLimiter.check(ip);
+        
+        if (!result.success) {
+          return NextResponse.json(
+            {
+              error: 'Rate limit exceeded',
+              limit: result.limit,
+              reset: result.reset,
+              remaining: result.remaining
+            },
+            {
+              status: 429,
+              headers: {
+                'X-RateLimit-Limit': result.limit.toString(),
+                'X-RateLimit-Remaining': result.remaining.toString(),
+                'X-RateLimit-Reset': result.reset.toString()
+              }
             }
-          }
-        );
+          );
+        }
+      } catch (error) {
+        console.error('Rate limiting error:', error);
+        // Allow request to proceed in case of rate limiting error
       }
     }
   }
@@ -105,6 +106,7 @@ export const config = {
     '/api/subscription/:path*',
     '/api/webhook',
     '/api/ai/:path*',
-    '/api/transcribe/:path*'
+    '/api/transcribe/:path*',
+    '/api/rate-limit-test'
   ]
 };

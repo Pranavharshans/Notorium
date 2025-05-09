@@ -1,84 +1,42 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
-import { Timestamp } from 'firebase-admin/firestore';
+import { aiAndTranscriptionLimiter } from '@/lib/rate-limit';
 
-const REQUESTS_PER_MINUTE = 10;
-
+/**
+ * This endpoint is maintained for backward compatibility and analytics.
+ * Rate limiting is now primarily handled directly in the middleware.
+ */
 export async function POST(request: Request) {
   try {
-    const { ip } = await request.json();
-    const now = Timestamp.now();
-    const minuteAgo = Timestamp.fromMillis(now.toMillis() - 60 * 1000);
-    
-    const rateLimitRef = db.collection('rateLimits').doc(ip);
-    
-    const result = await db.runTransaction(async (transaction) => {
-      const doc = await transaction.get(rateLimitRef);
-      
-      if (!doc.exists) {
-        transaction.set(rateLimitRef, {
-          requests: 1,
-          lastReset: now,
-        });
-        return {
-          success: true,
-          count: 1,
-          lastReset: now,
-        };
-      }
+    // Get client IP from headers or default to localhost
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+               request.headers.get('x-real-ip') ||
+               '127.0.0.1';
 
-      const data = doc.data()!;
-      const resetTime = data.lastReset.toMillis();
-      
-      if (resetTime < minuteAgo.toMillis()) {
-        transaction.set(rateLimitRef, {
-          requests: 1,
-          lastReset: now,
-        });
-        return {
-          success: true,
-          count: 1,
-          lastReset: now,
-        };
-      }
-
-      const newCount = data.requests + 1;
-      if (newCount <= REQUESTS_PER_MINUTE) {
-        transaction.update(rateLimitRef, {
-          requests: newCount,
-        });
-        return {
-          success: true,
-          count: newCount,
-          lastReset: data.lastReset,
-        };
-      }
-
-      return {
-        success: false,
-        count: data.requests,
-        lastReset: data.lastReset,
-      };
-    });
-
-    const timeUntilReset = Math.ceil(
-      (result.lastReset.toMillis() + 60 * 1000 - Date.now()) / 1000
-    );
+    // Check rate limit
+    const result = aiAndTranscriptionLimiter.check(ip);
 
     return NextResponse.json({
       success: result.success,
-      limit: REQUESTS_PER_MINUTE,
-      remaining: Math.max(0, REQUESTS_PER_MINUTE - result.count),
-      reset: timeUntilReset,
+      limit: result.limit,
+      remaining: result.remaining,
+      reset: result.reset,
+      message: result.success ? 'Request allowed' : 'Rate limit exceeded'
+    }, {
+      status: result.success ? 200 : 429,
+      headers: {
+        'X-RateLimit-Limit': result.limit.toString(),
+        'X-RateLimit-Remaining': result.remaining.toString(),
+        'X-RateLimit-Reset': result.reset.toString()
+      }
     });
   } catch (error) {
-    console.error('Rate limit error:', error);
-    // If there's an error, allow the request
+    console.error('Rate limiting error:', error);
     return NextResponse.json({
-      success: true,
-      limit: REQUESTS_PER_MINUTE,
-      remaining: 1,
-      reset: 60,
+      success: true, // Allow in case of error
+      message: 'Error checking rate limit',
+      limit: 10,
+      remaining: 10,
+      reset: 60
     });
   }
 }
