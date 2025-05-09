@@ -93,7 +93,7 @@ async function generateNotesFromTranscript(
   const combinedInstructions = `${systemInstruction}\n\n${categoryInstructions}`;
 
   const completion = await openai.chat.completions.create({
-    model: 'openai/gpt-4.1-nano',
+    model: 'meta-llama/llama-4-scout',
     messages: [
       {
         role: 'system',
@@ -103,7 +103,15 @@ async function generateNotesFromTranscript(
         role: 'user',
         content: transcript
       }
-    ]
+    ],
+    temperature: 0.7,
+    max_tokens: 8192, // Set to 8k tokens
+    top_p: 1,
+    stream: false,
+    provider: {
+      order: ["Groq"],
+      allow_fallbacks: false
+    }
   });
 
   return completion.choices[0].message.content || '';
@@ -124,7 +132,7 @@ async function enhanceNotes(
   };
 
   const completion = await openai.chat.completions.create({
-    model: 'openai/gpt-4.1-nano',
+    model: 'meta-llama/llama-4-scout',
     messages: [
       {
         role: 'system',
@@ -134,7 +142,15 @@ async function enhanceNotes(
         role: 'user',
         content: notes
       }
-    ]
+    ],
+    temperature: 0.7,
+    max_tokens: 8192, // Set to 8k tokens
+    top_p: 1,
+    stream: false,
+    provider: {
+      order: ["Groq"],
+      allow_fallbacks: false
+    }
   });
 
   return completion.choices[0].message.content || '';
