@@ -84,14 +84,20 @@ export class QuotaService {
   }
 
   private async initializeQuota(userId: string): Promise<UserQuota> {
+    const db = await this.getDB();
+
+    // Check subscription status from users collection
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    const subscriptionStatus: SubscriptionTier =
+      userDoc.exists() && userDoc.data()?.status === 'active' ? 'paid' : 'trial';
+
     const initialQuota: UserQuota = {
       recordingMinutesUsed: 0,
       enhanceNotesUsed: 0,
-      subscriptionStatus: 'trial',
+      subscriptionStatus,
       subscriptionStartDate: new Date(),
     };
 
-    const db = await this.getDB();
     const quotaRef = doc(collection(db, 'quotas'), userId);
     const dataToWrite = {
       ...initialQuota,
@@ -276,6 +282,86 @@ export class QuotaService {
       subscriptionStatus: quota.subscriptionStatus,
       isExhausted: remaining <= 0
     };
+  }
+
+  async syncQuotaWithSubscription(userId: string): Promise<void> {
+    const db = await this.getDB();
+    
+    // Get user's subscription status
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    const isActiveSubscription = userDoc.exists() && userDoc.data()?.status === 'active';
+    
+    // Get current quota
+    const quotaRef = doc(collection(db, 'quotas'), userId);
+    const quotaDoc = await getDoc(quotaRef);
+    
+    if (quotaDoc.exists()) {
+      const quota = quotaDoc.data();
+      const newStatus: SubscriptionTier = isActiveSubscription ? 'paid' : 'trial';
+      
+      // Only update if status needs to change
+      if (quota.subscriptionStatus !== newStatus) {
+        await updateDoc(quotaRef, {
+          subscriptionStatus: newStatus,
+          subscriptionStartDate: new Date().toISOString(),
+        });
+        
+        // Update cache
+        if (this.quotaCache.has(userId)) {
+          const cachedQuota = this.quotaCache.get(userId)!;
+          this.quotaCache.set(userId, {
+            ...cachedQuota,
+            subscriptionStatus: newStatus,
+            subscriptionStartDate: new Date(),
+          });
+        }
+      }
+    } else {
+      // If no quota exists, initialize one
+      await this.initializeQuota(userId);
+    }
+  }
+
+  /**
+   * Resets usage counters when a subscription is renewed
+   * This ensures users get fresh quotas with each billing cycle
+   */
+  async resetQuotaUsage(userId: string): Promise<void> {
+    console.log(`Resetting usage quotas for user: ${userId}`);
+    
+    const db = await this.getDB();
+    const quotaRef = doc(collection(db, 'quotas'), userId);
+    
+    // Get current quota to preserve subscription status
+    const quotaDoc = await getDoc(quotaRef);
+    if (!quotaDoc.exists()) {
+      // If no quota exists, initialize one instead
+      await this.initializeQuota(userId);
+      return;
+    }
+    
+    const currentData = quotaDoc.data();
+    
+    // Reset the usage counters to zero
+    await updateDoc(quotaRef, {
+      recordingMinutesUsed: 0,
+      enhanceNotesUsed: 0,
+      // Also update subscription start date to current date for tracking purposes
+      subscriptionStartDate: new Date().toISOString(),
+    });
+    
+    // Update cache if it exists
+    if (this.quotaCache.has(userId)) {
+      const cachedQuota = this.quotaCache.get(userId)!;
+      this.quotaCache.set(userId, {
+        ...cachedQuota,
+        recordingMinutesUsed: 0,
+        enhanceNotesUsed: 0,
+        subscriptionStartDate: new Date(),
+      });
+    }
+    
+    console.log(`Successfully reset usage quotas for user: ${userId}`);
   }
 }
 

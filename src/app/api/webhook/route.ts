@@ -2,6 +2,7 @@ import { Webhook } from "standardwebhooks";
 import { headers } from "next/headers";
 import { dodopayments } from "@/lib/dodopayments";
 import { updateSubscriptionStatus } from "@/lib/subscription-utils";
+import { quotaService } from "@/lib/quota-service";
 
 const webhook = new Webhook(process.env.DODO_PAYMENTS_WEBHOOK_KEY!);
 
@@ -41,8 +42,12 @@ export async function POST(request: Request) {
             firebaseUid,
             'active',
             subscription.next_billing_date,
-            subscription
+            payload.data
           );
+          // Synchronize quota with new subscription status
+          await quotaService.syncQuotaWithSubscription(firebaseUid);
+          // Synchronize quota with new subscription status
+          await quotaService.syncQuotaWithSubscription(firebaseUid);
           break;
         }
         case "subscription.failed": {
@@ -69,8 +74,12 @@ export async function POST(request: Request) {
             firebaseUid,
             'active',
             subscription.next_billing_date,
-            subscription
+            payload.data
           );
+          // Synchronize quota with new subscription status
+          await quotaService.syncQuotaWithSubscription(firebaseUid);
+          // Reset usage counters to give fresh quotas for the new billing period
+          await quotaService.resetQuotaUsage(firebaseUid);
           break;
         }
         case "subscription.on_hold": {
