@@ -70,7 +70,7 @@ export async function updateSubscriptionStatus(
   firebaseUID: string,
   status: SubscriptionData['status'],
   nextBillingDate?: string,
-  subscriptionData?: any
+  subscriptionData?: Record<string, unknown>
 ): Promise<void> {
   try {
     console.log('Updating subscription status for user:', firebaseUID);

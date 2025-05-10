@@ -8,20 +8,20 @@ import { formatDistanceToNow } from 'date-fns';
 
 import { Timestamp } from 'firebase/firestore';
 
-interface Note {
-  id: string;
-  title: string;
-  transcript: string;
-  notes: string;
-  createdAt: Timestamp | { seconds: number; nanoseconds: number };
-  updatedAt: Timestamp | { seconds: number; nanoseconds: number };
-  tags?: string[];
-  bookmarked?: boolean;
-}
+// interface Note { // This interface seems to be a duplicate or part of another definition, commenting out.
+//   id: string;
+//   title: string;
+//   transcript: string;
+//   notes: string;
+//   createdAt: Timestamp | { seconds: number; nanoseconds: number };
+//   updatedAt: Timestamp | { seconds: number; nanoseconds: number };
+//   tags?: string[];
+//   bookmarked?: boolean;
+// }
 
-interface TranscriptDisplayProps {
-  transcript: string;
-}
+// interface TranscriptDisplayProps { // Commented out - @typescript-eslint/no-unused-vars
+//   transcript: string;
+// }
 
 interface NoteItemProps {
   note: Note;
@@ -29,35 +29,36 @@ interface NoteItemProps {
   onClick: (id: string, note: Note) => void;
 }
 
-function TranscriptDisplay({ transcript }: TranscriptDisplayProps) {
-  const [expanded, setExpanded] = useState(false);
-  const truncatedTranscript = transcript.slice(0, 100); // Reduced from 300
+// function TranscriptDisplay({ transcript }: TranscriptDisplayProps) { // Commented out - @typescript-eslint/no-unused-vars
+//   const [expanded, setExpanded] = useState(false);
+//   const truncatedTranscript = transcript.slice(0, 100); // Reduced from 300
 
-  return (
-    <div className="mt-3 pt-3 border-t border-gray-100">
-      <p className="text-xs font-medium text-gray-500 mb-1">Transcript</p>
-      <p className="text-xs text-gray-600">
-        {expanded ? transcript : truncatedTranscript}
-        {!expanded && transcript.length > 100 && "..."} // Reduced from 300
-      </p>
-      {transcript.length > 100 && ( // Reduced from 300
-        <button
-          className="text-blue-500 text-xs hover:underline"
-          onClick={(e) => {
-            e.stopPropagation();
-            setExpanded(!expanded);
-          }}
-        >
-          {expanded ? "See Less" : "See More"}
-        </button>
-      )}
-    </div>
-  );
-}
+//   return (
+//     <div className="mt-3 pt-3 border-t border-gray-100">
+//       <p className="text-xs font-medium text-gray-500 mb-1">Transcript</p>
+//       <p className="text-xs text-gray-600">
+//         {expanded ? transcript : truncatedTranscript}
+//         {!expanded && transcript.length > 100 && "..."}
+//         {/* Reduced from 300 */}
+//       </p>
+//       {transcript.length > 100 && (
+//         <button
+//           className="text-blue-500 text-xs hover:underline"
+//           onClick={(e) => {
+//             e.stopPropagation();
+//             setExpanded(!expanded);
+//           }}
+//         >
+//           {expanded ? "See Less" : "See More"}
+//         </button>
+//       )}
+//     </div>
+//   );
+// }
 
 function NoteItem({ note, isActive, onClick }: NoteItemProps) {
-  const title = note.title || 'Untitled Note';
-  const excerpt = note.notes.split('\n')[0] || '';
+  // const title = note.title || 'Untitled Note'; // Commented out - @typescript-eslint/no-unused-vars
+  // const excerpt = note.notes.split('\n')[0] || ''; // Commented out - @typescript-eslint/no-unused-vars
 
   return (
     <div
@@ -153,7 +154,7 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
             }
           }
         }
-      } catch (err) {
+      } catch {
         if (mounted) {
           setError('Failed to load notes');
           setLoading(false);
@@ -167,7 +168,7 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
     return () => {
       mounted = false;
     };
-  }, [user, refreshKey]);
+  }, [user, refreshKey, activeNoteId, onNoteSelect]);
 
   useEffect(() => {
     let filtered = notes;

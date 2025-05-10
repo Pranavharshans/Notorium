@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Controller } from "react-hook-form";
+import { Controller, Control } from "react-hook-form";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { FlagImage } from "react-international-phone";
 
 interface CountrySelectProps {
-  control: any;
+  control: Control<Record<string, unknown>>;
   name: string;
   label: string;
   placeholder: string;
@@ -58,7 +58,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
         });
         const data = await response.json();
         setCountries(
-          data.countries.map((country: { title: string; value: string }) => ({
+          data.countries.map((country: { title: string; value: string; /* Add other properties if they exist */ }) => ({ // Added specific type for country argument - @typescript-eslint/no-explicit-any
             name: country.title,
             code: country.value,
           }))

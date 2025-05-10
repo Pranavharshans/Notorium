@@ -34,7 +34,7 @@ export function TypingAnimation({
     return () => {
       clearInterval(typingEffect);
     };
-  }, [duration, i, text]);
+  }, [duration, i, text, onComplete]);
 
   useEffect(() => {
     setDisplayedText("");

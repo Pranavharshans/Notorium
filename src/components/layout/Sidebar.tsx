@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { User, Plus, Book, Bookmark, LogOut } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 interface SidebarProps {
   currentView: string;
@@ -22,14 +23,20 @@ const icons = {
 
 export function Sidebar({ currentView, onViewChange, onSignOut }: SidebarProps) {
   const { user } = useAuth();
-  const router = useRouter();
+  // const router = useRouter();
 
   return (
     <div className="w-20 border-r border-gray-200 dark:border-gray-700 flex flex-col items-center py-4 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
       <div className="mb-6">
         <Link href="/profile" className="block hover:opacity-80 transition-opacity">
           {user?.photoURL ? (
-            <img src={user.photoURL} alt={user.displayName || "User"} className="w-8 h-8 rounded-full"/>
+            <Image 
+              src={user.photoURL} 
+              alt={user.displayName || "User"} 
+              width={32} 
+              height={32} 
+              className="rounded-full"
+            />
           ) : (
             <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
               <User className="w-4 h-4 text-gray-500 dark:text-gray-400"/>

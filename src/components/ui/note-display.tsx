@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { EnhanceMode } from '@/lib/openrouter-service';
@@ -10,7 +10,7 @@ import { AnimatedEditPopover } from './AnimatedEditPopover';
 interface CodeProps {
   children?: React.ReactNode;
   className?: string;
-  node?: any;
+  node?: Record<string, unknown>;
   inline?: boolean;
 }
 
@@ -19,11 +19,12 @@ interface NoteDisplayProps {
   onEnhance: (mode: EnhanceMode) => Promise<void>;
   isEnhancing: boolean;
   onTitlesExtracted?: (titles: { id: string; text: string; level: number }[]) => void;
+  showEnhanceOptions?: boolean;
 }
 
-export function NoteDisplay({ content, onEnhance, isEnhancing, onTitlesExtracted }: NoteDisplayProps) {
-  const [showEnhanceOptions, setShowEnhanceOptions] = useState(false);
-  const [titles, setTitles] = useState<{ id: string; text: string; level: number }[]>([]);
+export function NoteDisplay({ content, onEnhance, isEnhancing, onTitlesExtracted, showEnhanceOptions }: NoteDisplayProps) {
+  // const [showEnhanceOptions, setShowEnhanceOptions] = useState(false); // Commented out - @typescript-eslint/no-unused-vars. setShowEnhanceOptions was also unused.
+  // Removed commented out titles state since it was causing issues
 
   useEffect(() => {
     const extractTitles = () => {
@@ -36,7 +37,7 @@ export function NoteDisplay({ content, onEnhance, isEnhancing, onTitlesExtracted
         const id = text.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
         matches.push({ id, text, level });
       }
-      setTitles(matches);
+      // Removed setTitles call
       if (onTitlesExtracted) {
         onTitlesExtracted(matches);
       }
@@ -48,7 +49,9 @@ export function NoteDisplay({ content, onEnhance, isEnhancing, onTitlesExtracted
   return (
     <div className="relative">
       <div className="absolute top-2 right-2">
-        <AnimatedEditPopover onEnhance={onEnhance} isEnhancing={isEnhancing} />
+        {showEnhanceOptions && (
+          <AnimatedEditPopover onEnhance={onEnhance} isEnhancing={isEnhancing} />
+        )}
       </div>
 
       {/* Loading Overlay */}

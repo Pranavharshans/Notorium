@@ -3,7 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { QuotaFeature, QuotaWarningType } from "@/components/ui/usage-display";
-import { useAuth } from "@/context/auth-context";
+// import { useAuth } from "@/context/auth-context"; // Commented out - @typescript-eslint/no-unused-vars
 
 const QuotaWarningModal = dynamic(() => import("@/components/ui/quota-warning-modal").then(mod => mod.QuotaWarningModal), { ssr: false });
 
@@ -12,7 +12,7 @@ interface ClientLayoutProps {
 }
 
 export function ClientLayout({ children }: ClientLayoutProps) {
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Commented out - @typescript-eslint/no-unused-vars
   const [quotaWarning, setQuotaWarning] = useState<{
     type: QuotaWarningType;
     feature: QuotaFeature;

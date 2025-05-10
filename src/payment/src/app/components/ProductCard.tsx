@@ -65,11 +65,11 @@ export default function ProductCard({ product, isSubscribed = false }: ProductCa
   const isProductSubscription = product.is_recurring;
   const showSubscribeButton = isProductSubscription && !isSubscribed;
   const showActiveSubscription = isProductSubscription && isSubscribed;
-  const showBuyButton = !isProductSubscription;
+  // const showBuyButton = !isProductSubscription; // Commented out - @typescript-eslint/no-unused-vars
 
   // Show subscription status if we have subscription data and it's not active
-  const showSubscriptionStatus = subscriptionData && 
-    (subscriptionData.status === 'pending' || subscriptionData.status === 'on_hold');
+  // const showSubscriptionStatus = subscriptionData && 
+  //   (subscriptionData.status === 'pending' || subscriptionData.status === 'on_hold'); // Commented out - @typescript-eslint/no-unused-vars
 
   return (
     <div 

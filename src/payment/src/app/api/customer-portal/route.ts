@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { dodopayments } from '@/lib/dodopayments';
+// import { dodopayments } from '@/lib/dodopayments'; // Commented out - @typescript-eslint/no-unused-vars
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 

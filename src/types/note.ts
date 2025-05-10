@@ -2,11 +2,12 @@ export interface Note {
   id: string;
   transcript: string;
   notes: string;
-  createdAt: any; // TODO: Use proper Firebase timestamp type
-  updatedAt: any;
+  createdAt: { seconds: number; nanoseconds?: number } | Date;
+  updatedAt: { seconds: number; nanoseconds?: number } | Date;
   tags?: string[];
   title?: string;
   userId?: string;
+  bookmarked?: boolean;
 }
 
 export interface CreateNoteInput {

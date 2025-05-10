@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import Image from "next/image"
 
 interface AvatarProps {
   className?: string
@@ -17,7 +18,14 @@ interface AvatarImageProps {
 }
 
 export const AvatarImage = ({ src, alt }: AvatarImageProps) => (
-  <img src={src || "/placeholder.svg"} alt={alt} className="h-full w-full object-cover" />
+  <Image 
+    src={src || "/placeholder.svg"} 
+    alt={alt} 
+    className="h-full w-full object-cover" 
+    width={40} 
+    height={40}
+    unoptimized={src.startsWith("data:")}
+  />
 )
 
 interface AvatarFallbackProps {

@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/firebase-admin";
 import { cookies } from "next/headers";
 import { storeSubscriptionData } from "@/lib/subscription-utils";
-import { DecodedIdToken } from "firebase-admin/auth";
+// import { DecodedIdToken } from "firebase-admin/auth"; // Commented out to fix @typescript-eslint/no-unused-vars error
 
-async function validateSession(): Promise<{ firebaseUid: string; user: any } | null> {
+async function validateSession(): Promise<{ firebaseUid: string; user: Record<string, unknown> } | null> {
   const cookiesList = await cookies();
   const sessionCookie = cookiesList.get("session");
 

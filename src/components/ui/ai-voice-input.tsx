@@ -7,7 +7,8 @@ import { recordingService } from "@/lib/recording-service";
 import { getAuth } from "firebase/auth";
 import { toast } from "sonner";
 import { useQuotaPopup } from "@/context/QuotaPopupContext";
-import { RecordingQuotaExhaustedError, quotaService } from "@/lib/quota-service";
+// import { RecordingQuotaExhaustedError, quotaService } from "@/lib/quota-service"; // Commented out RecordingQuotaExhaustedError as it is unused - @typescript-eslint/no-unused-vars
+import { quotaService } from "@/lib/quota-service";
 
 interface AIVoiceInputProps {
   onStart?: () => void;

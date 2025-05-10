@@ -3,47 +3,44 @@
 import { useAuth } from '@/context/auth-context';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth } from 'firebase/auth'; // Added import
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, CreditCard } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
-import { quotaService, QUOTA_LIMITS, SubscriptionTier } from "@/lib/quota-service"; // Import QUOTA_LIMITS and SubscriptionTier
+import { quotaService, QUOTA_LIMITS, SubscriptionTier } from "@/lib/quota-service";
+import Image from "next/image";
 
 export default function ProfilePage() {
-  const { user, signOutUser } = useAuth();
+  const { user, loading: authLoading, signOutUser } = useAuth();
   const router = useRouter();
   const { subscriptionData, loading: subscriptionLoading, isSubscriptionActive } = useSubscription();
   const [quotaData, setQuotaData] = useState<{
-    recording: { minutesRemaining: number; percentageUsed: number; subscriptionStatus?: SubscriptionTier }; // Add subscriptionStatus
-    enhance: { enhancesRemaining: number; percentageUsed: number; subscriptionStatus?: SubscriptionTier }; // Add subscriptionStatus
+    recording: { minutesRemaining: number; percentageUsed: number; subscriptionStatus?: SubscriptionTier };
+    enhance: { enhancesRemaining: number; percentageUsed: number; subscriptionStatus?: SubscriptionTier };
   }>({
     recording: { minutesRemaining: 0, percentageUsed: 0 },
     enhance: { enhancesRemaining: 0, percentageUsed: 0 }
   });
   const [loading, setLoading] = useState(true);
-  const [cancelIsLoading, setCancelIsLoading] = useState(false); // Added state
-  const [cancelError, setCancelError] = useState<string | null>(null); // Added state
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false); // Added state
-  const [cancelEndDate, setCancelEndDate] = useState<string | null>(null); // Added state
-  const auth = getAuth(); // Added auth instance
+  const [cancelIsLoading, setCancelIsLoading] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelEndDate, setCancelEndDate] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
+    // Only redirect if we're not loading and there's no user
+    if (!authLoading && !user) {
       router.push("/");
       return;
     }
 
+    // Continue with quota fetching only if we have a user
+    if (!user) return;
+
     async function fetchQuota() {
       try {
-        if (!user) {
-          console.error("User is null, cannot fetch quota.");
-          setLoading(false);
-          return;
-        }
-
         // Initialize default quotas with trial status
         let recordingQuota = {
           minutesRemaining: 0,
@@ -60,9 +57,9 @@ export default function ProfilePage() {
         // Fetch recording quota
         try {
           recordingQuota = await quotaService.checkRecordingQuota(user.uid);
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("Error fetching recording quota:", error);
-          if (error.name === 'RecordingQuotaExhaustedError') {
+          if (error instanceof Error && error.name === 'RecordingQuotaExhaustedError') {
             recordingQuota.percentageUsed = 100;
           }
         }
@@ -70,9 +67,9 @@ export default function ProfilePage() {
         // Fetch enhance quota
         try {
           enhanceQuota = await quotaService.checkEnhanceQuota(user.uid);
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("Error fetching enhance quota:", error);
-          if (error.name === 'EnhanceQuotaExhaustedError') {
+          if (error instanceof Error && error.name === 'EnhanceQuotaExhaustedError') {
             enhanceQuota.percentageUsed = 100;
           }
         }
@@ -89,9 +86,10 @@ export default function ProfilePage() {
     }
 
     fetchQuota();
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
-  if (!user || loading || subscriptionLoading) {
+  // Show loading state while authentication is being determined
+  if (authLoading || loading || subscriptionLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
@@ -100,6 +98,11 @@ export default function ProfilePage() {
         </div>
       </div>
     );
+  }
+
+  // Don't render anything if there's no user
+  if (!user) {
+    return null;
   }
 
   const handleLogout = async () => {
@@ -112,9 +115,8 @@ export default function ProfilePage() {
   };
 
   const handleManageSubscription = () => {
-    // Instead of navigating, show the confirmation dialog
     setShowCancelConfirm(true);
-    setCancelError(null); // Reset error when showing confirm
+    setCancelError(null);
   };
 
   const handleCancelSubscription = async () => {
@@ -122,7 +124,7 @@ export default function ProfilePage() {
       setCancelIsLoading(true);
       setCancelError(null);
 
-      const token = await auth.currentUser?.getIdToken();
+      const token = await user?.getIdToken();
       if (!token) {
         throw new Error('Not authenticated');
       }
@@ -172,7 +174,13 @@ export default function ProfilePage() {
         <CardHeader className="flex flex-col items-center space-y-3 border-b pb-7 pt-6">
           <div className="h-24 w-24 rounded-full overflow-hidden">
             {user.photoURL ? (
-              <img src={user.photoURL} alt={user.displayName || "User"} className="h-full w-full object-cover" />
+              <Image 
+                src={user.photoURL} 
+                alt={user.displayName || "User"} 
+                className="h-full w-full object-cover" 
+                width={96}
+                height={96}
+              />
             ) : (
               <div className="h-full w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-2xl text-gray-500 dark:text-gray-400">
                 {(user.displayName || user.email || "?")[0].toUpperCase()}
@@ -206,104 +214,100 @@ export default function ProfilePage() {
             <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger value="usage">Usage</TabsTrigger>
             </TabsList>
-            {/* Remove className prop as it's not accepted by TabsContent */}
             <TabsContent value="usage">
-              <div className="space-y-4 pt-4"> {/* Apply styling to a wrapper div */}
+              <div className="space-y-4 pt-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Recording Minutes</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {quotaData.recording.subscriptionStatus ?
-                      `${QUOTA_LIMITS[quotaData.recording.subscriptionStatus].recordingMinutes - quotaData.recording.minutesRemaining} used / ${QUOTA_LIMITS[quotaData.recording.subscriptionStatus].recordingMinutes} total` :
-                      `${quotaData.recording.minutesRemaining} remaining`
-                    }
-                  </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {quotaData.recording.subscriptionStatus ?
+                        `${QUOTA_LIMITS[quotaData.recording.subscriptionStatus].recordingMinutes - quotaData.recording.minutesRemaining} used / ${QUOTA_LIMITS[quotaData.recording.subscriptionStatus].recordingMinutes} total` :
+                        `${quotaData.recording.minutesRemaining} remaining`
+                      }
+                    </span>
+                  </div>
+                  <Progress value={quotaData.recording.percentageUsed} className="h-2" />
                 </div>
-                <Progress value={quotaData.recording.percentageUsed} className="h-2" />
-              </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">AI Enhancements</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {quotaData.enhance.subscriptionStatus ?
-                      `${QUOTA_LIMITS[quotaData.enhance.subscriptionStatus].enhanceNotes - quotaData.enhance.enhancesRemaining} used / ${QUOTA_LIMITS[quotaData.enhance.subscriptionStatus].enhanceNotes} total` :
-                      `${quotaData.enhance.enhancesRemaining} remaining`
-                    }
-                  </span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">AI Enhancements</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {quotaData.enhance.subscriptionStatus ?
+                        `${QUOTA_LIMITS[quotaData.enhance.subscriptionStatus].enhanceNotes - quotaData.enhance.enhancesRemaining} used / ${QUOTA_LIMITS[quotaData.enhance.subscriptionStatus].enhanceNotes} total` :
+                        `${quotaData.enhance.enhancesRemaining} remaining`
+                      }
+                    </span>
+                  </div>
+                  <Progress value={quotaData.enhance.percentageUsed} className="h-2" />
                 </div>
-                <Progress value={quotaData.enhance.percentageUsed} className="h-2" />
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-      <CardFooter className="flex flex-col space-y-3 border-t p-6">
-        {/* Only show Manage/Cancel Subscription if active */}
-        {isSubscriptionActive && !cancelEndDate && (
-          <>
-            {!showCancelConfirm ? (
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={handleManageSubscription}
-                disabled={cancelIsLoading}
-              >
-                <CreditCard className="mr-2 h-4 w-4" />
-                Cancel Subscription
-              </Button>
-            ) : (
-              <div className="w-full p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-800 mb-4">
-                  Are you sure you want to cancel your subscription? You'll continue to have access until your current billing period ends.
-                </p>
-                <div className="flex space-x-3">
-                  <Button
-                    onClick={handleCancelSubscription}
-                    disabled={cancelIsLoading}
-                    className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50"
-                  >
-                    {cancelIsLoading ? 'Cancelling...' : 'Yes, Cancel'}
-                  </Button>
-                  <Button
-                    onClick={() => setShowCancelConfirm(false)}
-                    disabled={cancelIsLoading}
-                    variant="outline"
-                    className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-lg hover:bg-gray-300"
-                  >
-                    No, Keep Subscription
-                  </Button>
-                </div>
-                {cancelError && (
-                  <p className="mt-2 text-sm text-red-600">
-                    {cancelError}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-3 border-t p-6">
+          {isSubscriptionActive && !cancelEndDate && (
+            <>
+              {!showCancelConfirm ? (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={handleManageSubscription}
+                  disabled={cancelIsLoading}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Cancel Subscription
+                </Button>
+              ) : (
+                <div className="w-full p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800 mb-4">
+                    Are you sure you want to cancel your subscription? You&apos;ll still have access to your Pro features until your current billing period ends.
                   </p>
-                )}
-              </div>
-            )}
-          </>
-        )}
+                  <div className="flex space-x-3">
+                    <Button
+                      onClick={handleCancelSubscription}
+                      disabled={cancelIsLoading}
+                      className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {cancelIsLoading ? 'Cancelling...' : 'Yes, Cancel'}
+                    </Button>
+                    <Button
+                      onClick={() => setShowCancelConfirm(false)}
+                      disabled={cancelIsLoading}
+                      variant="outline"
+                      className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-lg hover:bg-gray-300"
+                    >
+                      No, Keep Subscription
+                    </Button>
+                  </div>
+                  {cancelError && (
+                    <p className="mt-2 text-sm text-red-600">
+                      {cancelError}
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
 
-        {/* Show cancellation confirmation message */}
-        {cancelEndDate && (
-          <div className="w-full p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800">
-              Your subscription has been cancelled. You will have access until {new Date(cancelEndDate).toLocaleDateString()}.
-            </p>
-          </div>
-        )}
+          {cancelEndDate && (
+            <div className="w-full p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                Your subscription has been cancelled. You will have access until {new Date(cancelEndDate).toLocaleDateString()}.
+              </p>
+            </div>
+          )}
 
-        {/* Always show Logout button */}
-        <Button
-          variant="outline"
-          className="w-full justify-start text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600"
-          onClick={handleLogout}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Logout
-        </Button>
-      </CardFooter>
-    </Card>
-  </div>
+          <Button
+            variant="outline"
+            className="w-full justify-start text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600"
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }

@@ -9,7 +9,7 @@ export function CancelSubscription() {
   const [error, setError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [endDate, setEndDate] = useState<string | null>(null);
-  const { subscriptionData, isSubscriptionActive } = useSubscription();
+  const { /* subscriptionData, */ isSubscriptionActive } = useSubscription();
   const auth = getAuth();
 
   const handleCancel = async () => {
@@ -70,7 +70,7 @@ export function CancelSubscription() {
       ) : (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-800 mb-4">
-            Are you sure you want to cancel your subscription? You'll continue to have access until your current billing period ends.
+            Are you sure you want to cancel your subscription? You&apos;ll continue to have access until your current billing period ends.
           </p>
           <div className="flex space-x-3">
             <button

@@ -66,11 +66,29 @@ export async function storeSubscriptionData(
   }
 }
 
+interface SubscriptionUpdateData {
+  customer?: {
+    email: string;
+    name: string;
+  };
+  billing?: {
+    city: string;
+    country: string;
+    state: string;
+    street: string;
+    zipcode: string;
+  };
+  product_id?: string;
+  payment_frequency_count?: number;
+  payment_frequency_interval?: string;
+  [key: string]: unknown;
+}
+
 export async function updateSubscriptionStatus(
   firebaseUID: string,
   status: SubscriptionData['status'],
   nextBillingDate?: string,
-  subscriptionData?: any
+  subscriptionData?: SubscriptionUpdateData
 ): Promise<void> {
   try {
     console.log('Updating subscription status for user:', firebaseUID);

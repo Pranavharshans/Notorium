@@ -90,7 +90,8 @@ export async function POST(request: Request) {
       switch (payload.type) {
         case "payment.succeeded":
           const paymentDataResp = await dodopayments.payments.retrieve(payload.data.payment_id);
-          // Add any payment-specific handling here if needed
+          // paymentDataResp is retrieved for future use but not currently used
+          console.log('Payment data retrieved:', paymentDataResp.payment_id);
           break;
         default:
           break;

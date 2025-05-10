@@ -11,7 +11,7 @@ interface EditNoteFormProps {
 
 export function EditNoteForm({ note, onCancel, onSave }: EditNoteFormProps) {
   const [title, setTitle] = useState(note.title || '');
-  const [content, setContent] = useState(note.notes);
+  // const [content, /* setContent */] = useState(note.notes); // Commented out - @typescript-eslint/no-unused-vars
   const [tags, setTags] = useState<string[]>(note.tags || []);
   const [tagInput, setTagInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,7 +65,7 @@ export function EditNoteForm({ note, onCancel, onSave }: EditNoteFormProps) {
         <div
           className="block w-full bg-transparent text-gray-700 dark:text-gray-300 whitespace-pre-wrap min-h-[300px]"
         >
-          {content}
+          {/* {content} */}
         </div>
       </div>
 

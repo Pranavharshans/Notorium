@@ -50,7 +50,7 @@ export class GroqService {
         try {
           const error = JSON.parse(errorText);
           throw new Error(error.error || 'Failed to transcribe audio');
-        } catch (parseError) {
+        } catch {
           throw new Error(`Failed to transcribe audio: ${errorText}`);
         }
       }

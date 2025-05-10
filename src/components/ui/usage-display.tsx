@@ -99,7 +99,7 @@ export function UsageDisplay({ onQuotaWarning }: UsageDisplayProps) {
       clearInterval(interval);
       setWarningIssued(false); // Reset warning state when component unmounts
     };
-  }, [user]);
+  }, [user, onQuotaWarning, warningIssued]);
 
   if (loading || !usage) {
     return (

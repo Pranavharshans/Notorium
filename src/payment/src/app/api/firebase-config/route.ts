@@ -1,6 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
+// import { getFirestore } from 'firebase-admin/firestore'; // Commented out - @typescript-eslint/no-unused-vars
+// import { getAuth } from 'firebase-admin/auth'; // Commented out - @typescript-eslint/no-unused-vars
 
 // Initialize Firebase Admin if it hasn't been initialized
 const apps = getApps();

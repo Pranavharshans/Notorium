@@ -57,7 +57,7 @@ export function SubscriptionStatus() {
       {subscriptionData.status === 'pending' ? (
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-yellow-800 mb-2">
-            Your payment is being processed. We'll retry automatically.
+            Your payment is being processed. We&apos;ll retry automatically.
           </p>
           <button
             onClick={handleUpdatePayment}

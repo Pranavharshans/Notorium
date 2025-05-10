@@ -1,6 +1,6 @@
 import { auth } from "@/lib/firebase-admin";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+// import { cookies } from "next/headers"; // Commented out to fix @typescript-eslint/no-unused-vars error
 
 const SESSION_EXPIRY_DAYS = 5;
 

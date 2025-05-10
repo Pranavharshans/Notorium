@@ -9,7 +9,8 @@ import { NotesSidebar } from "@/components/layout/NotesSidebar";
 import { MainContent } from "@/components/layout/MainContent";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { notesService } from "@/lib/notes-service";
-import { aiProviderService, AIProvider } from "@/lib/ai-provider-service";
+// import { aiProviderService, AIProvider } from "@/lib/ai-provider-service"; // Commented out AIProvider - @typescript-eslint/no-unused-vars
+import { aiProviderService } from "@/lib/ai-provider-service";
 
 export default function HomePage() {
   const { user, signOutUser } = useAuth();
@@ -18,7 +19,7 @@ export default function HomePage() {
   // State
   const [currentView, setCurrentView] = useState('notes');
   const [generatedNotes, setGeneratedNotes] = useState<string | null>(null);
-  const [provider, setProvider] = useState<AIProvider>('gemini');
+  // const [provider, setProvider] = useState<AIProvider>('gemini'); // Commented out - @typescript-eslint/no-unused-vars. setProvider was also unused.
   const [notesError, setNotesError] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -26,7 +27,7 @@ export default function HomePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [notesListRefreshKey, setNotesListRefreshKey] = useState(0);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
+  // const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false); // Commented out - @typescript-eslint/no-unused-vars. setIsTranscriptExpanded was also unused.
   const [showEnhanceOptions, setShowEnhanceOptions] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [categories, setCategories] = useState<{ name: string; count: number }[]>([]);
@@ -159,6 +160,8 @@ export default function HomePage() {
           setEnhancing={setEnhancing}
           refreshNotes={refreshNotes}
           user={user}
+          handleDeleteNote={handleDeleteNote}
+          setIsDeleting={setIsDeleting}
         />
       </div>
     </ClientLayout>

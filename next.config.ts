@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    domains: ['lh3.googleusercontent.com'],
+  },
   webpack: (config, { isServer }) => {
     // Handle node: protocol imports
     config.resolve.alias = {

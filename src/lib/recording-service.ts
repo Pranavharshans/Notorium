@@ -1,9 +1,10 @@
-import { quotaService, RecordingQuotaExhaustedError } from './quota-service';
-import { notesService } from './notes-service';
+// import { quotaService, RecordingQuotaExhaustedError } from './quota-service'; // Commented out RecordingQuotaExhaustedError - @typescript-eslint/no-unused-vars
+import { quotaService } from './quota-service';
+// import { notesService } from './notes-service'; // Commented out - @typescript-eslint/no-unused-vars
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { getFirebaseInstance } from './firebase';
-import { groqService } from './groq-service';
-import { aiProviderService } from './ai-provider-service';
+// import { groqService } from './groq-service'; // Commented out - @typescript-eslint/no-unused-vars
+// import { aiProviderService } from './ai-provider-service'; // Commented out - @typescript-eslint/no-unused-vars
 
 export interface RecordingData {
   blob: Blob;
@@ -171,7 +172,7 @@ export class RecordingService {
     }
   }
 
-  async stopRecording(isQuotaExhausted: boolean = false): Promise<RecordingData> {
+  async stopRecording(/* isQuotaExhausted: boolean = false */): Promise<RecordingData> {
     return new Promise((resolve, reject) => {
       if (!this.mediaRecorder) {
         reject(new Error('Recording not started'));

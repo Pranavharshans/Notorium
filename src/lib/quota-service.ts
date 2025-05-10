@@ -1,5 +1,5 @@
 import { getFirebaseInstance } from './firebase';
-import { User } from 'firebase/auth';
+// import { User } from 'firebase/auth'; // Commented out - @typescript-eslint/no-unused-vars
 import {
   collection,
   doc,

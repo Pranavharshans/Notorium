@@ -56,30 +56,23 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const router = useRouter();
 
-  const signInWithGoogle = async () => {
-    try {
-      const { auth } = await getFirebaseInstance();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      await createSession(user);
-      setUser(user);
-    } catch (error) {
-      console.error('Error signing in:', error);
-      throw error;
-    }
-  };
-
   useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+
     const initAuth = async () => {
       try {
         const { auth } = await getFirebaseInstance();
         
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        unsubscribe = onAuthStateChanged(auth, async (user) => {
           if (user) {
             try {
-              await createSession(user);
+              // Only create session if we haven't initialized yet
+              if (!initialized) {
+                await createSession(user);
+              }
               setUser(user);
             } catch (error) {
               console.error('Auth state change error:', error);
@@ -89,34 +82,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
           }
           setLoading(false);
+          setInitialized(true);
         });
-
-        return unsubscribe;
       } catch (error) {
         console.error('Failed to initialize auth:', error);
         setLoading(false);
-        return () => {};
+        setInitialized(true);
       }
     };
 
-    initAuth().then(unsubscribe => {
-      // Cleanup function
-      return () => {
-        if (unsubscribe) {
-          unsubscribe();
-        }
-      };
-    });
-  }, []);
+    initAuth();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [initialized]);
+
+  const signInWithGoogle = async () => {
+    try {
+      setLoading(true);
+      const { auth } = await getFirebaseInstance();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      await createSession(user);
+      setUser(user);
+    } catch (error) {
+      console.error('Error signing in:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const signOutUser = async () => {
     try {
+      setLoading(true);
       const { auth } = await getFirebaseInstance();
       await deleteSession();
       await signOut(auth);
+      setUser(null);
       router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
+    } finally {
+      setLoading(false);
     }
   };
 

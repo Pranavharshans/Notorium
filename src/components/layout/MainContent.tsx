@@ -28,7 +28,7 @@ interface MainContentProps {
   setShowEnhanceOptions: (show: boolean) => void;
   setEnhancing: (enhancing: boolean) => void;
   refreshNotes: () => void;
-  user: any; // TODO: Type this properly
+  user: Record<string, unknown>; // Changed 'any' to 'Record<string, unknown>' - @typescript-eslint/no-explicit-any
 }
 
 export function MainContent({

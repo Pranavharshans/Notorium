@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { getFirestore, doc, onSnapshot, Firestore } from 'firebase/firestore';
+// import { getFirestore, doc, onSnapshot, Firestore } from 'firebase/firestore'; // Commented out getFirestore - @typescript-eslint/no-unused-vars
+import { doc, onSnapshot, Firestore } from 'firebase/firestore';
 import { Auth, User } from 'firebase/auth';
-import { getFirebaseInstance, type FirebaseInstances } from '@/lib/firebase';
+// import { getFirebaseInstance, type FirebaseInstances } from '@/lib/firebase'; // Commented out FirebaseInstances - @typescript-eslint/no-unused-vars
+import { getFirebaseInstance } from '@/lib/firebase';
 
 interface SubscriptionData {
   customer_id: string;

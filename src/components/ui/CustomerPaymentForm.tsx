@@ -39,7 +39,7 @@ const CustomerPaymentForm: React.FC<CustomerPaymentFormProps> = ({ onSubmit, isL
   const {
     control,
     handleSubmit,
-    setValue,
+    // setValue, // Commented out - @typescript-eslint/no-unused-vars
     formState: { errors },
   } = useForm({
     resolver: zodResolver(formSchema),

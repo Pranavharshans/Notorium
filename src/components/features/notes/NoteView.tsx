@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import { Pencil, Trash2, Wand2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Pencil, Trash2 } from "lucide-react";
+// import { cn } from "@/lib/utils";
 import { EditNoteForm } from "@/components/ui/edit-note-form";
 import { NoteDisplay } from "@/components/ui/note-display";
 import { Note } from '@/types/note';
@@ -78,6 +78,7 @@ export function NoteView({
               content={`# ${note.title}\n\n${note.notes}`}
               onEnhance={onEnhance}
               isEnhancing={enhancing}
+              showEnhanceOptions={showEnhanceOptions}
             />
           </div>
         </>

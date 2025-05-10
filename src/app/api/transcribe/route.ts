@@ -3,7 +3,13 @@ import Groq from 'groq-sdk';
 
 interface TranscriptionResponse {
   text: string;
-  segments: any[];
+  segments: {
+    id: number;
+    start: number;
+    end: number;
+    text: string;
+    [key: string]: unknown;
+  }[];
   language: string;
 }
 import { FieldValue } from 'firebase-admin/firestore';
@@ -82,7 +88,7 @@ export async function POST(request: Request) {
               timestamp_granularities: ["segment"],
               language: "en",
               temperature: 0.0
-            } as any),
+            }) as unknown as Promise<TranscriptionResponse>,
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Transcription timeout')), timeout)
             )
@@ -114,13 +120,13 @@ export async function POST(request: Request) {
     console.log('Transcription data stored with ID: ', docRef.id);
     
     return NextResponse.json(transcription);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Transcription error in API route:', error);
     if (error instanceof SyntaxError) {
       console.error('JSON parsing error. Raw request:', await request.text());
     }
     return NextResponse.json(
-      { error: 'Failed to transcribe audio', details: error.message || 'Unknown error' },
+      { error: 'Failed to transcribe audio', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

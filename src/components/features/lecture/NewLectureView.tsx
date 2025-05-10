@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { cn } from "@/lib/utils";
 import { useQuotaPopup } from '@/context/QuotaPopupContext';
-import { quotaService, RecordingQuotaExhaustedError } from '@/lib/quota-service';
+import { quotaService } from '@/lib/quota-service';
 import { AIVoiceInput } from "@/components/ui/ai-voice-input";
 import { recordingService } from "@/lib/recording-service";
 import { groqService, TranscriptionResult } from "@/lib/groq-service";
@@ -11,12 +11,12 @@ import { aiProviderService, AIProvider } from "@/lib/ai-provider-service";
 import { notesService } from "@/lib/notes-service";
 import { Note } from "@/types/note";
 import { LectureCategory } from "@/lib/openrouter-service";
-import { RecordingData } from "@/lib/recording-service";
+// import { RecordingData } from "@/lib/recording-service"; // Commented out - @typescript-eslint/no-unused-vars
 
 interface NewLectureViewProps {
   setCurrentView: (view: string) => void;
   setGeneratedNotes: (notes: string | null) => void;
-  user: any; // TODO: Type this properly with Firebase user type
+  user: Record<string, unknown>;
   onNoteSelect?: (noteId: string, note: Note) => void;
 }
 
@@ -27,8 +27,8 @@ export function NewLectureView({
   onNoteSelect
 }: NewLectureViewProps) {
   const { showQuotaPopup } = useQuotaPopup();
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
+  // const [isRecording, setIsRecording] = useState(false); // Commented out - @typescript-eslint/no-unused-vars
+  // const [recordingDuration, setRecordingDuration] = useState(0); // Commented out - @typescript-eslint/no-unused-vars
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +40,6 @@ export function NewLectureView({
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const [currentRecordingData, setCurrentRecordingData] = useState<RecordingData | null>(null);
 
   const categories: { value: LectureCategory; label: string }[] = [
     { value: 'programming', label: 'Programming' },
@@ -67,7 +66,7 @@ export function NewLectureView({
       if (quotaStatus.isExhausted || !quotaStatus.hasQuota) {
         // Handle quota exceeded without throwing an error
         showQuotaPopup('recording');
-        setIsRecording(false);
+        // setIsRecording(false); // Commented out - @typescript-eslint/no-unused-vars
         return;
       }
       
@@ -80,7 +79,7 @@ export function NewLectureView({
           }
         });
       });
-      setIsRecording(true);
+      // setIsRecording(true); // Commented out - @typescript-eslint/no-unused-vars
       setError(null);
       setTranscription(null);
       setCopySuccess(false);
@@ -89,12 +88,12 @@ export function NewLectureView({
       console.error("Error checking recording quota:", err);
       const errorMessage = err instanceof Error ? err.message : "Failed to check recording quota.";
       setError(errorMessage);
-      setIsRecording(false);
+      // setIsRecording(false); // Commented out - @typescript-eslint/no-unused-vars
     }
   };
 
   const handleRecordingStop = async (recordingData: { duration: number; blob: Blob; downloadURL?: string }) => {
-    setIsRecording(false);
+    // setIsRecording(false); // Commented out - @typescript-eslint/no-unused-vars
     setIsProcessing(true);
     setError(null);
 
@@ -104,7 +103,7 @@ export function NewLectureView({
       }
 
       console.log("Got recording data with URL:", recordingData.downloadURL);
-      setRecordingDuration(recordingData.duration);
+      // setRecordingDuration(recordingData.duration); // Commented out - @typescript-eslint/no-unused-vars
 
       console.log("Sending for transcription...");
       const result = await groqService.transcribeAudio(recordingData);
@@ -141,7 +140,7 @@ export function NewLectureView({
       
       if (user?.uid) {
         const finalTitle = title.trim() || generatedTitle;
-        const noteTags = [...tags];
+        // const noteTags = [...tags]; // Commented out - @typescript-eslint/no-unused-vars
         
         const noteId = await notesService.createNote({
           title: finalTitle,

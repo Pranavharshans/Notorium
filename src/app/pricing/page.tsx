@@ -274,7 +274,7 @@ export default function PricingPage() {
               What happens when I reach my limit?
             </h3>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              You'll receive a notification when you're close to your limits. Upgrade anytime to continue using the features without interruption.
+              You&apos;ll receive a notification when you&apos;re close to your limits. Upgrade anytime to continue using the features without interruption.
             </p>
           </div>
           <div>
@@ -282,7 +282,15 @@ export default function PricingPage() {
               Is there a refund policy?
             </h3>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
-              Yes, we offer a 30-day money-back guarantee if you're not satisfied with your Pro subscription.
+              Yes, we offer a 30-day money-back guarantee if you&apos;re not satisfied with your Pro subscription.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              What if I need help?
+            </h3>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Our support team is available to help with any questions you&apos;ve got. Contact us anytime.
             </p>
           </div>
         </div>

@@ -89,7 +89,7 @@ export async function POST(request: Request) {
       // Handle payment events if needed
       switch (payload.type) {
         case "payment.succeeded":
-          const paymentDataResp = await dodopayments.payments.retrieve(payload.data.payment_id);
+          // const paymentDataResp = await dodopayments.payments.retrieve(payload.data.payment_id); // Commented out - @typescript-eslint/no-unused-vars
           // Add any payment-specific handling here if needed
           break;
         default:

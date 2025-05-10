@@ -2,12 +2,12 @@
 
 import { auth, provider } from "@/lib/firebase";
 import { signInWithPopup } from "firebase/auth";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation"; // Commented out - @typescript-eslint/no-unused-vars
 import { useState, useEffect } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 
 const SignUp = () => {
-  const router = useRouter();
+  // const router = useRouter(); // Commented out - @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(false);
   const [user] = useAuthState(auth);
 

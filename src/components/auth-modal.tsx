@@ -18,8 +18,12 @@ export function AuthModal({
       await signInWithGoogle();
       toast.success('Signed in with Google successfully!');
       onClose();
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('An unknown error occurred during sign-in.');
+      }
     }
   };
 
