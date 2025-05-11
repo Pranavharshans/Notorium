@@ -3,8 +3,53 @@ import { headers } from "next/headers";
 import { dodopayments } from "@/lib/dodopayments";
 import { updateSubscriptionStatus } from "@/lib/subscription-utils";
 import { quotaService } from "@/lib/quota-service";
+import { NextResponse } from 'next/server';
+import { db } from "@/lib/firebase-admin";
+import { getFirestore } from 'firebase-admin/firestore';
 
 const webhook = new Webhook(process.env.DODO_PAYMENTS_WEBHOOK_KEY!);
+
+async function resetQuotaUsageAdmin(userId: string): Promise<void> {
+  console.log(`Resetting usage quotas for user: ${userId}`);
+  
+  const quotaRef = db.collection('quotas').doc(userId);
+  
+  const quotaDoc = await quotaRef.get();
+  if (!quotaDoc.exists) {
+    console.log(`No quota found for user: ${userId}, skipping reset`);
+    return;
+  }
+  
+  await quotaRef.update({
+    recordingMinutesUsed: 0,
+    enhanceNotesUsed: 0,
+    subscriptionStartDate: new Date().toISOString(),
+  });
+  
+  console.log(`Successfully reset usage quotas for user: ${userId}`);
+}
+
+async function syncQuotaWithSubscriptionAdmin(userId: string): Promise<void> {
+  const userDoc = await db.collection('users').doc(userId).get();
+  const isActiveSubscription = userDoc.exists && userDoc.data()?.status === 'active';
+  
+  const quotaRef = db.collection('quotas').doc(userId);
+  const quotaDoc = await quotaRef.get();
+  
+  if (quotaDoc.exists) {
+    const quota = quotaDoc.data();
+    const newStatus = isActiveSubscription ? 'paid' : 'trial';
+    
+    if (quota && quota.subscriptionStatus !== newStatus) {
+      await quotaRef.update({
+        subscriptionStatus: newStatus,
+        subscriptionStartDate: new Date().toISOString(),
+      });
+    }
+  } else {
+    console.log(`No quota found for user: ${userId}, skipping sync`);
+  }
+}
 
 export async function POST(request: Request) {
   const headersList = await headers();
@@ -16,7 +61,12 @@ export async function POST(request: Request) {
       "webhook-signature": headersList.get("webhook-signature") || "",
       "webhook-timestamp": headersList.get("webhook-timestamp") || "",
     };
-    await webhook.verify(rawBody, webhookHeaders);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Development mode: Skipping webhook signature verification');
+      // Skip verification
+    } else {
+      await webhook.verify(rawBody, webhookHeaders);
+    }
     const payload = JSON.parse(rawBody);
 
     console.log('Webhook payload:', JSON.stringify(payload, null, 2));
@@ -44,10 +94,7 @@ export async function POST(request: Request) {
             subscription.next_billing_date,
             payload.data
           );
-          // Synchronize quota with new subscription status
-          await quotaService.syncQuotaWithSubscription(firebaseUid);
-          // Synchronize quota with new subscription status
-          await quotaService.syncQuotaWithSubscription(firebaseUid);
+          await syncQuotaWithSubscriptionAdmin(firebaseUid);
           break;
         }
         case "subscription.failed": {
@@ -69,17 +116,37 @@ export async function POST(request: Request) {
           break;
         }
         case "subscription.renewed": {
-          const subscription = await dodopayments.subscriptions.retrieve(payload.data.subscription_id);
-          await updateSubscriptionStatus(
-            firebaseUid,
-            'active',
-            subscription.next_billing_date,
-            payload.data
-          );
-          // Synchronize quota with new subscription status
-          await quotaService.syncQuotaWithSubscription(firebaseUid);
-          // Reset usage counters to give fresh quotas for the new billing period
-          await quotaService.resetQuotaUsage(firebaseUid);
+          try {
+            console.log('Processing subscription.renewed event');
+            
+            let subscription;
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Development mode: Using mock subscription data');
+              subscription = {
+                next_billing_date: payload.data.next_billing_date || "2025-06-10T02:22:25.300403Z"
+              };
+            } else {
+              subscription = await dodopayments.subscriptions.retrieve(payload.data.subscription_id);
+            }
+            
+            console.log('Updating subscription status...');
+            await updateSubscriptionStatus(
+              firebaseUid,
+              'active',
+              subscription.next_billing_date,
+              payload.data
+            );
+            
+            console.log('Synchronizing quota with subscription...');
+            await syncQuotaWithSubscriptionAdmin(firebaseUid);
+            
+            console.log('Resetting usage quotas...');
+            await resetQuotaUsageAdmin(firebaseUid);
+            
+            console.log('Successfully processed subscription.renewed event');
+          } catch (innerError) {
+            console.error('Error in subscription.renewed handler:', innerError);
+          }
           break;
         }
         case "subscription.on_hold": {
@@ -95,11 +162,9 @@ export async function POST(request: Request) {
           break;
       }
     } else if (payload.data.payload_type === "Payment") {
-      // Handle payment events if needed
       switch (payload.type) {
         case "payment.succeeded":
           const paymentDataResp = await dodopayments.payments.retrieve(payload.data.payment_id);
-          // paymentDataResp is retrieved for future use but not currently used
           console.log('Payment data retrieved:', paymentDataResp.payment_id);
           break;
         default:
@@ -112,10 +177,55 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Webhook error:", error);
-    console.error("Error details:", JSON.stringify(error, null, 2));
+    
+    let errorMessage = "Webhook processing failed";
+    let errorDetails = "Unknown error";
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = error.stack || "No stack trace available";
+    }
+    
+    console.error("Error message:", errorMessage);
+    console.error("Error details:", errorDetails);
+    
     return Response.json(
-      { message: "Webhook processing failed" },
+      { message: "Webhook processing failed", error: errorMessage },
       { status: 400 }
+    );
+  }
+}
+
+export async function testQuotaReset(request: Request) {
+  try {
+    const { userId } = await request.json();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Missing userId" },
+        { status: 400 }
+      );
+    }
+    
+    console.log(`Testing quota reset for user: ${userId}`);
+    
+    // Use the Admin version for server-side operation
+    await resetQuotaUsageAdmin(userId);
+    
+    return NextResponse.json({
+      success: true,
+      message: "Successfully reset quota for user",
+      userId
+    });
+  } catch (error) {
+    console.error("Error in test-quota-reset:", error);
+    
+    return NextResponse.json(
+      { 
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error" 
+      },
+      { status: 500 }
     );
   }
 }

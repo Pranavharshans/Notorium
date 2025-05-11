@@ -17,7 +17,14 @@ const initializeFirebase = async (): Promise<FirebaseInstances> => {
   }
 
   try {
-    const response = await fetch('/api/firebase-config');
+    // Determine if we're in a browser or server environment
+    const isServer = typeof window === 'undefined';
+    // Use absolute URL in server context, relative URL in browser
+    const url = isServer 
+      ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/firebase-config`
+      : '/api/firebase-config';
+    
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error('Failed to fetch Firebase configuration');
     }
