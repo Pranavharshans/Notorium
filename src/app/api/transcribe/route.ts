@@ -17,6 +17,9 @@ import { auth, db } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
 import { isValidAudioUrl } from '@/lib/url-validator';
 
+// Set maximum duration to 60 seconds (maximum allowed on Hobby plan)
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     // Get and verify session

@@ -4,6 +4,9 @@ import { EnhanceMode, LectureCategory } from '@/lib/openrouter-service';
 import { auth } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
 
+// Set maximum duration to 60 seconds (maximum allowed on Hobby plan)
+export const maxDuration = 60;
+
 const initOpenRouter = () => {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {

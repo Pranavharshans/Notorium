@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "src/app/api/transcribe/**": { "maxDuration": 60 },
+    "src/app/api/ai/openrouter/**": { "maxDuration": 60 },
+    "src/app/api/ai/groq/**": { "maxDuration": 60 }
+  }
+} 
