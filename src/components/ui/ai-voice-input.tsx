@@ -114,7 +114,7 @@ export function AIVoiceInput({
             if (currentDuration >= 1800) { // Only stop if we've hit 30 minutes
               toast.warning("Recording time limit reached");
               // Don't pass isQuotaExhausted flag for time limit
-              recordingService.stopRecording(false).then(recordingData => {
+              recordingService.stopRecording().then(recordingData => {
                 setIsRecording(false);
                 setIsPaused(false);
                 onStop?.(recordingData);

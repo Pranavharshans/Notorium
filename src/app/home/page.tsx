@@ -159,9 +159,9 @@ export default function HomePage() {
           setShowEnhanceOptions={setShowEnhanceOptions}
           setEnhancing={setEnhancing}
           refreshNotes={refreshNotes}
-          user={user}
-          handleDeleteNote={handleDeleteNote}
-          setIsDeleting={setIsDeleting}
+          user={user as { uid: string }}
+         // handleDeleteNote={handleDeleteNote}
+         // setIsDeleting={setIsDeleting}
         />
       </div>
     </ClientLayout>

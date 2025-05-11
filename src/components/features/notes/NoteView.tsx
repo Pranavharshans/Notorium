@@ -6,7 +6,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { EditNoteForm } from "@/components/ui/edit-note-form";
 import { NoteDisplay } from "@/components/ui/note-display";
 import { Note } from '@/types/note';
-import { EnhanceMode } from "@/lib/gemini-service";
+import { EnhanceMode } from "@/lib/openrouter-service";
 
 interface NoteViewProps {
   note: Note | null;

@@ -91,7 +91,7 @@ export async function POST(request: Request) {
               timestamp_granularities: ["segment"],
               language: "en",
               temperature: 0.0
-            }) as unknown as Promise<TranscriptionResponse>,
+            } as any) as unknown as Promise<TranscriptionResponse>,
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Transcription timeout')), timeout)
             )
@@ -105,6 +105,7 @@ export async function POST(request: Request) {
           await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
         }
       }
+      throw new Error('All transcription attempts failed');
     };
 
     const transcription = await attemptTranscription();

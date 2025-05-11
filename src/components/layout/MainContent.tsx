@@ -9,7 +9,8 @@ import { NoteView } from '@/components/features/notes/NoteView';
 import { Note } from '@/types/note';
 import { notesService } from '@/lib/notes-service';
 import { aiProviderService } from '@/lib/ai-provider-service';
-import { EnhanceMode } from '@/lib/gemini-service';
+import { EnhanceMode } from '@/lib/openrouter-service';
+import { Timestamp } from 'firebase/firestore';
 
 interface MainContentProps {
   currentView: string;
@@ -28,7 +29,7 @@ interface MainContentProps {
   setShowEnhanceOptions: (show: boolean) => void;
   setEnhancing: (enhancing: boolean) => void;
   refreshNotes: () => void;
-  user: Record<string, unknown>; // Changed 'any' to 'Record<string, unknown>' - @typescript-eslint/no-explicit-any
+  user: { uid: string };
 }
 
 export function MainContent({
@@ -54,8 +55,18 @@ export function MainContent({
 
   const handleSaveNote = async (updatedNote: Note) => {
     try {
-      await notesService.updateNote(selectedNoteId!, updatedNote);
-      setSelectedNote(updatedNote);
+      await notesService.updateNote(selectedNoteId!, {
+        title: updatedNote.title,
+        transcript: updatedNote.transcript,
+        notes: updatedNote.notes,
+        tags: updatedNote.tags,
+        bookmarked: updatedNote.bookmarked,
+        updatedAt: Timestamp.now(),
+      });
+      setSelectedNote({
+        ...updatedNote,
+        updatedAt: Timestamp.now(),
+      });
       setIsEditing(false);
       refreshNotes();
     } catch (err) {
@@ -76,10 +87,13 @@ export function MainContent({
       const updatedNote: Note = {
         ...selectedNote,
         notes: enhancedNotes,
-        updatedAt: new Date()
+        updatedAt: Timestamp.now()
       };
 
-      await notesService.updateNote(selectedNoteId, updatedNote);
+      await notesService.updateNote(selectedNoteId, {
+        notes: enhancedNotes,
+        updatedAt: Timestamp.now(),
+      });
       setSelectedNote(updatedNote);
       setShowEnhanceOptions(false);
       refreshNotes();

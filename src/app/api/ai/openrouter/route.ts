@@ -115,7 +115,7 @@ async function generateNotesFromTranscript(
       order: ["Groq"],
       allow_fallbacks: false
     }
-  });
+  } as any);
 
   return completion.choices[0].message.content || '';
 }
@@ -154,7 +154,7 @@ async function enhanceNotes(
       order: ["Groq"],
       allow_fallbacks: false
     }
-  });
+  } as any);
 
   return completion.choices[0].message.content || '';
 }

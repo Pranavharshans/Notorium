@@ -40,6 +40,7 @@ export default function ProfilePage() {
     if (!user) return;
 
     async function fetchQuota() {
+      if (!user) return;
       try {
         // Initialize default quotas with trial status
         let recordingQuota = {

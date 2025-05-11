@@ -19,7 +19,7 @@ async function validateSession(): Promise<{ firebaseUid: string; user: Record<st
     const user = await auth.getUser(decodedClaim.uid);
     return {
       firebaseUid: decodedClaim.uid,
-      user
+      user: user as unknown as Record<string, unknown>
     };
   } catch (error) {
     console.error('Session validation failed:', error);

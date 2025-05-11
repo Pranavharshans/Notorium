@@ -196,6 +196,7 @@ export async function POST(request: Request) {
   }
 }
 
+/*
 export async function testQuotaReset(request: Request) {
   try {
     const { userId } = await request.json();
@@ -229,3 +230,4 @@ export async function testQuotaReset(request: Request) {
     );
   }
 }
+*/

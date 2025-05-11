@@ -16,7 +16,7 @@ import { LectureCategory } from "@/lib/openrouter-service";
 interface NewLectureViewProps {
   setCurrentView: (view: string) => void;
   setGeneratedNotes: (notes: string | null) => void;
-  user: Record<string, unknown>;
+  user: { uid: string };
   onNoteSelect?: (noteId: string, note: Note) => void;
 }
 

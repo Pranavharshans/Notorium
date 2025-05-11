@@ -3,11 +3,11 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import CustomerPaymentForm from "@/components/ui/CustomerPaymentForm";
 import { useAuth } from "@/context/auth-context";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import type { z } from "zod";
 import type { formSchema } from "@/components/ui/CustomerPaymentForm";
 
-export default function BillingDetailsPage() {
+function BillingDetailsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = searchParams.get("productId");
@@ -86,5 +86,13 @@ export default function BillingDetailsPage() {
         userEmail={user?.email || ''}
       />
     </div>
+  );
+}
+
+export default function BillingDetailsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BillingDetailsPageInner />
+    </Suspense>
   );
 }
