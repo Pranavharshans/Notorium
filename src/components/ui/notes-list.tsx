@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
-import { notesService } from '@/lib/notes-service';
+import { notesService, Note } from '@/lib/notes-service';
 import { useAuth } from '@/context/auth-context';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -136,25 +136,20 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
     let mounted = true;
 
     async function fetchNotes() {
+      console.log('[NotesList] user:', user);
       if (!user) return;
 
       try {
         const userNotes = await notesService.getNotes(user.uid);
+        console.log('[NotesList] notesService.getNotes returned:', userNotes);
         if (mounted) {
           setNotes(userNotes);
           setFilteredNotes(userNotes);
           setLoading(false);
           setError(null);
-
-          // If there's an active note, ensure it's selected in the list
-          if (activeNoteId) {
-            const activeNote = userNotes.find(note => note.id === activeNoteId);
-            if (activeNote && onNoteSelect) {
-              onNoteSelect(activeNoteId, activeNote);
-            }
-          }
         }
-      } catch {
+      } catch (err) {
+        console.error('[NotesList] Failed to load notes:', err);
         if (mounted) {
           setError('Failed to load notes');
           setLoading(false);
@@ -168,7 +163,16 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
     return () => {
       mounted = false;
     };
-  }, [user, refreshKey, activeNoteId, onNoteSelect]);
+  }, [user, refreshKey]);
+
+  useEffect(() => {
+    if (activeNoteId && notes.length > 0) {
+      const activeNote = notes.find(note => note.id === activeNoteId);
+      if (activeNote && onNoteSelect) {
+        onNoteSelect(activeNoteId, activeNote);
+      }
+    }
+  }, [activeNoteId, notes, onNoteSelect]);
 
   useEffect(() => {
     let filtered = notes;
@@ -199,6 +203,8 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
+
+  console.log('[NotesList] render, user:', user, 'error:', error, 'notes:', notes);
 
   if (loading) {
     return (

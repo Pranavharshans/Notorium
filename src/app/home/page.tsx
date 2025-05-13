@@ -130,6 +130,7 @@ export default function HomePage() {
         <NotesSidebar
           selectedNoteId={selectedNoteId}
           onNoteSelect={(noteId, note) => {
+            console.log('[HomePage] onNoteSelect', noteId, note);
             setSelectedNoteId(noteId);
             setSelectedNote(note);
             setGeneratedNotes(null);

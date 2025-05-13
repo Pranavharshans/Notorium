@@ -78,7 +78,7 @@ export function NoteView({
               content={`# ${note.title}\n\n${note.notes}`}
               onEnhance={onEnhance}
               isEnhancing={enhancing}
-              showEnhanceOptions={showEnhanceOptions}
+              showEnhanceOptions={true}
             />
           </div>
         </>

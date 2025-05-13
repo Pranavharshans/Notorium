@@ -35,6 +35,10 @@ export default function Home() {
     }
   };
 
+  const handlePricingClick = () => {
+    router.push("/pricing");
+  };
+
   if (loading) return null;
   if (user) return null;
 
@@ -45,6 +49,14 @@ export default function Home() {
           <div className="absolute inset-0 [background:radial-gradient(100%_100%_at_50%_0%,transparent_30%,white_70%)] z-10"></div>
           <Tiles />
         </div>
+      </div>
+      <div className="absolute top-6 right-6 z-20">
+        <button 
+          className="px-3 py-1.5 text-sm font-semibold text-slate-700 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 transition-colors duration-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black"
+          onClick={handlePricingClick}
+        >
+          Pricing
+        </button>
       </div>
       <div className="relative z-10 flex flex-col items-center pt-32 text-black text-center px-4">
         <h1 className="text-xl md:text-7xl font-bold mb-12 tracking-tight flex flex-col items-center gap-4 font-roboto">
