@@ -6,6 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { Check, X } from "lucide-react";
+import { AuthNotificationModal } from "@/components/ui/auth-notification-modal";
 
 const pricingTiers = [
   {
@@ -206,10 +207,11 @@ export default function PricingPage() {
   const router = useRouter();
   const { subscriptionData } = useSubscription();
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const handlePlanSelect = async (plan: string) => {
     if (!user) {
-      router.push("/");
+      setIsAuthModalOpen(true);
       return;
     }
 
@@ -295,6 +297,11 @@ export default function PricingPage() {
           </div>
         </div>
       </div>
+
+      <AuthNotificationModal 
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
   );
 }
