@@ -11,10 +11,14 @@ import { ClientLayout } from "@/components/layout/ClientLayout";
 import { notesService } from "@/lib/notes-service";
 // import { aiProviderService, AIProvider } from "@/lib/ai-provider-service"; // Commented out AIProvider - @typescript-eslint/no-unused-vars
 import { aiProviderService } from "@/lib/ai-provider-service";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export default function HomePage() {
   const { user, signOutUser } = useAuth();
   const router = useRouter();
+  const { subscriptionData, loading: subscriptionLoading, isSubscriptionActive } = useSubscription();
 
   // State
   const [currentView, setCurrentView] = useState('notes');
@@ -109,7 +113,10 @@ export default function HomePage() {
     setNotesListRefreshKey(prev => prev + 1);
   };
 
-  if (user === undefined) {
+  // Combined loading state
+  const isLoading = subscriptionLoading || user === undefined;
+
+  if (isLoading) {
     return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
   
@@ -117,53 +124,65 @@ export default function HomePage() {
 
   return (
     <ClientLayout>
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 divide-x divide-gray-200 dark:divide-gray-700">
-        <Sidebar
-          currentView={currentView}
-          onViewChange={(view) => {
-            setCurrentView(view);
-            if (view === 'new-lecture') setSelectedNoteId(null);
-          }}
-          onSignOut={signOutUser}
-        />
+      <div className="relative">
+        {/* Upgrade to Pro button in top right - only show if not active */}
+        {!isSubscriptionActive && (
+          <div className="absolute top-4 right-4 z-10">
+            <Link href="/pricing">
+              <button className="group flex items-center bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium text-sm py-1.5 px-3 rounded-lg shadow-lg hover:shadow-xl hover:from-purple-600 hover:to-indigo-700 hover:bg-gradient-to-br transition-all duration-300 ease-in-out transform hover:-translate-y-1">
+                <Sparkles className="w-3.5 h-3.5 mr-1.5 opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300 ease-in-out" />
+                Upgrade to Pro
+              </button>
+            </Link>
+          </div>
+        )}
+        
+        <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 divide-x divide-gray-200 dark:divide-gray-700">
+          <Sidebar
+            currentView={currentView}
+            onViewChange={(view) => {
+              setCurrentView(view);
+              if (view === 'new-lecture') setSelectedNoteId(null);
+            }}
+            onSignOut={signOutUser}
+          />
 
-        <NotesSidebar
-          selectedNoteId={selectedNoteId}
-          onNoteSelect={(noteId, note) => {
-            console.log('[HomePage] onNoteSelect', noteId, note);
-            setSelectedNoteId(noteId);
-            setSelectedNote(note);
-            setGeneratedNotes(null);
-            setCurrentView('notes');
-            setIsEditing(false);
-          }}
-          notesListRefreshKey={notesListRefreshKey}
-          selectedCategories={selectedCategories}
-          categories={categories}
-          onCategorySelect={handleCategorySelect}
-        />
+          <NotesSidebar
+            selectedNoteId={selectedNoteId}
+            onNoteSelect={(noteId, note) => {
+              console.log('[HomePage] onNoteSelect', noteId, note);
+              setSelectedNoteId(noteId);
+              setSelectedNote(note);
+              setGeneratedNotes(null);
+              setCurrentView('notes');
+              setIsEditing(false);
+            }}
+            notesListRefreshKey={notesListRefreshKey}
+            selectedCategories={selectedCategories}
+            categories={categories}
+            onCategorySelect={handleCategorySelect}
+          />
 
-        <MainContent
-          currentView={currentView}
-          selectedNote={selectedNote}
-          selectedNoteId={selectedNoteId}
-          isEditing={isEditing}
-          isDeleting={isDeleting}
-          notesError={notesError}
-          showEnhanceOptions={showEnhanceOptions}
-          enhancing={enhancing}
-          setCurrentView={setCurrentView}
-          setGeneratedNotes={setGeneratedNotes}
-          setSelectedNote={setSelectedNote}
-          setIsEditing={setIsEditing}
-          setNotesError={setNotesError}
-          setShowEnhanceOptions={setShowEnhanceOptions}
-          setEnhancing={setEnhancing}
-          refreshNotes={refreshNotes}
-          user={user as { uid: string }}
-         // handleDeleteNote={handleDeleteNote}
-         // setIsDeleting={setIsDeleting}
-        />
+          <MainContent
+            currentView={currentView}
+            selectedNote={selectedNote}
+            selectedNoteId={selectedNoteId}
+            isEditing={isEditing}
+            isDeleting={isDeleting}
+            notesError={notesError}
+            showEnhanceOptions={showEnhanceOptions}
+            enhancing={enhancing}
+            setCurrentView={setCurrentView}
+            setGeneratedNotes={setGeneratedNotes}
+            setSelectedNote={setSelectedNote}
+            setIsEditing={setIsEditing}
+            setNotesError={setNotesError}
+            setShowEnhanceOptions={setShowEnhanceOptions}
+            setEnhancing={setEnhancing}
+            refreshNotes={refreshNotes}
+            user={user as { uid: string }}
+          />
+        </div>
       </div>
     </ClientLayout>
   );
