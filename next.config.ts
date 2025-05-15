@@ -7,6 +7,32 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  async headers() {
+    return [
+      {
+        // Apply CORS headers to all API routes
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*', // In production, you should replace this with specific origins
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
+          },
+          {
+            key: 'Access-Control-Max-Age',
+            value: '86400',
+          },
+        ],
+      },
+    ];
+  },
   webpack: (config, { isServer }) => {
     // Handle node: protocol imports
     config.resolve.alias = {

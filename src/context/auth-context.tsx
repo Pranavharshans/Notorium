@@ -10,12 +10,15 @@ const provider = new GoogleAuthProvider();
 // Function to create session
 async function createSession(user: User) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    // Get the current window origin instead of using environment variables
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    
     const idToken = await user.getIdToken();
     const response = await fetch(`${baseUrl}/api/auth/session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken })
+      body: JSON.stringify({ idToken }),
+      credentials: 'include', // Include cookies in the request
     });
 
     if (!response.ok) {
@@ -30,10 +33,17 @@ async function createSession(user: User) {
 // Function to delete session
 async function deleteSession() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    await fetch(`${baseUrl}/api/auth/session`, {
-      method: 'DELETE'
+    // Get the current window origin instead of using environment variables
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    
+    const response = await fetch(`${baseUrl}/api/auth/session`, {
+      method: 'DELETE',
+      credentials: 'include', // Include cookies in the request
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete session');
+    }
   } catch (error) {
     console.error('Error deleting session:', error);
   }

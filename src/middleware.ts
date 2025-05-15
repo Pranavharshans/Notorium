@@ -2,8 +2,25 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { aiAndTranscriptionLimiter } from '@/lib/rate-limit';
 
+// Add CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
+};
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Handle OPTIONS (preflight) requests immediately
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  }
+  
   // Get client IP from headers or default to localhost
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
              request.headers.get('x-real-ip') ||
@@ -36,7 +53,7 @@ export async function middleware(request: NextRequest) {
     if (!sessionCookie?.value) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -53,14 +70,14 @@ export async function middleware(request: NextRequest) {
       if (!response.ok) {
         return NextResponse.json(
           { error: 'Invalid session' },
-          { status: 401 }
+          { status: 401, headers: corsHeaders }
         );
       }
     } catch (error) {
       console.error('Session verification error:', error);
       return NextResponse.json(
         { error: 'Authentication failed' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -84,7 +101,8 @@ export async function middleware(request: NextRequest) {
               headers: {
                 'X-RateLimit-Limit': result.limit.toString(),
                 'X-RateLimit-Remaining': result.remaining.toString(),
-                'X-RateLimit-Reset': result.reset.toString()
+                'X-RateLimit-Reset': result.reset.toString(),
+                ...corsHeaders
               }
             }
           );
@@ -96,7 +114,17 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  // Add CORS headers to the response
+  const response = NextResponse.next();
+  
+  // Add CORS headers for API routes
+  if (pathname.startsWith('/api/')) {
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+  }
+
+  return response;
 }
 
 export const config = {
@@ -107,6 +135,7 @@ export const config = {
     '/api/webhook',
     '/api/ai/:path*',
     '/api/transcribe/:path*',
-    '/api/rate-limit-test'
+    '/api/rate-limit-test',
+    '/api/auth/:path*'  // Add auth endpoints to the matcher
   ]
 };

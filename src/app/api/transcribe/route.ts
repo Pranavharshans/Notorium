@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
 interface TranscriptionResponse {
@@ -20,7 +20,27 @@ import { isValidAudioUrl } from '@/lib/url-validator';
 // Set maximum duration to 60 seconds (maximum allowed on Hobby plan)
 export const maxDuration = 60;
 
-export async function POST(request: Request) {
+// Handle OPTIONS requests for CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
+}
+
+export async function POST(request: NextRequest) {
+  // Add CORS headers to the response
+  const responseHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
   try {
     // Get and verify session
     const cookieStore = await cookies();
@@ -28,7 +48,7 @@ export async function POST(request: Request) {
     if (!sessionCookie?.value) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 }
+        { status: 401, headers: responseHeaders }
       );
     }
 
@@ -37,7 +57,7 @@ export async function POST(request: Request) {
     if (!decodedClaims.uid) {
       return NextResponse.json(
         { error: 'Invalid session' },
-        { status: 401 }
+        { status: 401, headers: responseHeaders }
       );
     }
 
@@ -45,7 +65,7 @@ export async function POST(request: Request) {
       console.error('GROQ_API_KEY not configured');
       return NextResponse.json(
         { error: 'Groq API key is not configured' },
-        { status: 500 }
+        { status: 500, headers: responseHeaders }
       );
     }
 
@@ -58,7 +78,7 @@ export async function POST(request: Request) {
       console.error('No audio URL provided in request body:', body);
       return NextResponse.json(
         { error: 'No audio URL provided' },
-        { status: 400 }
+        { status: 400, headers: responseHeaders }
       );
     }
 
@@ -67,7 +87,7 @@ export async function POST(request: Request) {
       console.error('Invalid audio URL:', audioUrl);
       return NextResponse.json(
         { error: 'Invalid audio URL' },
-        { status: 400 }
+        { status: 400, headers: responseHeaders }
       );
     }
 
@@ -123,7 +143,7 @@ export async function POST(request: Request) {
     const docRef = await db.collection('transcriptions').add(transcriptionData);
     console.log('Transcription data stored with ID: ', docRef.id);
     
-    return NextResponse.json(transcription);
+    return NextResponse.json(transcription, { headers: responseHeaders });
   } catch (error: unknown) {
     console.error('Transcription error in API route:', error);
     if (error instanceof SyntaxError) {
@@ -131,7 +151,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(
       { error: 'Failed to transcribe audio', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { status: 500, headers: responseHeaders }
     );
   }
 }
