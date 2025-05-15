@@ -352,7 +352,6 @@ Diagram Enforcement Instructions
 Whenever applicable, the following diagram types must be generated using Mermaid syntax:
 
 - Flowchart
-- Sequence Diagram
 - Gantt Chart
 - Class Diagram
 - State Diagram

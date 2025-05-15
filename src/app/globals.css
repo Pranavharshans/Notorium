@@ -227,6 +227,29 @@
   }
 }
 
+/* Hide all Mermaid error elements globally INSIDE diagram SVGs */
+.mermaid svg [id*="syntax-error"],
+.mermaid svg .error-icon,
+.mermaid svg .error-text,
+.mermaid svg .error-message,
+.mermaid svg .marker.cross,
+.mermaid svg text.error,
+.mermaid svg g[id*="error"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Apply proper styling to the error message we control */
+.mermaid-error {
+  font-size: 10px !important;
+  padding: 2px 6px !important;
+  margin-top: 4px !important;
+  border-radius: 2px !important;
+  display: inline-block !important;
+}
+
 @layer utilities {
   .animate-shimmer {
     animation: shimmer 1.5s infinite linear;
@@ -238,6 +261,32 @@
       rgba(255, 255, 255, 0.3) 75%,
       transparent 100%
     );
+  }
+
+  /* Globally hide Mermaid's EXTERNAL error panes/popups/overlays */
+  body > div[id^='mermaid-error-pane'],
+  body > div[id*='mermaid-error-pane'],
+  body > div[class*='mermaid-error-overlay'],
+  body > div[class*='mermaid-live-editor-error-pane'],
+  body > div[aria-live][role="alert"][style*="background-color: red"], /* Catch generic error popups */
+  div[id^='mermaidErrorMessage'] { /* Another possible ID pattern */
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -1000 !important; /* Push behind everything */
+    position: absolute !important; /* Take out of flow and hide */
+    left: -10000px !important;
+    top: -10000px !important;
+  }
+
+  /* Hide any stray SVG bomb icons if they are directly in body or uncontained */
+  body > svg[class*='error-icon'],
+  body > svg[id*='error-icon'] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 }
 
@@ -255,3 +304,12 @@
   }
 }
 */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

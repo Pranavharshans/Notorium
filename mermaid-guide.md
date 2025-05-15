@@ -26,6 +26,28 @@ graph TD
     B --> E[Sub_2]
 ```
 
+4. Mindmap (Use for conceptual relationships)
+```mermaid
+mindmap
+  root((Central Topic))
+    Topic A
+      Subtopic A1
+      Subtopic A2
+    Topic B
+      Subtopic B1
+      Subtopic B2
+```
+
+## Mindmap Rules (Important to Avoid Errors)
+- A mindmap must have exactly ONE root node
+- Indent child topics with 2 spaces to show hierarchy
+- Each line of text is a node
+- Node shapes:
+  - `root((text))` for circular root nodes
+  - `id[text]` for rectangular nodes
+  - Simple text for default nodes
+- Common error: Multiple root nodes - ensure all topics are properly indented under the single root
+
 ## Key Rules for Error-Free Diagrams
 - Use TD (top-down) or LR (left-right) for clear direction
 - Always connect nodes with --> arrows
