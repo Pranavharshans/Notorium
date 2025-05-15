@@ -7,10 +7,13 @@ import { storeSubscriptionData } from "@/lib/subscription-utils";
 
 // Define CORS headers
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' 
+    ? 'https://www.notorium.app' 
+    : '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Max-Age': '86400',
+  'Access-Control-Allow-Credentials': 'true',
 };
 
 // Handle OPTIONS requests for CORS preflight

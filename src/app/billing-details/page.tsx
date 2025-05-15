@@ -24,9 +24,8 @@ function BillingDetailsPageInner() {
       setIsLoading(true);
       console.log('Form data submitted:', data); // Log form data
       
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
       const response = await fetch(
-        `${baseUrl}/api/checkout/subscription?productId=${productId}`,
+        `/api/checkout/subscription?productId=${productId}`,
         {
           method: "POST",
           headers: {
