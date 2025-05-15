@@ -1,10 +1,10 @@
 import DodoPayments from "dodopayments";
 
-if (!process.env.DODO_API_KEY_TEST) {
-  throw new Error('Missing DODO_API_KEY_TEST environment variable');
+if (!process.env.DODO_API_KEY) {
+  throw new Error('Missing DODO_API_KEY environment variable');
 }
 
 export const dodopayments = new DodoPayments({
-  bearerToken: process.env.DODO_API_KEY_TEST,
-  environment: "test_mode"
+  bearerToken: process.env.DODO_API_KEY,
+  environment: "live_mode"
 });
