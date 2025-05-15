@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
           const transcription = await Promise.race<TranscriptionResponse>([
             groq.audio.transcriptions.create({
               url: audioUrl,
-              model: "whisper-large-v3-turbo",
+              model: "distil-whisper-large-v3-en",
               response_format: "verbose_json",
               timestamp_granularities: ["segment"],
               language: "en",

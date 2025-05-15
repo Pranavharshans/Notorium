@@ -88,10 +88,6 @@ export function AIVoiceInput({
       return;
     }
 
-    if (isPaused) {
-      return;
-    }
-
     try {
       if (!isRecording) {
         const user = await getAuth().currentUser;
