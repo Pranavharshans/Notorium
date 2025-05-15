@@ -129,74 +129,21 @@ const PricingTier = ({
 
 const SubscriptionStatus = () => {
   const { subscriptionData, user } = useSubscription();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  if (!subscriptionData) return null;
-
-  const handleCancel = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Get the user's ID token
-      const token = await user?.getIdToken();
-      if (!token) {
-        throw new Error('Not authenticated');
-      }
-
-      const response = await fetch('/api/subscription/cancel', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to cancel subscription');
-      }
-
-      const data = await response.json();
-      console.log('Subscription cancelled successfully:', data);
-      
-    } catch (error) {
-      console.error('Cancel error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to cancel subscription');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (!subscriptionData || subscriptionData.status === 'cancelled' || subscriptionData.status === 'on_hold' || subscriptionData.status === 'pending') {
+    return null;
+  }
 
   return (
     <div className="mx-auto max-w-2xl mb-8 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/50">
-      <div className="flex flex-col space-y-4">
+      <div className="flex flex-col space-y-2">
         <div className="flex justify-between items-center">
           <div>
             <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-              Subscription Status: {subscriptionData.status}
+              Subscription Status: <span className="font-semibold capitalize">{subscriptionData.status}</span>
             </p>
-            {subscriptionData.next_billing_date && (
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                Next billing: {new Date(subscriptionData.next_billing_date).toLocaleDateString()}
-              </p>
-            )}
           </div>
-          {subscriptionData.status === 'active' && (
-            <ShimmerButton
-              onClick={handleCancel}
-              disabled={isLoading}
-              className="bg-red-600 hover:bg-red-700 text-sm"
-            >
-              {isLoading ? 'Cancelling...' : 'Cancel Subscription'}
-            </ShimmerButton>
-          )}
         </div>
-        {error && (
-          <div className="p-3 rounded bg-red-100 dark:bg-red-900/50">
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-          </div>
-        )}
       </div>
     </div>
   );
