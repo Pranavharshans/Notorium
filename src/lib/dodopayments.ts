@@ -8,5 +8,3 @@ export const dodopayments = new DodoPayments({
   bearerToken: process.env.DODO_API_KEY_TEST,
   environment: "test_mode"
 });
-
-console.log('Dodo Payments client initialized in test mode');

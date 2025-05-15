@@ -10,23 +10,12 @@ import { getFirestore } from 'firebase-admin/firestore';
 const webhook = new Webhook(process.env.DODO_PAYMENTS_WEBHOOK_KEY!);
 
 async function resetQuotaUsageAdmin(userId: string): Promise<void> {
-  console.log(`Resetting usage quotas for user: ${userId}`);
-  
   const quotaRef = db.collection('quotas').doc(userId);
-  
-  const quotaDoc = await quotaRef.get();
-  if (!quotaDoc.exists) {
-    console.log(`No quota found for user: ${userId}, skipping reset`);
-    return;
-  }
-  
   await quotaRef.update({
     recordingMinutesUsed: 0,
     enhanceNotesUsed: 0,
     subscriptionStartDate: new Date().toISOString(),
   });
-  
-  console.log(`Successfully reset usage quotas for user: ${userId}`);
 }
 
 async function syncQuotaWithSubscriptionAdmin(userId: string): Promise<void> {
@@ -62,28 +51,21 @@ export async function POST(request: Request) {
       "webhook-timestamp": headersList.get("webhook-timestamp") || "",
     };
     if (process.env.NODE_ENV === 'development') {
-      console.log('Development mode: Skipping webhook signature verification');
       // Skip verification
     } else {
       await webhook.verify(rawBody, webhookHeaders);
     }
     const payload = JSON.parse(rawBody);
 
-    console.log('Webhook payload:', JSON.stringify(payload, null, 2));
-    
     if (payload.data.payload_type === "Subscription") {
       const firebaseUid = payload.data.metadata?.firebase_uid;
-      console.log('Firebase UID from metadata:', firebaseUid);
       
       if (!firebaseUid) {
-        console.error("No firebase_uid found in metadata");
         return Response.json(
           { message: "Missing firebase_uid in metadata" },
           { status: 400 }
         );
       }
-
-      console.log('Processing subscription event:', payload.type);
 
       switch (payload.type) {
         case "subscription.active": {
@@ -117,11 +99,8 @@ export async function POST(request: Request) {
         }
         case "subscription.renewed": {
           try {
-            console.log('Processing subscription.renewed event');
-            
             let subscription;
             if (process.env.NODE_ENV === 'development') {
-              console.log('Development mode: Using mock subscription data');
               subscription = {
                 next_billing_date: payload.data.next_billing_date || "2025-06-10T02:22:25.300403Z"
               };
@@ -129,7 +108,6 @@ export async function POST(request: Request) {
               subscription = await dodopayments.subscriptions.retrieve(payload.data.subscription_id);
             }
             
-            console.log('Updating subscription status...');
             await updateSubscriptionStatus(
               firebaseUid,
               'active',
@@ -137,13 +115,10 @@ export async function POST(request: Request) {
               payload.data
             );
             
-            console.log('Synchronizing quota with subscription...');
             await syncQuotaWithSubscriptionAdmin(firebaseUid);
             
-            console.log('Resetting usage quotas...');
             await resetQuotaUsageAdmin(firebaseUid);
             
-            console.log('Successfully processed subscription.renewed event');
           } catch (innerError) {
             console.error('Error in subscription.renewed handler:', innerError);
           }
@@ -165,7 +140,6 @@ export async function POST(request: Request) {
       switch (payload.type) {
         case "payment.succeeded":
           const paymentDataResp = await dodopayments.payments.retrieve(payload.data.payment_id);
-          console.log('Payment data retrieved:', paymentDataResp.payment_id);
           break;
         default:
           break;

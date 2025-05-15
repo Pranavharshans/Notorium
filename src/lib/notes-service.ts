@@ -80,9 +80,7 @@ const saveToCache = (userId: string, notes: Note[]) => {
   };
   try {
     localStorage.setItem(`${CACHE_KEY}_${userId}`, JSON.stringify(cacheData));
-    console.log('Cache updated:', new Date().toISOString());
   } catch (error) {
-    console.error('Error saving to cache:', error);
     // Clear cache if storage is full
     localStorage.removeItem(`${CACHE_KEY}_${userId}`);
   }
@@ -114,10 +112,8 @@ const getFromCache = (userId: string): Note[] | null => {
       updatedAt: cacheToTimestamp(note.updatedAt),
     }));
 
-    console.log('Cache hit:', new Date().toISOString());
     return parsedNotes;
   } catch (error) {
-    console.error('Error reading from cache:', error);
     localStorage.removeItem(`${CACHE_KEY}_${userId}`);
     return null;
   }
@@ -138,7 +134,6 @@ const updateCacheForNote = (userId: string, noteId: string, updatedFields: Parti
   );
   
   saveToCache(userId, updatedNotes);
-  console.log('Cache updated for note:', noteId);
 };
 
 const removeCachedNote = (userId: string, noteId: string) => {
@@ -147,7 +142,6 @@ const removeCachedNote = (userId: string, noteId: string) => {
 
   const updatedNotes = cachedData.filter(note => note.id !== noteId);
   saveToCache(userId, updatedNotes);
-  console.log('Note removed from cache:', noteId);
 };
 
 export const notesService = {
@@ -186,7 +180,6 @@ export const notesService = {
       // Update or initialize cache with new note
       const cachedNotes = getFromCache(userId);
       saveToCache(userId, cachedNotes ? [newNote, ...cachedNotes] : [newNote]);
-      console.log('New note added to cache:', docRef.id);
 
       return docRef.id;
     } catch (error) {
@@ -206,7 +199,6 @@ export const notesService = {
         if (cachedNotes) {
           const cachedNote = cachedNotes.find(note => note.id === noteId);
           if (cachedNote) {
-            console.log('Note retrieved from cache:', noteId);
             return cachedNote;
           }
         }
@@ -236,7 +228,6 @@ export const notesService = {
       // Check cache first
       const cachedNotes = getFromCache(userId);
       if (cachedNotes) {
-        console.log('Notes retrieved from cache, count:', cachedNotes.length);
         return cachedNotes;
       }
 
@@ -257,7 +248,6 @@ export const notesService = {
 
       // Save to cache
       saveToCache(userId, notes);
-      console.log('Notes cached, count:', notes.length);
 
       return notes;
     } catch (error) {
@@ -305,7 +295,6 @@ export const notesService = {
         updatedAt: Timestamp.now(),
       };
       updateCacheForNote(auth.currentUser.uid, noteId, cacheUpdate);
-      console.log('Note updated in cache:', noteId);
     } catch (error) {
       console.error('Error updating note:', error);
       if (error instanceof Error) {
@@ -351,7 +340,6 @@ export const notesService = {
         updatedAt: Timestamp.now(),
       };
       updateCacheForNote(auth.currentUser.uid, noteId, cacheUpdate);
-      console.log('Bookmark status updated in cache:', noteId);
     } catch (error) {
       console.error('Error toggling bookmark status:', error);
       if (error instanceof Error) {
@@ -386,7 +374,6 @@ export const notesService = {
 
       // Remove from cache
       removeCachedNote(auth.currentUser.uid, noteId);
-      console.log('Note removed from cache:', noteId);
     } catch (error) {
       console.error('Error deleting note:', error);
       if (error instanceof Error) {
@@ -399,6 +386,5 @@ export const notesService = {
   // Clear user's cache (useful for logout)
   clearCache(userId: string): void {
     localStorage.removeItem(`${CACHE_KEY}_${userId}`);
-    console.log('Cache cleared for user:', userId);
   }
 };

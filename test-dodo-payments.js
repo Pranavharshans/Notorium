@@ -40,16 +40,7 @@ const testBilling = {
 // Test functions
 async function listProducts() {
   try {
-    console.log("Fetching products...");
     const products = await dodoClient.products.list();
-    
-    console.log(`\n=== Found ${products.items.length} Products ===`);
-    products.items.forEach((product, i) => {
-      console.log(`${i+1}. ${product.name} (${product.product_id})`);
-      console.log(`   Price: ${product.price?.unit_amount/100 || 'N/A'} ${product.price?.currency || ''}`);
-      console.log(`   Description: ${product.description || 'No description'}`);
-      console.log("");
-    });
     
     return products.items;
   } catch (error) {
@@ -62,7 +53,6 @@ async function createSubscription(productId) {
     const products = await listProducts();
     if (products && products.length > 0) {
       productId = products[0].product_id;
-      console.log(`\nUsing first product: ${products[0].name} (${productId})`);
     } else {
       console.error("No products found. Please create products in your Dodo Payments dashboard.");
       return;
@@ -70,16 +60,10 @@ async function createSubscription(productId) {
   }
   
   try {
-    console.log("\n=== Creating Test Subscription ===");
-    
-    // Generate test Firebase UID
-    const testFirebaseUid = `test-user-${Date.now()}`;
-    
     const response = await dodoClient.subscriptions.create({
       billing: testBilling,
       customer: testCustomer,
       metadata: {
-        firebase_uid: testFirebaseUid,
         test: "true"
       },
       product_id: productId,
@@ -88,21 +72,9 @@ async function createSubscription(productId) {
       payment_link: true
     });
     
-    console.log("\nSubscription created successfully!");
-    console.log(`Subscription ID: ${response.subscription_id}`);
-    console.log(`Customer ID: ${response.customer.customer_id}`);
-    console.log(`Firebase UID for testing: ${testFirebaseUid}`);
-    
-    if (response.payment_link) {
-      console.log("\n=== Payment Link ===");
-      console.log("Open this URL in your browser to complete the payment:");
-      console.log(response.payment_link);
-    }
-    
     return {
       subscriptionId: response.subscription_id,
-      customerId: response.customer.customer_id,
-      firebaseUid: testFirebaseUid
+      customerId: response.customer.customer_id
     };
   } catch (error) {
     console.error("Error creating subscription:", error);
@@ -111,9 +83,6 @@ async function createSubscription(productId) {
 
 async function testWebhook(eventType = 'subscription.active') {
   try {
-    console.log(`\n=== Testing ${eventType} Webhook ===`);
-    
-    // Use real IDs instead of generating random ones
     const testFirebaseUid = "test-user-1747301653340";
     const testSubscriptionId = "sub_QC4fG3Rft0TVarCvBOojg";
     const testCustomerId = "cus_rgMWPU52wMwDU6HULrHrx";
@@ -141,11 +110,6 @@ async function testWebhook(eventType = 'subscription.active') {
     // This is a simplified version for testing
     const signature = `test_sig_${Date.now()}`;
     
-    console.log("\nWebhook payload:");
-    console.log(JSON.stringify(payload, null, 2));
-    
-    console.log("\nSending webhook to /api/webhook...");
-    
     // Send webhook to your local server
     const options = {
       hostname: 'localhost',
@@ -161,8 +125,6 @@ async function testWebhook(eventType = 'subscription.active') {
     };
     
     const req = http.request(options, (res) => {
-      console.log(`\nResponse status: ${res.statusCode}`);
-      
       let data = '';
       res.on('data', (chunk) => {
         data += chunk;
@@ -171,7 +133,6 @@ async function testWebhook(eventType = 'subscription.active') {
       res.on('end', () => {
         try {
           const responseData = data ? JSON.parse(data) : {};
-          console.log("Response data:", responseData);
         } catch (error) {
           console.log("Raw response:", data);
         }
@@ -184,9 +145,6 @@ async function testWebhook(eventType = 'subscription.active') {
     
     req.write(payloadString);
     req.end();
-    
-    console.log("\nWebhook sent. Check your server logs for processing details.");
-    console.log(`Expected subscription status in Firebase for user ${testFirebaseUid}: ${eventType.split('.')[1]}`);
     
     return { 
       firebaseUid: testFirebaseUid, 
@@ -204,17 +162,10 @@ async function cancelSubscription(subscriptionId) {
   }
   
   try {
-    console.log(`\n=== Cancelling Subscription ${subscriptionId} ===`);
-    
     await dodoClient.subscriptions.update(subscriptionId, { status: 'cancelled' });
-    
-    console.log("\nSubscription cancelled successfully!");
     
     // Retrieve the updated subscription
     const subscription = await dodoClient.subscriptions.retrieve(subscriptionId);
-    
-    console.log(`Status: ${subscription.status}`);
-    console.log(`End date: ${subscription.next_billing_date || 'Immediate'}`);
     
     return subscription;
   } catch (error) {

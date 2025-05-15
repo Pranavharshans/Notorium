@@ -99,13 +99,9 @@ export class RecordingService {
         const warningThreshold = 1740; // 29 minutes * 60 seconds
         
         if (currentDuration >= MAX_RECORDING_DURATION_SECONDS) {
-          console.log('Maximum recording duration reached, stopping...');
-          this.onQuotaWarning?.('duration');
           await this.stopRecording();
           return;
         } else if (currentDuration >= warningThreshold) {
-          console.log('Recording duration warning - approaching 30 minute limit...');
-          this.onQuotaWarning?.('duration');
         }
 
         // Check quota silently
@@ -115,18 +111,14 @@ export class RecordingService {
           const remainingMinutes = quotaStatus.minutesRemaining - minutesUsed;
           
           if (quotaStatus.isExhausted || remainingMinutes <= 0) {
-            console.log('Quota exhausted, stopping recording...');
-            this.onQuotaWarning?.('limit');
             await this.stopRecording(true); // Pass true to indicate quota exhaustion
           } else if (remainingMinutes <= 1) {
             this.onQuotaWarning?.('warning');
           }
         } catch (error) {
-          console.error('Error checking quota:', error);
         }
       }, 5000); // Check every 5 seconds
     } catch (error) {
-      console.error('Error starting recording:', error);
       throw new Error('Failed to start recording');
     }
   }
@@ -144,18 +136,15 @@ export class RecordingService {
         uploadTask.on('state_changed',
           (snapshot) => {
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log('Upload is ' + progress + '% done');
             this.onUploadProgress?.(progress);
           },
           (error) => {
             this.isUploading = false;
-            console.error("Upload failed", error);
             reject(error);
           },
           async () => {
             try {
               const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              console.log('File available at', downloadURL);
               this.isUploading = false;
               this.onUploadProgress?.(100);
               resolve(downloadURL);
@@ -272,19 +261,14 @@ export class RecordingService {
         const warningThreshold = 1740; // 29 minutes * 60 seconds
         
         if (currentDuration >= MAX_RECORDING_DURATION_SECONDS) {
-          console.log('Maximum recording duration reached, stopping...');
-          this.onQuotaWarning?.('duration');
           await this.stopRecording();
           return;
         } else if (currentDuration >= warningThreshold) {
-          console.log('Recording duration warning - approaching 30 minute limit...');
-          this.onQuotaWarning?.('duration');
         }
 
         // Check quota
         const hasQuota = await this.checkQuota();
         if (!hasQuota) {
-          console.log('Quota exhausted, stopping recording...');
           await this.stopRecording(true); // Pass true to indicate quota exhaustion
         }
       }, 5000); // Check every 5 seconds

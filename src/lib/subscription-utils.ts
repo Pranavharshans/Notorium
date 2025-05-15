@@ -31,16 +31,8 @@ export async function storeSubscriptionData(
   subscriptionId: string,
   status: SubscriptionData['status'] = 'pending'
 ): Promise<void> {
-  console.log('Attempting to store subscription data:', {
-    firebaseUID,
-    customerId,
-    subscriptionId,
-    status
-  });
-
   try {
     const userRef = db.collection('users').doc(firebaseUID);
-    console.log('Created Firestore reference:', userRef.path);
 
     const data = {
       customer_id: customerId,
@@ -50,18 +42,8 @@ export async function storeSubscriptionData(
       updated_at: new Date().toISOString(),
     };
 
-    console.log('Attempting to write data:', data);
-
     await userRef.set(data, { merge: true });
-    console.log('Successfully stored subscription data in Firestore');
   } catch (error) {
-    console.error('Error storing subscription data:', {
-      error,
-      stackTrace: error instanceof Error ? error.stack : undefined,
-      firebaseUID,
-      customerId,
-      subscriptionId
-    });
     throw error;
   }
 }
@@ -91,13 +73,7 @@ export async function updateSubscriptionStatus(
   subscriptionData?: SubscriptionUpdateData
 ): Promise<void> {
   try {
-    console.log('Updating subscription status for user:', firebaseUID);
-    console.log('Status:', status);
-    console.log('Next billing date:', nextBillingDate);
-    console.log('Subscription data:', JSON.stringify(subscriptionData, null, 2));
-
     const userRef = db.collection('users').doc(firebaseUID);
-    console.log('Firestore reference created for path:', `users/${firebaseUID}`);
 
     const updateData: Partial<SubscriptionData> = {
       status: status,
@@ -109,9 +85,6 @@ export async function updateSubscriptionStatus(
     }
 
     if (subscriptionData) {
-      console.log('Processing additional subscription data');
-      
-      // Add additional subscription data if available
       if (subscriptionData.customer) {
         updateData.customer = {
           email: subscriptionData.customer.email,
@@ -133,15 +106,10 @@ export async function updateSubscriptionStatus(
           interval: subscriptionData.payment_frequency_interval,
         };
       }
-
-      console.log('Final update data:', JSON.stringify(updateData, null, 2));
     }
     
-    console.log('Attempting to update Firestore document...');
     await userRef.update(updateData);
-    console.log(`Subscription status updated to ${status}`);
   } catch (error) {
-    console.error('Error updating subscription status:', error);
     throw error;
   }
 }
