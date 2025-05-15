@@ -22,7 +22,7 @@ function BillingDetailsPageInner() {
 
     try {
       setIsLoading(true);
-      console.log('Form data submitted:', data); // Log form data
+      console.log('Form submitted with values:', data);
       
       const response = await fetch(
         `/api/checkout/subscription?productId=${productId}`,
@@ -49,21 +49,50 @@ function BillingDetailsPageInner() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Checkout failed: ${errorData.error || response.statusText}`);
+      // Attempt to parse the response JSON
+      let responseData;
+      try {
+        responseData = await response.json();
+        console.log('API response:', responseData);
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        responseData = { error: `${response.status} ${response.statusText}` };
       }
 
-      const responseData = await response.json();
-      console.log('API response:', responseData); // Log API response
+      // Check if the response was not OK (error status code)
+      if (!response.ok) {
+        console.error('Error response from server:', responseData);
+        
+        // Extract detailed error information if available
+        const errorMessage = responseData.error || 'Unknown error';
+        const errorDetails = responseData.details || '';
+        const debugInfo = responseData.debug || {};
+        
+        // Display the error to console with all available debug info
+        console.error('Payment processing failed:',
+          { message: errorMessage, details: errorDetails, debug: debugInfo }
+        );
+        
+        // Use a simple formatted error message for the alert
+        const alertMessage = errorDetails 
+          ? `${errorMessage}: ${errorDetails}`
+          : errorMessage;
+          
+        alert(`Payment processing error: ${alertMessage}`);
+        return;
+      }
+
+      // Handle successful response
       if (responseData.payment_link) {
+        console.log('Redirecting to payment link:', responseData.payment_link);
         router.push(responseData.payment_link);
       } else {
-        throw new Error("No payment link received");
+        console.error('Missing payment_link in response:', responseData);
+        alert('Error: No payment link was provided by the payment system.');
       }
     } catch (error) {
-      console.error('Checkout error:', error);
-      throw error;
+      console.error('Unexpected error during checkout:', error);
+      alert(`An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }

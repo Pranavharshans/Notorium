@@ -50,7 +50,22 @@ export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("productId") as string;
-    const body = await request.json();
+    
+    // Log the request URL for debugging
+    console.log('Request URL:', request.url);
+    console.log('Product ID:', productId);
+    
+    let body;
+    try {
+      body = await request.json();
+      console.log('Request body:', JSON.stringify(body));
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+      return NextResponse.json(
+        { error: "Invalid request body", details: 'Failed to parse JSON' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
     if (!productId) {
       return NextResponse.json(
@@ -89,59 +104,104 @@ export async function POST(request: Request) {
       uid: firebaseUid,
       email: user.email,
       metadata,
-      billing: body.billing, // Log received billing information
-      customer: body.customer // Log received customer information
+      billing: body.billing,
+      customer: body.customer
     });
 
-    // Create subscription
-    const response = await dodopayments.subscriptions.create({
-      billing: {
-        city: body.billing.city,
-        country: body.billing.country,
-        state: body.billing.state,
-        street: body.billing.street,
-        zipcode: body.billing.zipcode
-      },
-      customer: {
-        email: body.customer.email || user.email,
-        name: body.customer.name,
-      },
-      metadata,
-      product_id: productId,
-      quantity: 1,
-      return_url: process.env.NEXT_PUBLIC_BASE_URL,
-      payment_link: true
-    });
-
-    console.log('Subscription created:', {
-      subscription_id: response.subscription_id,
-      customer_id: response.customer.customer_id,
-      metadata: response.metadata // Log metadata from response
-    });
-
-    // Store initial subscription data in Firestore
-    await storeSubscriptionData(
-      firebaseUid,
-      response.customer.customer_id,
-      response.subscription_id,
-      'pending' // Initial status until webhook confirms
-    );
-
-    return NextResponse.json(response, { headers: corsHeaders });
-
-  } catch (error) {
-    console.error('Subscription creation error:', error);
+    // Create a diagnostics object to help debug
+    const diagnostics = {
+      dodoApiKeyConfigured: !!process.env.DODO_API_KEY,
+      dodoApiKeyLength: process.env.DODO_API_KEY ? process.env.DODO_API_KEY.length : 0,
+      dodoPaymentsApiKeyConfigured: !!process.env.DODO_PAYMENTS_API_KEY,
+      environment: process.env.NODE_ENV,
+      baseUrl: process.env.NEXT_PUBLIC_BASE_URL
+    };
     
-    if (error instanceof Error) {
-      const statusCode = error.message.includes('Unauthorized') ? 401 : 500;
+    console.log('Diagnostics:', diagnostics);
+
+    // Check if Dodo Payments API key is configured
+    if (!process.env.DODO_API_KEY) {
+      console.error('DODO_API_KEY not configured');
       return NextResponse.json(
-        { error: error.message },
-        { status: statusCode, headers: corsHeaders }
+        { error: "Payment provider configuration missing", diagnostics },
+        { status: 500, headers: corsHeaders }
       );
     }
 
+    try {
+      // Create subscription
+      console.log('Attempting to create Dodo subscription...');
+      const response = await dodopayments.subscriptions.create({
+        billing: {
+          city: body.billing.city,
+          country: body.billing.country,
+          state: body.billing.state,
+          street: body.billing.street,
+          zipcode: body.billing.zipcode
+        },
+        customer: {
+          email: body.customer.email || user.email,
+          name: body.customer.name,
+        },
+        metadata,
+        product_id: productId,
+        quantity: 1,
+        return_url: process.env.NEXT_PUBLIC_BASE_URL || 'https://www.notorium.app',
+        payment_link: true
+      });
+
+      console.log('Subscription created:', {
+        subscription_id: response.subscription_id,
+        customer_id: response.customer.customer_id,
+        metadata: response.metadata
+      });
+
+      // Store initial subscription data in Firestore
+      await storeSubscriptionData(
+        firebaseUid,
+        response.customer.customer_id,
+        response.subscription_id,
+        'pending' // Initial status until webhook confirms
+      );
+
+      return NextResponse.json(response, { headers: corsHeaders });
+    } catch (dodoError) {
+      console.error('Dodo API error:', dodoError);
+      
+      // Extract useful information from the error
+      const errorDetails = {
+        message: dodoError instanceof Error ? dodoError.message : 'Unknown Dodo API error',
+        name: dodoError instanceof Error ? dodoError.name : 'UnknownError',
+        stack: dodoError instanceof Error ? dodoError.stack : null,
+        diagnostics
+      };
+      
+      console.error('Detailed Dodo error:', JSON.stringify(errorDetails));
+      
+      return NextResponse.json(
+        { 
+          error: "Payment provider error", 
+          details: errorDetails.message,
+          debug: errorDetails
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+  } catch (error) {
+    console.error('Subscription creation error:', error);
+    
+    let errorMessage = "Internal server error";
+    let details = "Unknown error";
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      details = error.stack || "";
+    }
+    
+    console.error('Error details:', { message: errorMessage, details });
+    
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: errorMessage, details },
       { status: 500, headers: corsHeaders }
     );
   }
