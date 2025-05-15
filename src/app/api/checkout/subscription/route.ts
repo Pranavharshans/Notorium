@@ -5,6 +5,22 @@ import { cookies } from "next/headers";
 import { storeSubscriptionData } from "@/lib/subscription-utils";
 // import { DecodedIdToken } from "firebase-admin/auth"; // Commented out to fix @typescript-eslint/no-unused-vars error
 
+// Define CORS headers
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
+};
+
+// Handle OPTIONS requests for CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
+
 async function validateSession(): Promise<{ firebaseUid: string; user: Record<string, unknown> } | null> {
   const cookiesList = await cookies();
   const sessionCookie = cookiesList.get("session");
@@ -36,7 +52,7 @@ export async function POST(request: Request) {
     if (!productId) {
       return NextResponse.json(
         { error: "Missing productId parameter" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -44,7 +60,7 @@ export async function POST(request: Request) {
     if (!body.billing || !body.customer) {
       return NextResponse.json(
         { error: "Missing billing or customer information" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -53,7 +69,7 @@ export async function POST(request: Request) {
     if (!session) {
       return NextResponse.json(
         { error: "Unauthorized - Invalid session" },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -108,7 +124,7 @@ export async function POST(request: Request) {
       'pending' // Initial status until webhook confirms
     );
 
-    return NextResponse.json(response);
+    return NextResponse.json(response, { headers: corsHeaders });
 
   } catch (error) {
     console.error('Subscription creation error:', error);
@@ -117,13 +133,13 @@ export async function POST(request: Request) {
       const statusCode = error.message.includes('Unauthorized') ? 401 : 500;
       return NextResponse.json(
         { error: error.message },
-        { status: statusCode }
+        { status: statusCode, headers: corsHeaders }
       );
     }
 
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
