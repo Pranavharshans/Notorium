@@ -44,14 +44,7 @@ const CustomerPaymentForm: React.FC<CustomerPaymentFormProps> = ({ onSubmit, isL
   } = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      country: "US",
-      firstName: "John",
-      lastName: "Doe",
       email: userEmail,
-      addressLine: "364 Kent St",
-      city: "Sydney",
-      state: "NSW",
-      zipCode: "2035",
     },
   });
 
