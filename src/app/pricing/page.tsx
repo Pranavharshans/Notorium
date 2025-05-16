@@ -13,31 +13,32 @@ const pricingTiers = [
     name: "Trial",
     price: "Free",
     description: "Try out our core features",
+    saveAmount: "",
     features: [
-      { text: "10 minutes of recording time", included: true },
-      { text: "3 enhance note operations", included: true },
-      { text: "Basic editing features", included: true },
-      { text: "Community support", included: true },
+      { text: "20 minutes of recording time", included: true },
+      { text: "5 enhance note operations", included: true },
+      { text: "Early access to new features", included: false },
       { text: "Priority processing", included: false },
       { text: "Advanced AI features", included: false },
-      { text: "Offline access", included: false },
-      { text: "Custom export formats", included: false },
+      // { text: "Offline access", included: false },
+      // { text: "Custom export formats", included: false },
     ],
   },
   {
     name: "Pro",
     price: "$9.99",
     description: "Unlock your full learning potential",
-    saveAmount: "Save 33% with annual billing",
+    // saveAmount: "Save 33% with annual billing",
     features: [
       { text: "20 hours of recording time", included: true },
-      { text: "50 enhance note operations", included: true },
-      { text: "Advanced editing features", included: true },
+      { text: "100 enhance note operations", included: true },
+      // { text: "Advanced editing features", included: true },
       { text: "Priority email support", included: true },
       { text: "Priority AI processing", included: true },
       { text: "Advanced AI summarization", included: true },
-      { text: "Offline mode access", included: true },
-      { text: "Export to any format", included: true },
+      { text: "Early access to new features", included: true },
+      { text: "Flashcards(coming soon)", included: true },
+      { text: "Export notes(coming soon)", included: true },
     ],
     highlighted: true,
   }
@@ -78,11 +79,11 @@ const PricingTier = ({
   isCurrentPlan?: boolean;
 }) => (
   <div
-    className={`relative rounded-2xl ${
+    className={`relative rounded-2xl p-8 shadow-lg transition-all ${
       highlighted
-        ? "border-2 border-blue-600 bg-blue-50/50 dark:border-blue-500 dark:bg-blue-950/50"
-        : "border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
-    } p-8 shadow-lg transition-all hover:scale-105`}
+        ? "border-2 border-blue-600 bg-blue-50/50 dark:border-blue-500 dark:bg-blue-950/50 scale-105 shadow-xl hover:scale-[1.07]"
+        : "border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-gray-800 dark:bg-gray-900 scale-90 shadow-md hover:scale-95"
+    }`}
   >
     {highlighted && (
       <span className="absolute -top-5 left-1/2 -translate-x-1/2 transform rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-1 text-sm font-bold text-white shadow-lg">
@@ -93,11 +94,13 @@ const PricingTier = ({
       <h3 className={`text-xl font-bold ${highlighted ? "text-blue-600 dark:text-blue-400" : ""}`}>
         {name}
       </h3>
-      <div className="mt-2 text-gray-600 dark:text-gray-400">{description}</div>
+      <div className={`mt-2 ${highlighted ? "text-gray-700 dark:text-gray-300" : "text-gray-600 dark:text-gray-400"}`}>
+        {description}
+      </div>
     </div>
     <div className="mb-6">
       <div className="flex items-baseline">
-        <span className="text-5xl font-bold">{price}</span>
+        <span className={`text-5xl font-bold ${highlighted ? "text-blue-800 dark:text-blue-300" : ""}`}>{price}</span>
         {price !== "Free" && <span className="text-gray-600 dark:text-gray-400">/month</span>}
       </div>
       {saveAmount && (
@@ -111,19 +114,21 @@ const PricingTier = ({
         <Feature key={index} included={feature.included} text={feature.text} />
       ))}
     </ul>
-    <ShimmerButton
-      onClick={onSelect}
-      disabled={isLoading || isCurrentPlan}
-      className={`w-full ${
-        highlighted
-          ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 dark:from-blue-500 dark:to-indigo-500"
-          : "bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700"
-      } ${isCurrentPlan ? 'opacity-50 cursor-not-allowed' : ''}`}
-    >
-      {isLoading ? "Processing..." :
-       isCurrentPlan ? "Current Plan" :
-       price === "Free" ? "Start Trial" : "Upgrade Now"}
-    </ShimmerButton>
+    {price !== "Free" && (
+      <ShimmerButton
+        onClick={onSelect}
+        disabled={isLoading || isCurrentPlan}
+        className={`w-full ${
+          highlighted
+            ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 dark:from-blue-500 dark:to-indigo-500"
+            : "bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700"
+        } ${isCurrentPlan ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        {isLoading ? "Processing..." :
+         isCurrentPlan ? "Current Plan" :
+         "Upgrade Now"}
+      </ShimmerButton>
+    )}
   </div>
 );
 
@@ -175,7 +180,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-gray-100 to-sky-100 dark:from-gray-900 dark:via-slate-800 dark:to-sky-900">
       <div className="pt-6 px-6">
         <button 
           onClick={() => router.back()} 
@@ -189,15 +194,15 @@ export default function PricingPage() {
       </div>
       <SubscriptionStatus />
       <header className="py-16 text-center">
-        <h1 className="mb-4 text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
+        <h1 className="mb-4 text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 dark:from-blue-400 dark:via-indigo-300 dark:to-purple-400">
           Choose Your Learning Path
         </h1>
-        <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
+        <p className="mx-auto max-w-2xl text-lg text-gray-700 dark:text-gray-300">
           Unlock your full potential with our Pro features. Switch plans anytime as your needs evolve.
         </p>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-20 sm:grid-cols-2 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-20 sm:grid-cols-1 md:grid-cols-2 lg:px-8 items-start">
         {pricingTiers.map((tier) => (
           <PricingTier
             key={tier.name}
@@ -206,7 +211,7 @@ export default function PricingPage() {
             description={tier.description}
             features={tier.features}
             highlighted={tier.highlighted}
-            saveAmount={tier.saveAmount}
+            saveAmount={tier.saveAmount || ""}
             isLoading={isLoading}
             isCurrentPlan={
               subscriptionData?.status === 'active' && tier.name === "Pro"
