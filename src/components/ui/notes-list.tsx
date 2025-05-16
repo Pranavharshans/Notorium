@@ -250,11 +250,6 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
           </svg>
         </div>
       </div>
-      <div className="flex justify-end px-3">
-        <button className="text-gray-500 hover:text-gray-800">
-          <Plus size={18} />
-        </button>
-      </div>
       <div className="flex-1 overflow-y-auto px-3">
         {filteredNotes.length === 0 ? (
           <p className="text-gray-500 text-center mt-4">

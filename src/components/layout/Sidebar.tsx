@@ -60,12 +60,14 @@ export function Sidebar({ currentView, onViewChange, onSignOut }: SidebarProps) 
         >
           {icons.notes}
         </button>
+        {/* Bookmark icon hidden temporarily 
         <button 
           title="Bookmarks" 
           className="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded"
         >
           {icons.bookmarkIcon}
         </button>
+        */}
       </nav>
       
       <div className="mt-auto flex flex-col items-center space-y-4">
