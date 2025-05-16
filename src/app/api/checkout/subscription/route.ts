@@ -49,11 +49,16 @@ async function validateSession(): Promise<{ firebaseUid: string; user: Record<st
 export async function POST(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const productId = searchParams.get("productId") as string;
+    // Comment out the original productId extraction
+    // const productId = searchParams.get("productId") as string;
+    
+    // TEMPORARY: Hardcode the product ID for testing
+    const productId = "pdt_8j4YYULCtXBp2kyW8Mh5k";
+    console.log('TESTING: Using hardcoded product ID:', productId);
     
     // Log the request URL for debugging
     console.log('Request URL:', request.url);
-    console.log('Product ID:', productId);
+    console.log('Product ID (hardcoded for test):', productId);
     
     let body;
     try {
