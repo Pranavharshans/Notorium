@@ -28,7 +28,7 @@ const pricingTiers = [
     name: "Pro",
     price: "$9.99",
     description: "Unlock your full learning potential",
-    // saveAmount: "Save 33% with annual billing",
+    // saveAmount: "Save 33% with annual billing"
     features: [
       { text: "20 hours of recording time", included: true },
       { text: "100 enhance note operations", included: true },
