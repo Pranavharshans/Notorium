@@ -21,7 +21,7 @@ const pricingTiers = [
       { text: "Priority processing", included: false },
       { text: "Advanced AI features", included: false },
       // { text: "Offline access", included: false },
-      // { text: "Custom export formats", included: false },
+      // { text: "Custom export formats", included: false},
     ],
   },
   {
