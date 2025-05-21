@@ -136,12 +136,10 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
     let mounted = true;
 
     async function fetchNotes() {
-      console.log('[NotesList] user:', user);
       if (!user) return;
 
       try {
         const userNotes = await notesService.getNotes(user.uid);
-        console.log('[NotesList] notesService.getNotes returned:', userNotes);
         if (mounted) {
           setNotes(userNotes);
           setFilteredNotes(userNotes);
@@ -149,7 +147,6 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
           setError(null);
         }
       } catch (err) {
-        console.error('[NotesList] Failed to load notes:', err);
         if (mounted) {
           setError('Failed to load notes');
           setLoading(false);
@@ -203,8 +200,6 @@ export function NotesList({ activeNoteId, onNoteSelect, refreshKey, selectedCate
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
-
-  console.log('[NotesList] render, user:', user, 'error:', error, 'notes:', notes);
 
   if (loading) {
     return (

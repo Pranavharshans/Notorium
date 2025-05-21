@@ -110,7 +110,12 @@ export default function HomePage() {
   };
 
   const refreshNotes = () => {
-    setNotesListRefreshKey(prev => prev + 1);
+    console.log("HomePage - refreshNotes called, current key:", notesListRefreshKey);
+    setNotesListRefreshKey(prev => {
+      const newKey = prev + 1;
+      console.log("HomePage - Setting new refresh key:", newKey);
+      return newKey;
+    });
   };
 
   // Combined loading state
@@ -151,11 +156,13 @@ export default function HomePage() {
             selectedNoteId={selectedNoteId}
             onNoteSelect={(noteId, note) => {
               console.log('[HomePage] onNoteSelect', noteId, note);
+              if (noteId !== selectedNoteId) {
+                setIsEditing(false);
+              }
               setSelectedNoteId(noteId);
               setSelectedNote(note);
               setGeneratedNotes(null);
               setCurrentView('notes');
-              setIsEditing(false);
             }}
             notesListRefreshKey={notesListRefreshKey}
             selectedCategories={selectedCategories}

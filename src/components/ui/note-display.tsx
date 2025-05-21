@@ -48,7 +48,7 @@ export function NoteDisplay({ content, onEnhance, isEnhancing, onTitlesExtracted
 
   return (
     <div className="relative">
-      <div className="absolute top-2 right-2">
+      <div className="absolute top-2 right-2 no-print">
         {showEnhanceOptions && (
           <AnimatedEditPopover onEnhance={onEnhance} isEnhancing={isEnhancing} />
         )}
@@ -56,7 +56,7 @@ export function NoteDisplay({ content, onEnhance, isEnhancing, onTitlesExtracted
 
       {/* Loading Overlay */}
       {isEnhancing && (
-        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-[1]">
+        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-[1] no-print">
           <div className="flex items-center gap-2 text-purple-600">
             <span className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
             <span>Enhancing notes...</span>

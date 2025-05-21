@@ -313,3 +313,79 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Print styles */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Only show the note content */
+  .note-content-for-print,
+  .note-content-for-print * {
+    visibility: visible;
+    position: relative;
+  }
+
+  /* Reset the note content container */
+  .note-content-for-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 2rem;
+    margin: 0;
+    background: white;
+  }
+
+  /* Hide UI elements */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  .note-content-for-print h1,
+  .note-content-for-print h2,
+  .note-content-for-print h3 {
+    break-after: avoid;
+  }
+
+  .note-content-for-print p,
+  .note-content-for-print ul,
+  .note-content-for-print ol {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Ensure code blocks and diagrams don't break across pages */
+  .note-content-for-print pre,
+  .note-content-for-print .mermaid {
+    break-inside: avoid;
+  }
+
+  /* Remove background colors and adjust text for better print contrast */
+  .note-content-for-print * {
+    background-color: transparent !important;
+    color: black !important;
+    text-shadow: none !important;
+  }
+
+  /* Ensure links are readable in print */
+  .note-content-for-print a {
+    text-decoration: underline;
+  }
+
+  /* Ensure proper margins and paper size */
+  @page {
+    margin: 2cm;
+    size: auto;
+  }
+
+  /* Reset body styles for print */
+  body {
+    background: none;
+    margin: 0;
+    padding: 0;
+  }
+}

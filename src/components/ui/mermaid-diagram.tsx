@@ -1,6 +1,92 @@
 import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 
+// Enhanced console filtering
+const originalConsoleLog = console.log;
+const originalConsoleInfo = console.info;
+const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error;
+
+// Helper function to check if a message should be filtered
+const shouldFilterMessage = (args: unknown[]): boolean => {
+  if (!args[0]) return false;
+  const message = String(args[0]);
+  
+  // Filter out specific Mermaid patterns
+  const mermaidPatterns = [
+    'INFO :',
+    'WARN :',
+    'Graph after',
+    'Graph before',
+    'Position XBX',
+    'Position X',
+    'abc82',
+    'dagre-',
+    'chunk-',
+    'mermaid',
+    'Flowchart',
+    'rendering',
+    'recursivelyTraversePassiveMountEffects',
+    'commitPassiveMountOnFiber',
+    'XXX',
+    'Layout',
+    'XAX',
+    'XBX',
+    'Fix Map',
+    'Edge',
+    'Node XXX'
+  ];
+
+  // Check if message contains any of the patterns
+  if (mermaidPatterns.some(pattern => message.includes(pattern))) {
+    return true;
+  }
+
+  // Filter out graph data objects
+  if (typeof args[0] === 'object' && args[0] !== null) {
+    const obj = args[0] as Record<string, unknown>;
+    // Filter out Mermaid graph objects
+    if (
+      ('options' in obj && 'nodes' in obj && 'edges' in obj) || // Graph structure
+      ('id' in obj && typeof obj.id === 'string' && (
+        obj.id.startsWith('L_') || // Edge IDs
+        obj.id.startsWith('flowchart-') // Node IDs
+      )) ||
+      ('v' in obj && 'w' in obj && 'name' in obj) // Edge definitions
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+// Override console methods with more specific filtering
+console.log = function(...args: unknown[]) {
+  if (!shouldFilterMessage(args)) {
+    originalConsoleLog.apply(console, args);
+  }
+};
+
+console.info = function(...args: unknown[]) {
+  if (!shouldFilterMessage(args)) {
+    originalConsoleInfo.apply(console, args);
+  }
+};
+
+console.warn = function(...args: unknown[]) {
+  if (!shouldFilterMessage(args)) {
+    originalConsoleWarn.apply(console, args);
+  }
+};
+
+console.error = function(...args: unknown[]) {
+  // Only filter Mermaid-specific errors, let other errors through
+  if (!shouldFilterMessage(args) || (args[0] && String(args[0]).includes('Error:') && !String(args[0]).includes('mermaid'))) {
+    originalConsoleError.apply(console, args);
+  }
+};
+
 interface MermaidDiagramProps {
   content: string;
 }
@@ -8,26 +94,11 @@ interface MermaidDiagramProps {
 mermaid.initialize({
   theme: 'default',
   securityLevel: 'loose',
-  logLevel: 0, // Crucial for suppressing Mermaid's own error UI
+  logLevel: 1, // Set to 1 to only show errors
   startOnLoad: false,
   fontFamily: 'arial',
-  deterministicIds: true,
+  deterministicIds: true
 });
-
-const originalConsoleError = console.error;
-console.error = function(...args) {
-  const message = args[0];
-  if (typeof message === 'string' && 
-      (message.includes('mermaid') || 
-       message.includes('Flowchart') || 
-       message.includes('Error parsing') ||
-       message.includes('Error rendering') ||
-       message.includes('Syntax error') ||
-       message.includes('There can be only one'))) {
-    return; 
-  }
-  originalConsoleError.apply(console, args);
-};
 
 function removeGlobalMermaidErrors() {
   const selectors = [
@@ -42,7 +113,7 @@ function removeGlobalMermaidErrors() {
     try {
       document.querySelectorAll(selector).forEach(el => el.remove());
     } catch (e) {
-      originalConsoleError.call(console, "Error removing global mermaid element with selector:", selector, e);
+      // Error handling removed
     }
   });
 
@@ -58,7 +129,7 @@ function removeGlobalMermaidErrors() {
       }
     });
   } catch (e) {
-     originalConsoleError.call(console, "Error removing global mermaid SVG elements:", e);
+    // Error handling removed
   }
 }
 
@@ -89,7 +160,7 @@ export default function MermaidDiagram({ content }: MermaidDiagramProps) {
       // Observe the entire document body for additions/removals.
       observer.observe(document.body, { childList: true, subtree: true });
     } catch (e) {
-      originalConsoleError.call(console, "Failed to start MutationObserver:", e);
+      // Error handling removed
     }
 
     if (elementRef.current) {
@@ -109,10 +180,10 @@ export default function MermaidDiagram({ content }: MermaidDiagramProps) {
             setTimeout(() => {
               if (isMounted && elementRef.current) {
                 const errorElements = elementRef.current.querySelectorAll(
-                  '.error-icon, .error-text, .error-message, [id*="syntax-error"], g.error-icon, g.marker.cross, text:contains(Syntax error)'
+                  '.error-icon, .error-text, .error-message, [id*="syntax-error"], g.error-icon, g.marker.cross'
                 );
                 errorElements.forEach(el => el.remove());
-                const remainingErrorsInDiagram = elementRef.current.querySelector('g.error-icon, g.marker.cross, text:contains("Syntax error")');
+                const remainingErrorsInDiagram = elementRef.current.querySelector('g.error-icon, g.marker.cross');
                 setError(remainingErrorsInDiagram ? "⚠️" : null);
               }
               removeGlobalMermaidErrors(); 
@@ -122,7 +193,6 @@ export default function MermaidDiagram({ content }: MermaidDiagramProps) {
           if (isMounted) {
             setError("⚠️");
             if (elementRef.current) elementRef.current.innerHTML = '';
-            originalConsoleError.call(console, "Mermaid render catch:", e);
           }
         } finally {
           if (isMounted) document.documentElement.classList.remove('processing-mermaid');

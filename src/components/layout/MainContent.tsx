@@ -55,20 +55,37 @@ export function MainContent({
 
   const handleSaveNote = async (updatedNote: Note) => {
     try {
-      await notesService.updateNote(selectedNoteId!, {
+      console.log("MainContent - handleSaveNote called with:", updatedNote);
+      console.log("MainContent - selectedNoteId:", selectedNoteId);
+      
+      const updateData = {
         title: updatedNote.title,
         transcript: updatedNote.transcript,
         notes: updatedNote.notes,
         tags: updatedNote.tags,
-        bookmarked: updatedNote.bookmarked,
+        bookmarked: updatedNote.bookmarked !== undefined ? updatedNote.bookmarked : false,
         updatedAt: Timestamp.now(),
-      });
+      };
+      
+      console.log("MainContent - Updating note with data:", updateData);
+      
+      await notesService.updateNote(selectedNoteId!, updateData);
+      
+      console.log("MainContent - Note updated in Firestore");
+      
       setSelectedNote({
         ...updatedNote,
+        tags: updatedNote.tags,
+        bookmarked: updatedNote.bookmarked !== undefined ? updatedNote.bookmarked : false,
         updatedAt: Timestamp.now(),
       });
+      
+      console.log("MainContent - Selected note state updated");
+      
       setIsEditing(false);
       refreshNotes();
+      
+      console.log("MainContent - Edit mode disabled and notes refreshed");
     } catch (err) {
       console.error("Failed to update note:", err);
       setNotesError("Failed to update note. Please try again.");

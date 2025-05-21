@@ -264,6 +264,8 @@ export const notesService = {
     }
 
     try {
+      console.log("NotesService - updateNote called with:", { noteId, updates });
+      
       const { db } = await getFirebaseInstance();
       const noteRef = doc(db, NOTES_COLLECTION, noteId);
       const noteSnapshot = await getDoc(noteRef);
@@ -273,6 +275,8 @@ export const notesService = {
       }
 
       const noteData = noteSnapshot.data();
+      console.log("NotesService - Current note data:", noteData);
+      
       if (auth.currentUser.uid !== noteData.userId) {
         throw new Error('You do not have permission to edit this note');
       }
@@ -287,14 +291,18 @@ export const notesService = {
         updatedAt: serverTimestamp(),
       };
 
+      console.log("NotesService - Sending update to Firebase:", firebaseUpdate);
       await updateDoc(noteRef, firebaseUpdate);
+      console.log("NotesService - Firebase update successful");
 
       // Update cache with Timestamp instead of FieldValue
       const cacheUpdate = {
         ...updates,
         updatedAt: Timestamp.now(),
       };
+      console.log("NotesService - Updating cache with:", cacheUpdate);
       updateCacheForNote(auth.currentUser.uid, noteId, cacheUpdate);
+      console.log("NotesService - Cache update completed");
     } catch (error) {
       console.error('Error updating note:', error);
       if (error instanceof Error) {

@@ -147,7 +147,7 @@ export function NewLectureView({
           transcript: transcription.text,
           notes: generatedContent,
           userId: user.uid,
-          tags: [] // No default tags
+          tags: tags // Use the tags entered by the user
         });
 
         if (!title.trim()) {
