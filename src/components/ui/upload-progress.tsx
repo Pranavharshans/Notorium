@@ -15,7 +15,7 @@ export const UploadProgress = () => {
       setIsUploading(uploadProgress < 100)
     })
 
-    // Set up beforeunload warning
+    // Set up beforeunload
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isUploading) {
         e.preventDefault()
