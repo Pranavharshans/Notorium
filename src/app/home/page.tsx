@@ -9,7 +9,7 @@ import { NotesSidebar } from "@/components/layout/NotesSidebar";
 import { MainContent } from "@/components/layout/MainContent";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { notesService } from "@/lib/notes-service";
-// import { aiProviderService, AIProvider } from "@/lib/ai-provider-service"; // Conted out AIProvider - @typescript-eslint/no-unused-vars
+// import { aiProviderService, AIProvider } from "@/lib/ai-provider-service"; // Conted out AIProvider - @typescript-eslint/no-unused-va
 import { aiProviderService } from "@/lib/ai-provider-service";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
