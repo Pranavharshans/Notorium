@@ -2,13 +2,30 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { aiAndTranscriptionLimiter } from '@/lib/rate-limit';
 
-// Add CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+// SECURITY FIX: Restrict CORS to specific trusted origins
+const getAllowedOrigin = (origin: string | null) => {
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://notorium.app',
+    'https://www.notorium.app'
+  ];
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    return origin;
+  }
+  
+  // Default to production domain if no origin or origin not allowed
+  return 'https://www.notorium.app';
+};
+
+// Add CORS headers with dynamic origin
+const getCorsHeaders = (origin: string | null) => ({
+  'Access-Control-Allow-Origin': getAllowedOrigin(origin),
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Max-Age': '86400',
-};
+  'Access-Control-Allow-Credentials': 'true',
+});
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -17,7 +34,7 @@ export async function middleware(request: NextRequest) {
   if (request.method === 'OPTIONS') {
     return new NextResponse(null, {
       status: 204,
-      headers: corsHeaders,
+      headers: getCorsHeaders(request.headers.get('origin')),
     });
   }
   
@@ -53,7 +70,7 @@ export async function middleware(request: NextRequest) {
     if (!sessionCookie?.value) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: getCorsHeaders(request.headers.get('origin')) }
       );
     }
 
@@ -70,14 +87,14 @@ export async function middleware(request: NextRequest) {
       if (!response.ok) {
         return NextResponse.json(
           { error: 'Invalid session' },
-          { status: 401, headers: corsHeaders }
+          { status: 401, headers: getCorsHeaders(request.headers.get('origin')) }
         );
       }
     } catch (error) {
       console.error('Session verification error:', error);
       return NextResponse.json(
         { error: 'Authentication failed' },
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: getCorsHeaders(request.headers.get('origin')) }
       );
     }
 
@@ -102,7 +119,7 @@ export async function middleware(request: NextRequest) {
                 'X-RateLimit-Limit': result.limit.toString(),
                 'X-RateLimit-Remaining': result.remaining.toString(),
                 'X-RateLimit-Reset': result.reset.toString(),
-                ...corsHeaders
+                ...getCorsHeaders(request.headers.get('origin'))
               }
             }
           );
@@ -119,7 +136,7 @@ export async function middleware(request: NextRequest) {
   
   // Add CORS headers for API routes
   if (pathname.startsWith('/api/')) {
-    Object.entries(corsHeaders).forEach(([key, value]) => {
+    Object.entries(getCorsHeaders(request.headers.get('origin'))).forEach(([key, value]) => {
       response.headers.set(key, value);
     });
   }

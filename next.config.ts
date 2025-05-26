@@ -15,7 +15,9 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: '*', // In production, you should replace this with specific origins
+            value: process.env.NODE_ENV === 'production' 
+              ? 'https://www.notorium.app' 
+              : 'http://localhost:3000', // SECURITY FIX: Specific origins only
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -28,6 +30,10 @@ const nextConfig: NextConfig = {
           {
             key: 'Access-Control-Max-Age',
             value: '86400',
+          },
+          {
+            key: 'Access-Control-Allow-Credentials',
+            value: 'true',
           },
         ],
       },

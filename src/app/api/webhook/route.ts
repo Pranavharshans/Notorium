@@ -50,11 +50,13 @@ export async function POST(request: Request) {
       "webhook-signature": headersList.get("webhook-signature") || "",
       "webhook-timestamp": headersList.get("webhook-timestamp") || "",
     };
-    if (process.env.NODE_ENV === 'development') {
-      // Skip verification
-    } else {
-      await webhook.verify(rawBody, webhookHeaders);
-    }
+    // SECURITY FIX: Always verify webhooks regardless of environment
+    // if (process.env.NODE_ENV === 'development') {
+    //   // Skip verification
+    // } else {
+    //   await webhook.verify(rawBody, webhookHeaders);
+    // }
+    await webhook.verify(rawBody, webhookHeaders);
     const payload = JSON.parse(rawBody);
 
     if (payload.data.payload_type === "Subscription") {
