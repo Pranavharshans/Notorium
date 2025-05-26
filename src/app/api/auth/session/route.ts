@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      sameSite: "none", // Allow cross-site requests
+      sameSite: "lax", // SECURITY FIX: Changed from "none" to "lax" - allows payment redirects while preventing most CSRF attacks
     });
 
     return response;

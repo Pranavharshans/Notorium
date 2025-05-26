@@ -105,13 +105,7 @@ export async function POST(request: Request) {
       user_name: String(user.displayName || '')
     };
 
-    console.log('Creating subscription for user:', {
-      uid: firebaseUid,
-      email: user.email,
-      metadata,
-      billing: body.billing,
-      customer: body.customer
-    });
+ 
 
     // Create a diagnostics object to help debug
     const diagnostics = {

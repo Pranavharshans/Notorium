@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Security Test - Notorium</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #333;
+        }
+        .success { background: #d4edda; border-color: #28a745; }
+        .warning { background: #fff3cd; border-color: #ffc107; }
+        .error { background: #f8d7da; border-color: #dc3545; }
+        .info { background: #d1ecf1; border-color: #17a2b8; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .code {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Notorium Session Security Test</h1>
+    
+    <div class="test-result info">
+        <h3>📋 Test Instructions</h3>
+        <p>This page helps you verify that the session security fix is working correctly.</p>
+        <ol>
+            <li>Open Developer Tools (F12)</li>
+            <li>Go to Application/Storage tab → Cookies</li>
+            <li>Click "Check Cookie Status" below</li>
+            <li>Follow the manual tests</li>
+        </ol>
+    </div>
+
+    <div class="test-result">
+        <h3>🔍 Automatic Cookie Check</h3>
+        <button onclick="checkCookies()">Check Cookie Status</button>
+        <div id="cookieResults"></div>
+    </div>
+
+    <div class="test-result">
+        <h3>🧪 Manual Tests</h3>
+        <h4>Test 1: Authentication Flow</h4>
+        <button onclick="testAuth()">Test Authentication</button>
+        <div id="authResults"></div>
+        
+        <h4>Test 2: Protected API Access</h4>
+        <button onclick="testProtectedAPI()">Test Protected Endpoint</button>
+        <div id="apiResults"></div>
+        
+        <h4>Test 3: Cross-Site Request (Should Fail)</h4>
+        <button onclick="testCrossSite()">Test Cross-Site Security</button>
+        <div id="crossSiteResults"></div>
+    </div>
+
+    <div class="test-result warning">
+        <h3>⚠️ Expected Results</h3>
+        <p><strong>Cookie Attributes (in DevTools):</strong></p>
+        <ul>
+            <li>✅ SameSite: <strong>Lax</strong> (not None)</li>
+            <li>✅ HttpOnly: <strong>true</strong></li>
+            <li>✅ Secure: <strong>true</strong> (in production)</li>
+            <li>✅ Domain: your domain</li>
+        </ul>
+    </div>
+
+    <script>
+        function checkCookies() {
+            const results = document.getElementById('cookieResults');
+            const cookies = document.cookie;
+            
+            if (cookies.includes('session=')) {
+                results.innerHTML = `
+                    <div class="success">
+                        ✅ Session cookie found!<br>
+                        <div class="code">Document.cookie: ${cookies}</div>
+                        <strong>Note:</strong> HttpOnly cookies won't show here (which is good for security!).<br>
+                        Check DevTools → Application → Cookies for full details.
+                    </div>
+                `;
+            } else {
+                results.innerHTML = `
+                    <div class="info">
+                        ℹ️ No session cookie in document.cookie (this is normal for HttpOnly cookies).<br>
+                        <strong>To test:</strong> Sign in first, then check DevTools → Application → Cookies
+                    </div>
+                `;
+            }
+        }
+
+        async function testAuth() {
+            const results = document.getElementById('authResults');
+            results.innerHTML = '<p>Testing authentication...</p>';
+            
+            try {
+                const response = await fetch('/api/verify-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionCookie: 'test' }),
+                    credentials: 'include'
+                });
+                
+                if (response.status === 401) {
+                    results.innerHTML = `
+                        <div class="success">
+                            ✅ Authentication properly rejects invalid sessions (401)
+                        </div>
+                    `;
+                } else {
+                    results.innerHTML = `
+                        <div class="warning">
+                            ⚠️ Unexpected response: ${response.status}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="error">
+                        ❌ Test failed: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testProtectedAPI() {
+            const results = document.getElementById('apiResults');
+            results.innerHTML = '<p>Testing protected API access...</p>';
+            
+            try {
+                const response = await fetch('/api/checkout/subscription?productId=test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}),
+                    credentials: 'include'
+                });
+                
+                if (response.status === 401) {
+                    results.innerHTML = `
+                        <div class="success">
+                            ✅ Protected API properly requires authentication (401)
+                        </div>
+                    `;
+                } else {
+                    results.innerHTML = `
+                        <div class="info">
+                            ℹ️ Response status: ${response.status} - Check if you're signed in
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="warning">
+                        ⚠️ Network error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function testCrossSite() {
+            const results = document.getElementById('crossSiteResults');
+            results.innerHTML = `
+                <div class="info">
+                    🧪 To test cross-site protection:
+                    <ol>
+                        <li>Open a different website (e.g., google.com)</li>
+                        <li>Open browser console (F12)</li>
+                        <li>Run this command:</li>
+                    </ol>
+                    <div class="code">
+fetch('${window.location.origin}/api/verify-session', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionCookie: 'test' })
+})
+.then(r => console.log('Status:', r.status))
+.catch(e => console.log('Blocked:', e.message))
+                    </div>
+                    <p>✅ <strong>Expected:</strong> Should be blocked by CORS or fail to send cookies due to SameSite protection</p>
+                </div>
+            `;
+        }
+
+        // Run automatic check on page load
+        window.addEventListener('load', () => {
+            checkCookies();
+        });
+    </script>
+</body>
+</html> 
