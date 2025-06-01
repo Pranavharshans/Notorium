@@ -85,7 +85,6 @@ export function NewLectureView({
       setCopySuccess(false);
     } catch (err) {
       // This will only catch unexpected errors, not quota issues
-      console.error("Error checking recording quota:", err);
       const errorMessage = err instanceof Error ? err.message : "Failed to check recording quota.";
       setError(errorMessage);
       // setIsRecording(false); // Commented out - @typescript-eslint/no-unused-vars
@@ -102,16 +101,13 @@ export function NewLectureView({
         throw new Error("Failed to get download URL for audio file");
       }
 
-      console.log("Got recording data with URL:", recordingData.downloadURL);
       // setRecordingDuration(recordingData.duration); // Commented out - @typescript-eslint/no-unused-vars
 
-      console.log("Sending for transcription...");
       const result = await groqService.transcribeAudio(recordingData);
       setTranscription(result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to process the recording. Please try again.";
       setError(errorMessage);
-      console.error("Transcription error:", err);
     } finally {
       setIsProcessing(false);
     }
@@ -127,16 +123,13 @@ export function NewLectureView({
 
   const handleGenerateNotes = async () => {
     if (!transcription?.text) {
-      console.log("No transcription available for generating notes");
       return;
     }
     setNotesLoading(true);
     setNotesError(null);
     try {
-      console.log("Generating notes with transcript:", transcription.text);
       aiProviderService.setProvider(provider);
       const { title: generatedTitle, content: generatedContent } = await aiProviderService.generateNotesFromTranscript(transcription.text, category);
-      console.log("Generated notes:", { title: generatedTitle, content: generatedContent });
       
       if (user?.uid) {
         const finalTitle = title.trim() || generatedTitle;
@@ -160,12 +153,9 @@ export function NewLectureView({
           onNoteSelect(noteId, newNote);
           setCurrentView('notes');
         }
-      } else {
-        console.error("Cannot save note: User not logged in.");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to generate notes";
-      console.error("Error generating notes:", errorMessage);
       setNotesError(errorMessage);
     } finally {
       setNotesLoading(false);
@@ -191,6 +181,7 @@ export function NewLectureView({
             className="w-full scale-110 md:scale-125 transform"
             onStart={handleRecordingStart}
             onStop={handleRecordingStop}
+            disabled={isProcessing}
           />
         </div>
 

@@ -55,9 +55,6 @@ export function MainContent({
 
   const handleSaveNote = async (updatedNote: Note) => {
     try {
-      console.log("MainContent - handleSaveNote called with:", updatedNote);
-      console.log("MainContent - selectedNoteId:", selectedNoteId);
-      
       const updateData = {
         title: updatedNote.title,
         transcript: updatedNote.transcript,
@@ -67,11 +64,7 @@ export function MainContent({
         updatedAt: Timestamp.now(),
       };
       
-      console.log("MainContent - Updating note with data:", updateData);
-      
       await notesService.updateNote(selectedNoteId!, updateData);
-      
-      console.log("MainContent - Note updated in Firestore");
       
       setSelectedNote({
         ...updatedNote,
@@ -80,14 +73,9 @@ export function MainContent({
         updatedAt: Timestamp.now(),
       });
       
-      console.log("MainContent - Selected note state updated");
-      
       setIsEditing(false);
       refreshNotes();
-      
-      console.log("MainContent - Edit mode disabled and notes refreshed");
     } catch (err) {
-      console.error("Failed to update note:", err);
       setNotesError("Failed to update note. Please try again.");
     }
   };
@@ -121,7 +109,6 @@ export function MainContent({
       } else {
         // Handle other errors
         setNotesError('Failed to enhance notes. Please try again.');
-        console.error('Error enhancing notes:', err);
       }
     } finally {
       setEnhancing(false);
@@ -148,7 +135,6 @@ export function MainContent({
             setCurrentView('notes');
             refreshNotes();
           } catch (err) {
-            console.error("Failed to delete note:", err);
             setNotesError("Failed to delete note. Please try again.");
           } finally {
             setIsDeleteModalOpen(false);

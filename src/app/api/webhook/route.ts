@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     // } else {
     //   await webhook.verify(rawBody, webhookHeaders);
     // }
-    await webhook.verify(rawBody, webhookHeaders);
+      await webhook.verify(rawBody, webhookHeaders);
     const payload = JSON.parse(rawBody);
 
     if (payload.data.payload_type === "Subscription") {

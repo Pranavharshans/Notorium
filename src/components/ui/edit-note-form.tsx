@@ -34,14 +34,6 @@ export function EditNoteForm({ note, onCancel, onSave }: EditNoteFormProps) {
     setIsSubmitting(true);
 
     try {
-      console.log("Saving note with data:", {
-        ...note,
-        title,
-        notes: note.notes,
-        tags,
-        updatedAt: new Date()
-      });
-      
       await onSave({
         ...note,
         title,
@@ -49,10 +41,8 @@ export function EditNoteForm({ note, onCancel, onSave }: EditNoteFormProps) {
         tags,
         updatedAt: new Date()
       });
-      
-      console.log("Save completed successfully");
     } catch (err) {
-      console.error("Error in handleSubmit:", err);
+      // Error handling without console logging
     } finally {
       setIsSubmitting(false);
     }
