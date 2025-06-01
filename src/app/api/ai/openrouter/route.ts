@@ -128,9 +128,9 @@ async function enhanceNotes(
 ): Promise<string> {
   console.log(`Enhancing notes for user ${userId}`);
   const instructions = {
-    detailed: "Make these notes more detailed by expanding explanations and adding examples:",
+    detailed: "Make these notes more detailed by diving deeper into the concepts and provide more examples and applications, and make them well described and well organized, keep the same structure as the original notes , that is the same number of sections and the same headings and subheadings and mark down format. Be aware of the context, do not bring irrelevant information or details, the word count is very much important, atleast 4000 words is needed, do not produce shorter that 4000 words. the word count is very crucial , make sure it is alteast 4000 words:",
     shorter: "Summarize these notes into a more concise version while keeping the key points:",
-    simpler: "Simplify these notes to make them easier to understand:",
+    simpler: "Simplify these notes to make them easier to understand in a simpler way of language and structure, do not change the structure of the notes, keep the same number of sections and the same headings and subheadings and mark down format.do not bring irrelevant information or details,keeps the same word count as the original notes,Just make it simoler and easier to understand wihtout loss of any content or data in the orginal inpput.:",
     complex: "Make these notes more sophisticated and higher level, using advanced terminology:"
   };
 

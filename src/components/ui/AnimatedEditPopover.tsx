@@ -67,12 +67,12 @@ export function AnimatedEditPopover({ onEnhance, isEnhancing }: AnimatedEditPopo
             </Button>
             <Button
               variant="ghost"
-              className="flex items-center justify-start gap-2 px-3 py-1.5 text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+              className="flex items-center justify-start gap-2 px-3 py-1.5 text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors opacity-50 cursor-not-allowed"
               onClick={() => {
                 onEnhance('shorter');
                 setIsOpen(false);
               }}
-              disabled={isEnhancing}
+              disabled={true}
             >
               <MinusSquare className="h-3.5 w-3.5" />
               <span>Shorten</span>
