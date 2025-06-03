@@ -12,7 +12,7 @@ export async function POST(request: Request) {
                request.headers.get('x-real-ip') ||
                '127.0.0.1';
 
-    // Check rate limit
+    // Check rate lim
     const result = aiAndTranscriptionLimiter.check(ip);
 
     return NextResponse.json({

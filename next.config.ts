@@ -37,6 +37,36 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Cache optimized favicon files for 1 year
+        source: '/favicon-:size(16x16|32x32).png',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Cache Apple touch icon for 1 year
+        source: '/apple-touch-icon.png',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Cache optimized logo files for 1 year
+        source: '/logo-:size(small|medium).png',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
     ];
   },
   webpack: (config, { isServer }) => {
